@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>현장 사고 접수</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #f0f4f8;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+
+  .page { max-width: 580px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+  /* ── 헤더 ── */
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid #d9e4ef;
+  }
+  .icon-wrap {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #fff0f0; margin: 0 auto 1rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+  }
+  .form-title { font-size: 20px; font-weight: 700; line-height: 1.45; margin-bottom: 10px; color: #1a1a1a; }
+  .form-desc { font-size: 13.5px; color: #666; line-height: 1.75; margin-bottom: 14px; }
+  .notice-box {
+    background: #fff8f0; border-left: 3px solid #e05c00;
+    border-radius: 0 8px 8px 0; padding: .8rem 1rem;
+    text-align: left; font-size: 13px; color: #555; line-height: 1.95;
+  }
+  .notice-box b { color: #e05c00; }
+
+  /* ── 섹션 타이틀 ── */
+  .section-title {
+    font-size: 13px; font-weight: 700; color: #e05c00;
+    text-transform: uppercase; letter-spacing: .05em;
+    margin-bottom: 1rem; margin-top: .25rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .section-title::after {
+    content:''; flex:1; height:1px; background:#ffe0cc;
+  }
+
+  /* ── 카드 ── */
+  .card {
+    background: #fff; border-radius: 14px;
+    border: 1px solid #dce8f4; padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* ── 필드 ── */
+  .field { margin-bottom: 1.15rem; }
+  .field:last-child { margin-bottom: 0; }
+  .label {
+    font-size: 14px; font-weight: 600; color: #333;
+    margin-bottom: 7px; display: flex; align-items: center; gap: 4px;
+  }
+  .req { color: #e05c00; font-size: 13px; }
+  .input, .select, .textarea {
+    width: 100%; padding: 10px 13px;
+    border: 1.5px solid #ddd; border-radius: 9px;
+    font-size: 15px; color: #1a1a1a; background: #fff;
+    outline: none; font-family: inherit; transition: border-color .15s;
+  }
+  .input:focus, .select:focus, .textarea:focus {
+    border-color: #e05c00; box-shadow: 0 0 0 3px rgba(224,92,0,.1);
+  }
+  .input.err, .select.err, .textarea.err { border-color: #e74c3c; }
+  .err-msg { font-size: 12px; color: #e05c00; margin-top: 5px; }
+  .textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+  .select { cursor: pointer; -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px;
+  }
+
+  /* ── 긴급도 버튼 ── */
+  .level-row { display: flex; flex-direction: column; gap: 8px; }
+  .level-btn {
+    width: 100%; padding: 12px 14px; border-radius: 9px; font-size: 14px;
+    border: 1.5px solid #ddd; background: #fff; color: #666;
+    cursor: pointer; transition: all .15s; font-family: inherit; font-weight: 500;
+    text-align: left; display: flex; align-items: center; gap: 10px;
+  }
+  .level-btn .lv-badge {
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .level-btn.lv1 .lv-badge { background: #ffe0e0; color: #b71c1c; }
+  .level-btn.lv2 .lv-badge { background: #fff3e0; color: #e65100; }
+  .level-btn.lv3 .lv-badge { background: #e8f5e9; color: #2e7d32; }
+  .level-btn.on.lv1 { border-color: #b71c1c; background: #fff5f5; }
+  .level-btn.on.lv2 { border-color: #e65100; background: #fff8f0; }
+  .level-btn.on.lv3 { border-color: #2e7d32; background: #f0faf0; }
+  .level-btn .lv-desc { font-size: 12px; color: #999; margin-top: 2px; font-weight: 400; }
+  .level-btn-inner { display: flex; flex-direction: column; }
+
+  /* ── 라디오 버튼 스타일 ── */
+  .radio-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-btn {
+    padding: 8px 16px; border-radius: 20px; font-size: 13.5px;
+    border: 1.5px solid #ddd; background: #fff; color: #888;
+    cursor: pointer; transition: all .15s; font-family: inherit; font-weight: 500;
+  }
+  .radio-btn.on { border-color: #e05c00; background: #fff3eb; color: #e05c00; }
+
+  /* ── 체크박스 ── */
+  .chk-list { display: flex; flex-direction: column; gap: 11px; }
+  .chk-item { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+  .chk-item input[type=checkbox] {
+    width: 17px; height: 17px; accent-color: #e05c00;
+    cursor: pointer; flex-shrink: 0; margin-top: 2px;
+  }
+  .chk-item span { font-size: 14px; color: #555; line-height: 1.55; user-select: none; }
+
+  /* ── 제출 버튼 ── */
+  .submit-btn {
+    width: 100%; padding: 14px; background: #e05c00; color: #fff;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: background .15s; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .submit-btn:hover { background: #c44f00; }
+  .submit-btn:disabled { background: #f0b48a; cursor: not-allowed; }
+
+  /* ── 완료 화면 ── */
+  .success-wrap {
+    text-align: center; padding: 2.5rem 1.5rem;
+    background: #fff; border-radius: 14px; border: 1px solid #dce8f4;
+  }
+  .success-icon {
+    width: 60px; height: 60px; border-radius: 50%; background: #fff0e0;
+    margin: 0 auto 1.25rem;
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
+  }
+  .success-title { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+  .success-desc { font-size: 14px; color: #666; line-height: 1.7; margin-bottom: 1.25rem; }
+  .receipt {
+    background: #f5f8fc; border-radius: 10px; padding: 1rem 1.25rem;
+    text-align: left; font-size: 13.5px; color: #555;
+    line-height: 2.1; margin-bottom: 1.5rem;
+  }
+  .receipt strong { color: #1a1a1a; }
+  .receipt .lv1-text { color: #b71c1c; font-weight: 700; }
+  .receipt .lv2-text { color: #e65100; font-weight: 700; }
+  .receipt .lv3-text { color: #2e7d32; font-weight: 700; }
+  .reset-btn {
+    padding: 11px 28px; background: #e05c00; color: #fff;
+    border: none; border-radius: 9px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .reset-btn:hover { background: #c44f00; }
+
+  /* ── 로딩 ── */
+  .loading-bar { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
+
+  /* ── 에러 배너 ── */
+  .err-banner {
+    background: #fff0ee; border: 1px solid #f5b7b1; border-radius: 9px;
+    padding: 10px 14px; font-size: 13px; color: #c0392b; margin-bottom: 12px;
+  }
+
+  /* ── 관리자 링크 ── */
+  .admin-link-wrap { text-align: center; margin-top: 1.75rem; }
+  .admin-link {
+    font-size: 12px; color: #ccc; background: none; border: none;
+    cursor: pointer; text-decoration: underline; font-family: inherit;
+  }
+
+  /* ── Firebase 설정 안내 ── */
+  .setup-banner {
+    background: #fffbe6; border: 1px solid #f9c74f; border-radius: 10px;
+    padding: 1rem 1.25rem; font-size: 13px; color: #7a6000;
+    line-height: 1.8; margin-bottom: 1.25rem;
+  }
+  .setup-banner strong { color: #5a4400; }
+  .setup-banner code {
+    background: #fff3c4; padding: 1px 5px; border-radius: 4px;
+    font-family: monospace; font-size: 12px;
+  }
+
+  /* ── 사고번호 배지 ── */
+  .acc-no-badge {
+    display: inline-block; background: #e05c00; color: #fff;
+    font-size: 13px; font-weight: 700; padding: 3px 12px; border-radius: 20px;
+    margin-bottom: 12px; letter-spacing: .04em;
+  }
+
+  @media (max-width: 420px) {
+    .radio-row { gap: 6px; }
+    .radio-btn { padding: 7px 12px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div id="app"><div class="loading-bar">불러오는 중...</div></div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ★  FIREBASE 설정  ★
+     아래 firebaseConfig 값을 본인 프로젝트 값으로 교체하세요.
+════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, onValue, update, remove }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+/* ─────────────────────────────────────────────
+   Firebase 프로젝트 설정을 여기에 붙여넣으세요
+───────────────────────────────────────────── */
+const firebaseConfig = {
+  apiKey: "AIzaSyCQHrtgTZr5sZVElyfy2TBcENC0cwzmkhg",
+  authDomain: "safety001-5091e.firebaseapp.com",
+  databaseURL: "https://safety001-5091e-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "safety001-5091e",
+  storageBucket: "safety001-5091e.firebasestorage.app",
+  messagingSenderId: "753126039012",
+  appId: "1:753126039012:web:68ec71700a164db531fbf1"
+};
+
+/* ───────────────────────────────────────────── */
+
+const CONFIGURED = !firebaseConfig.apiKey.startsWith("YOUR");
+const ADMIN_PW = "safety2025";
+
+/* ── 사업소 목록 ── */
+const SITES = ["광명1범퍼","광명2도어","안산물류","수원JIS","평택협력","기타"];
+
+/* ── 체크리스트 ── */
+const CHECKS = [
+  "현장을 통제하거나 2차 사고를 예방하기 위한 즉시 조치를 취했습니다.",
+  "사진 촬영 등 현장 기록을 완료하였습니다.",
+  "허위 보고 시 규정에 따라 처리될 수 있음을 확인했습니다."
+];
+
+let db, entriesRef;
+let entries = {};
+let view = "form";
+let saving = false;
+let submitted = null;
+let accSeq = 1;
+
+let form = {
+  site: "", accType: "", accDetail: "",
+  level: "", lineStop: "", customerEffect: "",
+  reporter: "", phone: "",
+  location: "", situation: "",
+  actionTaken: "", supportNeeded: "",
+  checks: [false, false, false]
+};
+let errors = {};
+let filter = { accType: "전체", level: "전체", search: "" };
+
+/* ── 전화번호 포매팅 ── */
+function fmt(v){
+  v = v.replace(/\D/g, "");
+  if(v.length<=3) return v;
+  if(v.length<=7) return v.slice(0,3)+"-"+v.slice(3);
+  return v.slice(0,3)+"-"+v.slice(3,7)+"-"+v.slice(7,11);
+}
+
+/* ── 사고번호 생성 ── */
+function genAccNo(){
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  const cnt = Object.values(entries).filter(e => e.accNo && e.accNo.startsWith("ACC-"+ymd)).length;
+  return `ACC-${ymd}-${String(cnt+1).padStart(3,"0")}`;
+}
+
+/* ── 긴급도 라벨 ── */
+function levelLabel(lv){
+  if(lv==="1") return {text:"Level 1 최긴급", cls:"lv1-text"};
+  if(lv==="2") return {text:"Level 2 긴급",   cls:"lv2-text"};
+  if(lv==="3") return {text:"Level 3 일반",   cls:"lv3-text"};
+  return {text:"-", cls:""};
+}
+
+/* ── 렌더 ── */
+function render(){
+  const app = document.getElementById("app");
+  if(!CONFIGURED){ app.innerHTML = renderSetupGuide(); return; }
+  if(view==="form")    app.innerHTML = renderForm();
+  if(view==="success") app.innerHTML = renderSuccess();
+  if(view==="admin")   app.innerHTML = renderAdmin();
+  bindEvents();
+}
+
+/* ── Firebase 설정 안내 ── */
+function renderSetupGuide(){
+  return `
+<div class="setup-banner">
+  <strong>⚙️ Firebase 연결 설정이 필요합니다</strong><br><br>
+  이 파일을 실제로 사용하려면 Firebase 프로젝트를 연결해야 합니다.<br>
+  <strong>1단계</strong> — <a href="https://console.firebase.google.com" target="_blank" style="color:#7a6000;">console.firebase.google.com</a> 접속 → 새 프로젝트 생성<br>
+  <strong>2단계</strong> — Realtime Database 활성화 (테스트 모드로 시작)<br>
+  <strong>3단계</strong> — 프로젝트 설정 → 앱 추가(웹) → SDK 설정 복사<br>
+  <strong>4단계</strong> — 이 파일의 <code>firebaseConfig</code> 부분에 붙여넣기
+</div>
+<div class="card" style="text-align:center;color:#aaa;font-size:14px;padding:2rem;">
+  Firebase 설정 후 이 화면이 사고접수 폼으로 바뀝니다.
+</div>`;
+}
+
+/* ── 사고접수 폼 ── */
+function renderForm(){
+  const e = errors;
+  const siteOpts = `<option value="">사업소 선택</option>` + SITES.map(s=>`<option value="${s}"${form.site===s?" selected":""}>${s}</option>`).join("");
+
+  const accTypeOpts = ["인사사고","제품사고","공급사고"].map(t=>`
+    <button class="radio-btn${form.accType===t?" on":""}" data-field="accType" data-val="${t}">${t}</button>`).join("");
+
+  const accDetailMap = {
+    "인사사고": ["중대재해","일반재해","경미사고","아차사고"],
+    "제품사고": ["파손","낙하","충격","오염","포장불량","운송중 손상"],
+    "공급사고": ["이종","불량","결품","누락","서열오류","납입지연","수량불일치","라인투입오류"]
+  };
+  const detailBtns = form.accType
+    ? (accDetailMap[form.accType]||[]).map(d=>`
+        <button class="radio-btn${form.accDetail===d?" on":""}" data-field="accDetail" data-val="${d}">${d}</button>`).join("")
+    : `<div style="font-size:13px;color:#bbb;padding:4px 0;">사고 유형을 먼저 선택해 주세요.</div>`;
+
+  const levelBtns = [
+    {lv:"1", cls:"lv1", badge:"최긴급", desc:"인명피해·라인중단·고객사 즉시 대응 필요"},
+    {lv:"2", cls:"lv2", badge:"긴급",   desc:"생산 차질 가능·수습 후 30분 내 보고"},
+    {lv:"3", cls:"lv3", badge:"일반",   desc:"생산 영향 없음·정기 보고 포함"}
+  ].map(l=>`
+    <button class="level-btn ${l.cls}${form.level===l.lv?" on":""}" data-lv="${l.lv}">
+      <span class="lv-badge">Level ${l.lv} ${l.badge}</span>
+      <div class="level-btn-inner">
+        <span style="font-size:14px;font-weight:600;color:#333;">Level ${l.lv} — ${l.badge}</span>
+        <span class="lv-desc">${l.desc}</span>
+      </div>
+    </button>`).join("");
+
+  const yesNoBtns = (field, val) => ["예","아니오"].map(v=>`
+    <button class="radio-btn${val===v?" on":""}" data-field="${field}" data-val="${v}">${v}</button>`).join("");
+
+  const chkItems = CHECKS.map((t,i)=>`
+    <label class="chk-item">
+      <input type="checkbox" data-chk="${i}" ${form.checks[i]?"checked":""}/>
+      <span>${t}</span>
+    </label>`).join("");
+
+  return `
+<div class="header">
+  <div class="icon-wrap">🚨</div>
+  <div class="form-title">현장 사고 접수</div>
+  <div class="form-desc">사고 발생 즉시 아래 항목을 입력해 주세요.<br>접수 즉시 담당자에게 자동으로 통보됩니다.</div>
+  <div class="notice-box">
+    <b>※</b> 인명피해·라인중단 발생 시 즉시 보고 후 현장 통제<br>
+    <b>※</b> 사진은 반드시 현장 상태 그대로 촬영 후 별도 공유<br>
+    <b>※</b> 허위·지연 보고는 사고 대응에 치명적 영향을 줍니다
+  </div>
+</div>
+
+<!-- ── 기본정보 ── -->
+<div class="card">
+  <div class="section-title">📋 기본 정보</div>
+
+  <div class="field">
+    <div class="label">사업소 <span class="req">*</span></div>
+    <select id="f-site" class="select${e.site?" err":""}">
+      ${siteOpts}
+    </select>
+    ${e.site?`<div class="err-msg">${e.site}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">접수자 성명 <span class="req">*</span></div>
+    <input id="f-reporter" class="input${e.reporter?" err":""}" value="${form.reporter}" placeholder="성함을 입력해 주세요" maxlength="20"/>
+    ${e.reporter?`<div class="err-msg">${e.reporter}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">접수자 연락처 <span class="req">*</span></div>
+    <input id="f-phone" class="input${e.phone?" err":""}" value="${form.phone}" placeholder="010-0000-0000" type="tel"/>
+    ${e.phone?`<div class="err-msg">${e.phone}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">사고 발생 위치 <span class="req">*</span></div>
+    <input id="f-location" class="input${e.location?" err":""}" value="${form.location}" placeholder="예: 1공장 도킹존 3번 라인" maxlength="60"/>
+    ${e.location?`<div class="err-msg">${e.location}</div>`:""}
+  </div>
+</div>
+
+<!-- ── 사고분류 ── -->
+<div class="card">
+  <div class="section-title">🗂️ 사고 분류</div>
+
+  <div class="field">
+    <div class="label">사고 유형 <span class="req">*</span></div>
+    <div class="radio-row">${accTypeOpts}</div>
+    ${e.accType?`<div class="err-msg">${e.accType}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">세부 유형 <span class="req">*</span></div>
+    <div class="radio-row">${detailBtns}</div>
+    ${e.accDetail?`<div class="err-msg">${e.accDetail}</div>`:""}
+  </div>
+</div>
+
+<!-- ── 긴급도 ── -->
+<div class="card">
+  <div class="section-title">⚡ 긴급도 판단</div>
+
+  <div class="field">
+    <div class="label">긴급도 선택 <span class="req">*</span></div>
+    <div class="level-row">${levelBtns}</div>
+    ${e.level?`<div class="err-msg">${e.level}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">라인중단 여부 <span class="req">*</span></div>
+    <div class="radio-row">${yesNoBtns("lineStop", form.lineStop)}</div>
+    ${e.lineStop?`<div class="err-msg">${e.lineStop}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">고객사 영향 여부 <span class="req">*</span></div>
+    <div class="radio-row">${yesNoBtns("customerEffect", form.customerEffect)}</div>
+    ${e.customerEffect?`<div class="err-msg">${e.customerEffect}</div>`:""}
+  </div>
+</div>
+
+<!-- ── 상황 및 조치 ── -->
+<div class="card">
+  <div class="section-title">📝 현황 및 조치</div>
+
+  <div class="field">
+    <div class="label">현재 상황 <span class="req">*</span></div>
+    <textarea id="f-situation" class="textarea${e.situation?" err":""}" placeholder="사고 발생 경위 및 현재 상황을 간략히 기술해 주세요.">${form.situation}</textarea>
+    ${e.situation?`<div class="err-msg">${e.situation}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">즉시 조치 내용</div>
+    <textarea id="f-action" class="textarea" placeholder="취한 즉시 조치를 입력해 주세요. (없으면 '없음' 입력)">${form.actionTaken}</textarea>
+  </div>
+
+  <div class="field">
+    <div class="label">추가 지원 필요 여부</div>
+    <input id="f-support" class="input" value="${form.supportNeeded}" placeholder="예: 안전팀 현장 출동 요청, 대체품 긴급 수배 등" maxlength="100"/>
+  </div>
+</div>
+
+<!-- ── 확인사항 ── -->
+<div class="card">
+  <div class="section-title" style="margin-bottom:12px;">✅ 확인 사항</div>
+  <div class="chk-list">${chkItems}</div>
+  ${e.checks?`<div class="err-msg" style="margin-top:8px;">${e.checks}</div>`:""}
+</div>
+
+${e.submit?`<div class="err-banner">${e.submit}</div>`:""}
+
+<button class="submit-btn" id="btn-submit" ${saving?"disabled":""}>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+  ${saving?"접수 중...":"사고 접수하기"}
+</button>
+
+<div class="admin-link-wrap">
+  <button class="admin-link" id="go-admin">관리자 페이지</button>
+</div>`;
+}
+
+/* ── 완료 화면 ── */
+function renderSuccess(){
+  const e = submitted;
+  const lv = e ? levelLabel(e.level) : {text:"-",cls:""};
+  return `
+<div class="success-wrap">
+  <div class="success-icon">✅</div>
+  <div class="success-title">사고 접수가 완료되었습니다.</div>
+  <div class="success-desc">담당자에게 즉시 통보됩니다.<br>Level 1·2 사고는 전화로 추가 보고를 병행해 주세요.</div>
+  ${e?`
+  <div class="acc-no-badge">${e.accNo}</div>
+  <div class="receipt">
+    <strong>사업소</strong>: ${e.site}<br>
+    <strong>접수자</strong>: ${e.reporter} (${e.phone})<br>
+    <strong>사고유형</strong>: ${e.accType} > ${e.accDetail}<br>
+    <strong>긴급도</strong>: <span class="${lv.cls}">${lv.text}</span><br>
+    <strong>라인중단</strong>: ${e.lineStop} &nbsp;|&nbsp; <strong>고객사 영향</strong>: ${e.customerEffect}<br>
+    <strong>접수일시</strong>: ${e.createdAt}
+  </div>`:""}
+  <button class="reset-btn" id="btn-reset">새 사고 접수</button>
+</div>`;
+}
+
+/* ── 관리자 화면 ── */
+function renderAdmin(){
+  const list = Object.entries(entries);
+  const total = list.length;
+  const lv1 = list.filter(([,e])=>e.level==="1").length;
+  const lv2 = list.filter(([,e])=>e.level==="2").length;
+  const lv3 = list.filter(([,e])=>e.level==="3").length;
+  const lineStop = list.filter(([,e])=>e.lineStop==="예").length;
+
+  let filtered = list.filter(([,e])=>{
+    if(filter.accType!=="전체" && e.accType!==filter.accType) return false;
+    if(filter.level!=="전체" && e.level!==filter.level) return false;
+    if(filter.search && !e.reporter.includes(filter.search) && !e.site.includes(filter.search) && !(e.accDetail||"").includes(filter.search)) return false;
+    return true;
+  });
+  // 최신순 정렬
+  filtered.sort((a,b)=>(b[1].createdAt||"").localeCompare(a[1].createdAt||""));
+
+  const lvStyle = {
+    "1":{bg:"#fff5f5",color:"#b71c1c",border:"#f5c6c6"},
+    "2":{bg:"#fff8f0",color:"#e65100",border:"#fcd8a8"},
+    "3":{bg:"#f0faf0",color:"#2e7d32",border:"#b8e0ba"}
+  };
+
+  const rows = filtered.map(([key,e])=>{
+    const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px;color:#999;white-space:nowrap;">${e.accNo||"-"}</td>
+      <td style="font-weight:600;white-space:nowrap;">${e.site}</td>
+      <td>
+        <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};">
+          Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
+        </span>
+      </td>
+      <td style="white-space:nowrap;">${e.accType||"-"}</td>
+      <td style="color:#666;">${e.accDetail||"-"}</td>
+      <td style="text-align:center;">
+        ${e.lineStop==="예"?`<span style="color:#b71c1c;font-weight:700;">●</span>`:`<span style="color:#ccc;">○</span>`}
+      </td>
+      <td style="font-weight:600;">${e.reporter}</td>
+      <td style="color:#888;font-size:12px;white-space:nowrap;">${(e.createdAt||"").slice(0,16)}</td>
+      <td>
+        <select class="status-sel" data-key="${key}"
+          style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer;font-family:inherit;">
+          ${["접수","처리중","완료","보류"].map(s=>`<option${e.status===s?" selected":""}>${s}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <button class="del-btn" data-key="${key}"
+          style="background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;padding:2px;">✕</button>
+      </td>
+    </tr>`;
+  }).join("");
+
+  return `
+<div style="padding-bottom:2rem;">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem;">
+    <div>
+      <div style="font-size:17px;font-weight:700;">🛡️ 사고관리 대시보드</div>
+      <div style="font-size:13px;color:#888;margin-top:2px;">실시간 사고 접수 현황</div>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;">
+      <button onclick="location.reload()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">새로고침</button>
+      <button id="btn-excel" style="padding:7px 12px;border:1px solid #1d6f42;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;color:#1d6f42;font-weight:500;">⬇ 엑셀 다운로드</button>
+      <button id="go-form" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">접수 폼 보기</button>
+      <button id="go-logout" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer;color:#999;font-family:inherit;">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- 통계 카드 -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:1.25rem;">
+    <div style="background:#e8eef7;border-radius:9px;padding:10px 13px;">
+      <div style="font-size:12px;color:#3a5a8a;margin-bottom:3px;">총 접수</div>
+      <div style="font-size:24px;font-weight:700;color:#1a3a6b;">${total}</div>
+    </div>
+    <div style="background:#fff5f5;border-radius:9px;padding:10px 13px;">
+      <div style="font-size:12px;color:#b71c1c;margin-bottom:3px;">최긴급(Lv1)</div>
+      <div style="font-size:24px;font-weight:700;color:#b71c1c;">${lv1}</div>
+    </div>
+    <div style="background:#fff8f0;border-radius:9px;padding:10px 13px;">
+      <div style="font-size:12px;color:#e65100;margin-bottom:3px;">긴급(Lv2)</div>
+      <div style="font-size:24px;font-weight:700;color:#e65100;">${lv2}</div>
+    </div>
+    <div style="background:#f0faf0;border-radius:9px;padding:10px 13px;">
+      <div style="font-size:12px;color:#2e7d32;margin-bottom:3px;">일반(Lv3)</div>
+      <div style="font-size:24px;font-weight:700;color:#2e7d32;">${lv3}</div>
+    </div>
+    <div style="background:#FCEBEB;border-radius:9px;padding:10px 13px;">
+      <div style="font-size:12px;color:#A32D2D;margin-bottom:3px;">라인중단</div>
+      <div style="font-size:24px;font-weight:700;color:#791F1F;">${lineStop}</div>
+    </div>
+  </div>
+
+  <!-- 필터 -->
+  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;">
+    <input id="a-search" value="${filter.search}" placeholder="사업소 / 접수자 / 세부유형"
+      style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;min-width:160px;font-family:inherit;flex:1;"/>
+    <select id="a-acctype" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;">
+      ${["전체","인사사고","제품사고","공급사고"].map(s=>`<option${filter.accType===s?" selected":""}>${s}</option>`).join("")}
+    </select>
+    <select id="a-level" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;">
+      ${["전체","1","2","3"].map(s=>`<option${filter.level===s?" selected":""}>${s==="전체"?"전체 긴급도":"Level "+s}</option>`).join("")}
+    </select>
+  </div>
+
+  <!-- 테이블 -->
+  <div class="card" style="padding:0;overflow:hidden;">
+    ${filtered.length===0
+      ?`<div style="text-align:center;padding:2.5rem;color:#bbb;font-size:14px;">접수된 사고가 없습니다.</div>`
+      :`<div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead style="background:#f5f8fc;">
+            <tr style="border-bottom:1px solid #dce8f4;">
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;white-space:nowrap;">사고번호</th>
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;white-space:nowrap;">사업소</th>
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">긴급도</th>
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">유형</th>
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">세부유형</th>
+              <th style="padding:9px 11px;text-align:center;font-weight:600;color:#888;white-space:nowrap;">라인<br>중단</th>
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">접수자</th>
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;white-space:nowrap;">접수일시</th>
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">상태</th>
+              <th style="padding:9px 11px;"></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`}
+  </div>
+  <div style="font-size:12px;color:#bbb;margin-top:7px;text-align:right;">총 ${filtered.length}건</div>
+</div>
+
+<!-- 관리자 로그인 모달 -->
+<div id="login-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:2rem 1.75rem;width:300px;text-align:center;">
+    <div style="font-size:22px;margin-bottom:8px;">🔐</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px;">관리자 로그인</div>
+    <div style="font-size:13px;color:#888;margin-bottom:1rem;">비밀번호를 입력해 주세요</div>
+    <input id="modal-pw" type="password" class="input" placeholder="비밀번호" style="margin-bottom:8px;"/>
+    <div id="modal-err" style="font-size:12px;color:#c0392b;margin-bottom:8px;display:none;"></div>
+    <button id="modal-login" class="submit-btn" style="font-size:14px;padding:11px;">로그인</button>
+    <button id="modal-cancel" style="margin-top:8px;width:100%;padding:9px;background:#f5f5f5;border:none;border-radius:9px;font-size:13px;cursor:pointer;color:#888;font-family:inherit;">취소</button>
+  </div>
+</div>`;
+}
+
+/* ── 이벤트 바인딩 ── */
+function bindEvents(){
+  const $ = id => document.getElementById(id);
+
+  if(view==="form"){
+    $("f-site")     && ($("f-site").onchange     = e => { form.site = e.target.value; delete errors.site; });
+    $("f-reporter") && ($("f-reporter").oninput   = e => { form.reporter = e.target.value; delete errors.reporter; });
+    $("f-phone")    && ($("f-phone").oninput      = e => { const v=fmt(e.target.value); form.phone=v; e.target.value=v; delete errors.phone; });
+    $("f-location") && ($("f-location").oninput   = e => { form.location = e.target.value; delete errors.location; });
+    $("f-situation")&& ($("f-situation").oninput  = e => { form.situation = e.target.value; delete errors.situation; });
+    $("f-action")   && ($("f-action").oninput     = e => { form.actionTaken = e.target.value; });
+    $("f-support")  && ($("f-support").oninput    = e => { form.supportNeeded = e.target.value; });
+
+    // 라디오 버튼 (유형/세부/예아니오)
+    document.querySelectorAll("[data-field]").forEach(b => {
+      b.onclick = () => {
+        const field = b.dataset.field;
+        const val   = b.dataset.val;
+        if(field==="accType"){ form.accType=val; form.accDetail=""; delete errors.accType; }
+        else { form[field]=val; delete errors[field]; }
+        render();
+      };
+    });
+
+    // 긴급도 버튼
+    document.querySelectorAll("[data-lv]").forEach(b => {
+      b.onclick = () => { form.level=b.dataset.lv; delete errors.level; render(); };
+    });
+
+    // 체크박스
+    document.querySelectorAll("[data-chk]").forEach(c => {
+      c.onchange = () => {
+        form.checks[+c.dataset.chk] = c.checked;
+        if(form.checks.every(Boolean)) delete errors.checks;
+      };
+    });
+
+    $("btn-submit") && ($("btn-submit").onclick = handleSubmit);
+    $("go-admin")   && ($("go-admin").onclick   = () => showLoginModal());
+  }
+
+  if(view==="success"){
+    $("btn-reset") && ($("btn-reset").onclick = () => {
+      form = {site:"",accType:"",accDetail:"",level:"",lineStop:"",customerEffect:"",
+              reporter:"",phone:"",location:"",situation:"",actionTaken:"",supportNeeded:"",
+              checks:[false,false,false]};
+      errors={}; submitted=null; view="form"; render();
+    });
+  }
+
+  if(view==="admin"){
+    $("go-form")   && ($("go-form").onclick   = () => { view="form"; render(); });
+    $("go-logout") && ($("go-logout").onclick = () => { view="form"; render(); });
+    $("a-search")  && ($("a-search").oninput  = e => { filter.search=e.target.value; render(); });
+    $("a-acctype") && ($("a-acctype").onchange= e => { filter.accType=e.target.value; render(); });
+    $("a-level")   && ($("a-level").onchange  = e => { filter.level=e.target.value; render(); });
+    $("btn-excel") && ($("btn-excel").onclick  = () => downloadExcel());
+
+    document.querySelectorAll(".status-sel").forEach(s => {
+      s.onchange = () => { update(ref(db,`accidents/${s.dataset.key}`),{status:s.value}); };
+    });
+    document.querySelectorAll(".del-btn").forEach(b => {
+      b.onclick = () => {
+        if(!confirm("이 사고 접수 건을 삭제하시겠습니까?")) return;
+        remove(ref(db,`accidents/${b.dataset.key}`));
+      };
+    });
+
+    const modal = $("login-modal");
+    if(modal){
+      modal.onclick = e => { if(e.target===modal) modal.style.display="none"; };
+      $("modal-cancel") && ($("modal-cancel").onclick = () => { modal.style.display="none"; });
+      $("modal-login")  && ($("modal-login").onclick  = doModalLogin);
+      $("modal-pw")     && ($("modal-pw").onkeydown   = e => { if(e.key==="Enter") doModalLogin(); });
+    }
+  }
+}
+
+/* ── 엑셀 다운로드 ── */
+function downloadExcel(){
+  const list = Object.values(entries);
+  if(!list.length){ alert("다운로드할 데이터가 없습니다."); return; }
+  const BOM = "\uFEFF";
+  const headers = ["사고번호","접수일시","사업소","접수자","연락처","사고유형","세부유형","긴급도","라인중단","고객사영향","상황","즉시조치","상태"];
+  const rows = list.map(e=>[
+    e.accNo||"", e.createdAt||"", e.site||"", e.reporter||"", e.phone||"",
+    e.accType||"", e.accDetail||"",
+    {1:"최긴급",2:"긴급",3:"일반"}[e.level]||"",
+    e.lineStop||"", e.customerEffect||"",
+    e.situation||"", e.actionTaken||"", e.status||""
+  ]);
+  const csv = BOM + [headers,...rows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url; a.download="사고접수현황.csv";
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/* ── 로그인 모달 ── */
+function showLoginModal(){
+  view="admin"; render();
+  const modal = document.getElementById("login-modal");
+  if(modal) modal.style.display="flex";
+}
+function doModalLogin(){
+  const pw = document.getElementById("modal-pw").value;
+  const errEl = document.getElementById("modal-err");
+  if(pw===ADMIN_PW){
+    document.getElementById("login-modal").style.display="none";
+    view="admin"; render();
+  } else {
+    errEl.textContent="비밀번호가 올바르지 않습니다.";
+    errEl.style.display="block";
+  }
+}
+
+/* ── 제출 처리 ── */
+async function handleSubmit(){
+  const errs={};
+  if(!form.site)          errs.site="사업소를 선택해 주세요.";
+  if(!form.reporter.trim()) errs.reporter="접수자 성명을 입력해 주세요.";
+  if(!form.phone||form.phone.replace(/\D/g,"").length<10) errs.phone="연락처를 입력해 주세요.";
+  if(!form.location.trim()) errs.location="사고 발생 위치를 입력해 주세요.";
+  if(!form.accType)       errs.accType="사고 유형을 선택해 주세요.";
+  if(!form.accDetail)     errs.accDetail="세부 유형을 선택해 주세요.";
+  if(!form.level)         errs.level="긴급도를 선택해 주세요.";
+  if(!form.lineStop)      errs.lineStop="라인중단 여부를 선택해 주세요.";
+  if(!form.customerEffect) errs.customerEffect="고객사 영향 여부를 선택해 주세요.";
+  if(!form.situation.trim()) errs.situation="현재 상황을 입력해 주세요.";
+  if(form.checks.some(c=>!c)) errs.checks="모든 확인 사항을 체크해 주세요.";
+  if(Object.keys(errs).length){ errors=errs; render(); window.scrollTo(0,0); return; }
+
+  saving=true; render();
+  const accNo = genAccNo();
+  const entry={
+    accNo,
+    site: form.site,
+    reporter: form.reporter.trim(),
+    phone: form.phone,
+    location: form.location.trim(),
+    accType: form.accType,
+    accDetail: form.accDetail,
+    level: form.level,
+    lineStop: form.lineStop,
+    customerEffect: form.customerEffect,
+    situation: form.situation.trim(),
+    actionTaken: form.actionTaken.trim()||"없음",
+    supportNeeded: form.supportNeeded.trim()||"없음",
+    status: "접수",
+    createdAt: new Date().toLocaleString("ko-KR")
+  };
+  try{
+    await push(ref(db,"accidents"), entry);
+    submitted=entry; view="success";
+  }catch(err){
+    errors={submit:"저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."};
+  }
+  saving=false; render();
+}
+
+/* ── Firebase 초기화 ── */
+if(CONFIGURED){
+  const app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+  entriesRef = ref(db,"accidents");
+  onValue(entriesRef, snapshot=>{
+    entries = snapshot.val() || {};
+    render();
+  });
+} else {
+  render();
+}
+</script>
+
+<!--
+════════════════════════════════════════════════════════════
+  Firebase 설정 방법 (5분 완성)
+════════════════════════════════════════════════════════════
+
+1. https://console.firebase.google.com 접속 (구글 계정 로그인)
+2. "프로젝트 만들기" → 이름 입력 → 생성
+3. 왼쪽 메뉴 "빌드" → "Realtime Database" → "데이터베이스 만들기"
+   → 위치: asia-southeast1 선택 → "테스트 모드"로 시작
+4. 프로젝트 개요(홈) → 앱 추가(</> 아이콘) → 웹 앱 등록
+5. "SDK 설정 및 구성"에서 firebaseConfig 객체 복사
+6. 이 파일 상단 firebaseConfig 부분에 붙여넣기 후 저장
+
+기본 관리자 비밀번호: safety2025
+(파일 내 ADMIN_PW 값을 변경해서 사용하세요)
+
+════ 배포 방법 ════
+
+방법 A — Netlify Drop (가장 쉬움, 1분)
+  1. https://app.netlify.com/drop 접속
+  2. 이 HTML 파일을 드래그 앤 드롭
+  3. 자동 생성된 링크 공유!
+
+방법 B — GitHub Pages
+  1. github.com → 새 저장소 생성 (Public)
+  2. 이 파일을 index.html 로 업로드
+  3. Settings → Pages → Branch: main 선택 → Save
+  4. https://[아이디].github.io/[저장소명] 링크 공유!
+
+════════════════════════════════════════════════════════════
+-->
+</body>
+</html>
