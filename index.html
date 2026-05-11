@@ -224,7 +224,8 @@ const firebaseConfig = {
   projectId: "safety001-5091e",
   storageBucket: "safety001-5091e.firebasestorage.app",
   messagingSenderId: "753126039012",
-  appId: "1:753126039012:web:68ec71700a164db531fbf1"
+  appId: "1:753126039012:web:68ec71700a164db531fbf1",
+  measurementId: "G-DXS3VQE8R3"
 };
 
 /* ───────────────────────────────────────────── */
@@ -233,7 +234,7 @@ const CONFIGURED = !firebaseConfig.apiKey.startsWith("YOUR");
 const ADMIN_PW = "safety2025";
 
 /* ── 사업소 목록 ── */
-const SITES = ["광명1범퍼","광명2도어","안산물류","수원JIS","평택협력","기타"];
+const SITES = ["광명1범퍼사업소","광명2범퍼사업소","광명1서열사업소","광명2서열사업소","광명JIT사업소","광명장비사업소","기타"];
 
 /* ── 체크리스트 ── */
 const CHECKS = [
@@ -252,7 +253,7 @@ let accSeq = 1;
 let form = {
   site: "", accType: "", accDetail: "",
   level: "", lineStop: "", customerEffect: "",
-  reporter: "", phone: "",
+  reporter: "", rank: "", phone: "",
   location: "", situation: "",
   actionTaken: "", supportNeeded: "",
   checks: [false, false, false]
@@ -381,6 +382,15 @@ function renderForm(){
   </div>
 
   <div class="field">
+    <div class="label">직급 <span class="req">*</span></div>
+    <select id="f-rank" class="select${e.rank?" err":""}">
+      <option value="">직급 선택</option>
+      ${["사원","주임","대리","과장","차장","부장","소장","임원","기타"].map(r=>`<option value="${r}"${form.rank===r?" selected":""}>${r}</option>`).join("")}
+    </select>
+    ${e.rank?`<div class="err-msg">${e.rank}</div>`:""}
+  </div>
+
+  <div class="field">
     <div class="label">접수자 연락처 <span class="req">*</span></div>
     <input id="f-phone" class="input${e.phone?" err":""}" value="${form.phone}" placeholder="010-0000-0000" type="tel"/>
     ${e.phone?`<div class="err-msg">${e.phone}</div>`:""}
@@ -486,7 +496,7 @@ function renderSuccess(){
   <div class="acc-no-badge">${e.accNo}</div>
   <div class="receipt">
     <strong>사업소</strong>: ${e.site}<br>
-    <strong>접수자</strong>: ${e.reporter} (${e.phone})<br>
+    <strong>접수자</strong>: ${e.reporter} ${e.rank} (${e.phone})<br>
     <strong>사고유형</strong>: ${e.accType} > ${e.accDetail}<br>
     <strong>긴급도</strong>: <span class="${lv.cls}">${lv.text}</span><br>
     <strong>라인중단</strong>: ${e.lineStop} &nbsp;|&nbsp; <strong>고객사 영향</strong>: ${e.customerEffect}<br>
@@ -649,6 +659,7 @@ function bindEvents(){
   if(view==="form"){
     $("f-site")     && ($("f-site").onchange     = e => { form.site = e.target.value; delete errors.site; });
     $("f-reporter") && ($("f-reporter").oninput   = e => { form.reporter = e.target.value; delete errors.reporter; });
+    $("f-rank")     && ($("f-rank").onchange       = e => { form.rank = e.target.value; delete errors.rank; });
     $("f-phone")    && ($("f-phone").oninput      = e => { const v=fmt(e.target.value); form.phone=v; e.target.value=v; delete errors.phone; });
     $("f-location") && ($("f-location").oninput   = e => { form.location = e.target.value; delete errors.location; });
     $("f-situation")&& ($("f-situation").oninput  = e => { form.situation = e.target.value; delete errors.situation; });
@@ -686,7 +697,7 @@ function bindEvents(){
   if(view==="success"){
     $("btn-reset") && ($("btn-reset").onclick = () => {
       form = {site:"",accType:"",accDetail:"",level:"",lineStop:"",customerEffect:"",
-              reporter:"",phone:"",location:"",situation:"",actionTaken:"",supportNeeded:"",
+              reporter:"",rank:"",phone:"",location:"",situation:"",actionTaken:"",supportNeeded:"",
               checks:[false,false,false]};
       errors={}; submitted=null; view="form"; render();
     });
@@ -725,9 +736,9 @@ function downloadExcel(){
   const list = Object.values(entries);
   if(!list.length){ alert("다운로드할 데이터가 없습니다."); return; }
   const BOM = "\uFEFF";
-  const headers = ["사고번호","접수일시","사업소","접수자","연락처","사고유형","세부유형","긴급도","라인중단","고객사영향","상황","즉시조치","상태"];
+  const headers = ["사고번호","접수일시","사업소","접수자","직급","연락처","사고유형","세부유형","긴급도","라인중단","고객사영향","상황","즉시조치","상태"];
   const rows = list.map(e=>[
-    e.accNo||"", e.createdAt||"", e.site||"", e.reporter||"", e.phone||"",
+    e.accNo||"", e.createdAt||"", e.site||"", e.reporter||"", e.rank||"", e.phone||"",
     e.accType||"", e.accDetail||"",
     {1:"최긴급",2:"긴급",3:"일반"}[e.level]||"",
     e.lineStop||"", e.customerEffect||"",
@@ -766,6 +777,7 @@ async function handleSubmit(){
   const errs={};
   if(!form.site)          errs.site="사업소를 선택해 주세요.";
   if(!form.reporter.trim()) errs.reporter="접수자 성명을 입력해 주세요.";
+  if(!form.rank)            errs.rank="직급을 선택해 주세요.";
   if(!form.phone||form.phone.replace(/\D/g,"").length<10) errs.phone="연락처를 입력해 주세요.";
   if(!form.location.trim()) errs.location="사고 발생 위치를 입력해 주세요.";
   if(!form.accType)       errs.accType="사고 유형을 선택해 주세요.";
@@ -783,6 +795,7 @@ async function handleSubmit(){
     accNo,
     site: form.site,
     reporter: form.reporter.trim(),
+    rank: form.rank,
     phone: form.phone,
     location: form.location.trim(),
     accType: form.accType,
