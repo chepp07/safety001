@@ -532,30 +532,58 @@ function renderAdmin(){
 
   const rows = filtered.map(([key,e])=>{
     const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
-    return `<tr>
-      <td style="font-family:monospace;font-size:11px;color:#999;white-space:nowrap;">${e.accNo||"-"}</td>
-      <td style="font-weight:600;white-space:nowrap;">${e.site}</td>
-      <td>
+    const detailId = `detail-${key}`;
+    return `
+    <tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" onclick="toggleDetail('${detailId}')">
+      <td style="padding:10px 11px;font-family:monospace;font-size:11px;color:#999;white-space:nowrap;">${e.accNo||"-"}</td>
+      <td style="padding:10px 11px;font-weight:600;white-space:nowrap;">${e.site}</td>
+      <td style="padding:10px 11px;">
         <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};">
           Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
         </span>
       </td>
-      <td style="white-space:nowrap;">${e.accType||"-"}</td>
-      <td style="color:#666;">${e.accDetail||"-"}</td>
-      <td style="text-align:center;">
-        ${e.lineStop==="예"?`<span style="color:#b71c1c;font-weight:700;">●</span>`:`<span style="color:#ccc;">○</span>`}
+      <td style="padding:10px 11px;white-space:nowrap;">${e.accType||"-"}</td>
+      <td style="padding:10px 11px;color:#666;">${e.accDetail||"-"}</td>
+      <td style="padding:10px 11px;text-align:center;">
+        ${e.lineStop==="예"
+          ?`<span style="background:#fff0f0;color:#b71c1c;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">O</span>`
+          :`<span style="background:#f5f5f5;color:#aaa;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">X</span>`}
       </td>
-      <td style="font-weight:600;">${e.reporter}</td>
-      <td style="color:#888;font-size:12px;white-space:nowrap;">${(e.createdAt||"").slice(0,16)}</td>
-      <td>
+      <td style="padding:10px 11px;text-align:center;">
+        ${e.customerEffect==="예"
+          ?`<span style="background:#fff3e0;color:#e65100;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">O</span>`
+          :`<span style="background:#f5f5f5;color:#aaa;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">X</span>`}
+      </td>
+      <td style="padding:10px 11px;font-weight:600;">${e.reporter}<br><span style="font-size:11px;color:#aaa;font-weight:400;">${e.rank||""}</span></td>
+      <td style="padding:10px 11px;color:#666;font-size:12px;">${e.phone||"-"}</td>
+      <td style="padding:10px 11px;color:#888;font-size:12px;white-space:nowrap;">${(e.createdAt||"").slice(0,16)}</td>
+      <td style="padding:10px 11px;" onclick="event.stopPropagation()">
         <select class="status-sel" data-key="${key}"
           style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer;font-family:inherit;">
           ${["접수","처리중","완료","보류"].map(s=>`<option${e.status===s?" selected":""}>${s}</option>`).join("")}
         </select>
       </td>
-      <td>
+      <td style="padding:10px 11px;" onclick="event.stopPropagation()">
         <button class="del-btn" data-key="${key}"
           style="background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;padding:2px;">✕</button>
+      </td>
+    </tr>
+    <tr id="${detailId}" style="display:none;background:#f9fbfd;">
+      <td colspan="12" style="padding:0;">
+        <div style="padding:14px 16px;font-size:13px;line-height:2;border-top:1px dashed #dce8f4;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin-bottom:10px;">
+            <div><span style="color:#aaa;">발생위치</span> &nbsp;<strong>${e.location||"-"}</strong></div>
+            <div><span style="color:#aaa;">고객사영향</span> &nbsp;<strong>${e.customerEffect||"-"}</strong></div>
+            <div><span style="color:#aaa;">라인중단</span> &nbsp;<strong>${e.lineStop||"-"}</strong></div>
+            <div><span style="color:#aaa;">추가지원</span> &nbsp;<strong>${e.supportNeeded||"없음"}</strong></div>
+          </div>
+          <div style="margin-bottom:6px;"><span style="color:#aaa;">현재 상황</span><br>
+            <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 11px;margin-top:4px;color:#333;line-height:1.7;">${(e.situation||"-").replace(/\n/g,"<br>")}</div>
+          </div>
+          <div><span style="color:#aaa;">즉시 조치</span><br>
+            <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 11px;margin-top:4px;color:#333;line-height:1.7;">${(e.actionTaken||"없음").replace(/\n/g,"<br>")}</div>
+          </div>
+        </div>
       </td>
     </tr>`;
   }).join("");
@@ -625,7 +653,9 @@ function renderAdmin(){
               <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">유형</th>
               <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">세부유형</th>
               <th style="padding:9px 11px;text-align:center;font-weight:600;color:#888;white-space:nowrap;">라인<br>중단</th>
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">접수자</th>
+              <th style="padding:9px 11px;text-align:center;font-weight:600;color:#888;white-space:nowrap;">고객사<br>영향</th>
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">접수자/직급</th>
+              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">연락처</th>
               <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;white-space:nowrap;">접수일시</th>
               <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">상태</th>
               <th style="padding:9px 11px;"></th>
@@ -730,6 +760,13 @@ function bindEvents(){
     }
   }
 }
+
+/* ── 상세 행 펼치기/접기 ── */
+window.toggleDetail = function(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.display = el.style.display==="none" ? "table-row" : "none";
+};
 
 /* ── 엑셀 다운로드 ── */
 function downloadExcel(){
