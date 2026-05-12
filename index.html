@@ -218,16 +218,14 @@ import { getDatabase, ref, push, onValue, update, remove }
    Firebase 프로젝트 설정을 여기에 붙여넣으세요
 ───────────────────────────────────────────── */
 const firebaseConfig = {
-  apiKey: "AIzaSyCQHrtgTZr5sZVElyfy2TBcENC0cwzmkhg",
-  authDomain: "safety001-5091e.firebaseapp.com",
-  databaseURL: "https://safety001-5091e-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "safety001-5091e",
-  storageBucket: "safety001-5091e.firebasestorage.app",
-  messagingSenderId: "753126039012",
-  appId: "1:753126039012:web:68ec71700a164db531fbf1",
-  measurementId: "G-DXS3VQE8R3"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "YOUR_PROJECT",
+  storageBucket:     "YOUR_PROJECT.firebasestorage.app",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
-
 /* ───────────────────────────────────────────── */
 
 const CONFIGURED = !firebaseConfig.apiKey.startsWith("YOUR");
@@ -254,6 +252,7 @@ let form = {
   site: "", accType: "", accDetail: "",
   level: "", lineStop: "", customerEffect: "",
   reporter: "", rank: "", phone: "",
+  accYear: "", accMonth: "", accDay: "", accAmPm: "오전", accHour: "", accMin: "",
   location: "", situation: "",
   actionTaken: "", supportNeeded: "",
   checks: [false, false, false]
@@ -385,7 +384,7 @@ function renderForm(){
     <div class="label">직급 <span class="req">*</span></div>
     <select id="f-rank" class="select${e.rank?" err":""}">
       <option value="">직급 선택</option>
-      ${["사원","주임","대리","과장","차장","부장","소장","임원","기타"].map(r=>`<option value="${r}"${form.rank===r?" selected":""}>${r}</option>`).join("")}
+      ${["사원","조장","반장","주임","대리","과장","차장","부장","부소장","소장","임원","기타"].map(r=>`<option value="${r}"${form.rank===r?" selected":""}>${r}</option>`).join("")}
     </select>
     ${e.rank?`<div class="err-msg">${e.rank}</div>`:""}
   </div>
@@ -394,6 +393,38 @@ function renderForm(){
     <div class="label">접수자 연락처 <span class="req">*</span></div>
     <input id="f-phone" class="input${e.phone?" err":""}" value="${form.phone}" placeholder="010-0000-0000" type="tel"/>
     ${e.phone?`<div class="err-msg">${e.phone}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">사고 발생 일시 <span class="req">*</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+      <select id="f-acc-year" class="select${e.accYear?" err":""}" style="flex:1;min-width:80px;">
+        <option value="">년도</option>
+        ${[2024,2025,2026,2027].map(y=>`<option value="${y}"${form.accYear===String(y)?" selected":""}>${y}년</option>`).join("")}
+      </select>
+      <select id="f-acc-month" class="select${e.accMonth?" err":""}" style="flex:1;min-width:60px;">
+        <option value="">월</option>
+        ${Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${String(m).padStart(2,'0')}"${form.accMonth===String(m).padStart(2,'0')?" selected":""}>${m}월</option>`).join("")}
+      </select>
+      <select id="f-acc-day" class="select${e.accDay?" err":""}" style="flex:1;min-width:60px;">
+        <option value="">일</option>
+        ${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${String(d).padStart(2,'0')}"${form.accDay===String(d).padStart(2,'0')?" selected":""}>${d}일</option>`).join("")}
+      </select>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;">
+      <select id="f-acc-ampm" class="select" style="flex:1;min-width:70px;">
+        ${["오전","오후"].map(v=>`<option value="${v}"${form.accAmPm===v?" selected":""}>${v}</option>`).join("")}
+      </select>
+      <select id="f-acc-hour" class="select${e.accHour?" err":""}" style="flex:1;min-width:60px;">
+        <option value="">시</option>
+        ${Array.from({length:12},(_,i)=>i+1).map(h=>`<option value="${String(h).padStart(2,'0')}"${form.accHour===String(h).padStart(2,'0')?" selected":""}>${h}시</option>`).join("")}
+      </select>
+      <select id="f-acc-min" class="select${e.accMin?" err":""}" style="flex:1;min-width:60px;">
+        <option value="">분</option>
+        ${Array.from({length:12},(_,i)=>i*5).map(m=>`<option value="${String(m).padStart(2,'0')}"${form.accMin===String(m).padStart(2,'0')?" selected":""}>${String(m).padStart(2,'0')}분</option>`).join("")}
+      </select>
+    </div>
+    ${e.accYear||e.accHour?`<div class="err-msg">사고 발생 일시를 입력해 주세요.</div>`:""}
   </div>
 
   <div class="field">
@@ -497,6 +528,7 @@ function renderSuccess(){
   <div class="receipt">
     <strong>사업소</strong>: ${e.site}<br>
     <strong>접수자</strong>: ${e.reporter} ${e.rank} (${e.phone})<br>
+    <strong>사고발생일시</strong>: ${e.accDateTime||"-"}<br>
     <strong>사고유형</strong>: ${e.accType} > ${e.accDetail}<br>
     <strong>긴급도</strong>: <span class="${lv.cls}">${lv.text}</span><br>
     <strong>라인중단</strong>: ${e.lineStop} &nbsp;|&nbsp; <strong>고객사 영향</strong>: ${e.customerEffect}<br>
@@ -573,6 +605,7 @@ function renderAdmin(){
         <div style="padding:14px 16px;font-size:13px;line-height:2;border-top:1px dashed #dce8f4;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin-bottom:10px;">
             <div><span style="color:#aaa;">발생위치</span> &nbsp;<strong>${e.location||"-"}</strong></div>
+            <div><span style="color:#aaa;">사고발생일시</span> &nbsp;<strong>${e.accDateTime||"-"}</strong></div>
             <div><span style="color:#aaa;">고객사영향</span> &nbsp;<strong>${e.customerEffect||"-"}</strong></div>
             <div><span style="color:#aaa;">라인중단</span> &nbsp;<strong>${e.lineStop||"-"}</strong></div>
             <div><span style="color:#aaa;">추가지원</span> &nbsp;<strong>${e.supportNeeded||"없음"}</strong></div>
@@ -691,6 +724,12 @@ function bindEvents(){
     $("f-reporter") && ($("f-reporter").oninput   = e => { form.reporter = e.target.value; delete errors.reporter; });
     $("f-rank")     && ($("f-rank").onchange       = e => { form.rank = e.target.value; delete errors.rank; });
     $("f-phone")    && ($("f-phone").oninput      = e => { const v=fmt(e.target.value); form.phone=v; e.target.value=v; delete errors.phone; });
+    $("f-acc-year") && ($("f-acc-year").onchange  = e => { form.accYear=e.target.value; delete errors.accYear; });
+    $("f-acc-month")&& ($("f-acc-month").onchange = e => { form.accMonth=e.target.value; delete errors.accMonth; });
+    $("f-acc-day")  && ($("f-acc-day").onchange   = e => { form.accDay=e.target.value; delete errors.accDay; });
+    $("f-acc-ampm") && ($("f-acc-ampm").onchange  = e => { form.accAmPm=e.target.value; });
+    $("f-acc-hour") && ($("f-acc-hour").onchange  = e => { form.accHour=e.target.value; delete errors.accHour; });
+    $("f-acc-min")  && ($("f-acc-min").onchange   = e => { form.accMin=e.target.value; delete errors.accMin; });
     $("f-location") && ($("f-location").oninput   = e => { form.location = e.target.value; delete errors.location; });
     $("f-situation")&& ($("f-situation").oninput  = e => { form.situation = e.target.value; delete errors.situation; });
     $("f-action")   && ($("f-action").oninput     = e => { form.actionTaken = e.target.value; });
@@ -727,7 +766,9 @@ function bindEvents(){
   if(view==="success"){
     $("btn-reset") && ($("btn-reset").onclick = () => {
       form = {site:"",accType:"",accDetail:"",level:"",lineStop:"",customerEffect:"",
-              reporter:"",rank:"",phone:"",location:"",situation:"",actionTaken:"",supportNeeded:"",
+              reporter:"",rank:"",phone:"",
+              accYear:"",accMonth:"",accDay:"",accAmPm:"오전",accHour:"",accMin:"",
+              location:"",situation:"",actionTaken:"",supportNeeded:"",
               checks:[false,false,false]};
       errors={}; submitted=null; view="form"; render();
     });
@@ -773,9 +814,9 @@ function downloadExcel(){
   const list = Object.values(entries);
   if(!list.length){ alert("다운로드할 데이터가 없습니다."); return; }
   const BOM = "\uFEFF";
-  const headers = ["사고번호","접수일시","사업소","접수자","직급","연락처","사고유형","세부유형","긴급도","라인중단","고객사영향","상황","즉시조치","상태"];
+  const headers = ["사고번호","접수일시","사고발생일시","사업소","접수자","직급","연락처","사고유형","세부유형","긴급도","라인중단","고객사영향","상황","즉시조치","상태"];
   const rows = list.map(e=>[
-    e.accNo||"", e.createdAt||"", e.site||"", e.reporter||"", e.rank||"", e.phone||"",
+    e.accNo||"", e.createdAt||"", e.accDateTime||"", e.site||"", e.reporter||"", e.rank||"", e.phone||"",
     e.accType||"", e.accDetail||"",
     {1:"최긴급",2:"긴급",3:"일반"}[e.level]||"",
     e.lineStop||"", e.customerEffect||"",
@@ -816,6 +857,8 @@ async function handleSubmit(){
   if(!form.reporter.trim()) errs.reporter="접수자 성명을 입력해 주세요.";
   if(!form.rank)            errs.rank="직급을 선택해 주세요.";
   if(!form.phone||form.phone.replace(/\D/g,"").length<10) errs.phone="연락처를 입력해 주세요.";
+  if(!form.accYear||!form.accMonth||!form.accDay) errs.accYear="사고 발생 날짜를 선택해 주세요.";
+  if(!form.accHour||!form.accMin) errs.accHour="사고 발생 시간을 선택해 주세요.";
   if(!form.location.trim()) errs.location="사고 발생 위치를 입력해 주세요.";
   if(!form.accType)       errs.accType="사고 유형을 선택해 주세요.";
   if(!form.accDetail)     errs.accDetail="세부 유형을 선택해 주세요.";
@@ -834,6 +877,7 @@ async function handleSubmit(){
     reporter: form.reporter.trim(),
     rank: form.rank,
     phone: form.phone,
+    accDateTime: `${form.accYear}년 ${form.accMonth}월 ${form.accDay}일 ${form.accAmPm} ${form.accHour}시 ${form.accMin}분`,
     location: form.location.trim(),
     accType: form.accType,
     accDetail: form.accDetail,
