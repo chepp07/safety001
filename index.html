@@ -904,7 +904,7 @@ async function handleSubmit(){
 
 /* ── Slack 알림 발송 ── */
 async function sendSlackAlert(e){
-  const SLACK_WEBHOOK = "https://hooks.slack.com/services/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";
+  const SLACK_WEBHOOK = "https://hooks.slack.com/services/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";
 
   const levelEmoji = {"1":"🔴","2":"🟠","3":"🟢"}[e.level] || "⚪";
   const levelText  = {"1":"Level 1 최긴급","2":"Level 2 긴급","3":"Level 3 일반"}[e.level] || "-";
