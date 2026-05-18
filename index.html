@@ -24,6 +24,18 @@
 
   .page { max-width: 580px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
+  /* ── 관리자 모드 PC 전체 너비 ── */
+  body.admin-mode { background: #f0f4f8; }
+  body.admin-mode .page {
+    max-width: 100%;
+    padding: 1.5rem 2rem 3rem;
+  }
+  @media (min-width: 1024px) {
+    body.admin-mode .page {
+      padding: 1.5rem 3rem 3rem;
+    }
+  }
+
   /* ── 헤더 ── */
   .header {
     text-align: center;
@@ -297,9 +309,9 @@ function levelLabel(lv){
 function render(){
   const app = document.getElementById("app");
   if(!CONFIGURED){ app.innerHTML = renderSetupGuide(); return; }
-  if(view==="form")    app.innerHTML = renderForm();
-  if(view==="success") app.innerHTML = renderSuccess();
-  if(view==="admin")   app.innerHTML = renderAdmin();
+  if(view==="form")    { document.body.classList.remove("admin-mode"); app.innerHTML = renderForm(); }
+  if(view==="success") { document.body.classList.remove("admin-mode"); app.innerHTML = renderSuccess(); }
+  if(view==="admin")   { document.body.classList.add("admin-mode");    app.innerHTML = renderAdmin(); }
   bindEvents();
 }
 
