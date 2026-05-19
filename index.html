@@ -264,10 +264,12 @@ const CHECKS = [
 
 let db, entriesRef;
 let entries = {};
-let view = "form";
+let view = "form"; // form | success | admin | myreport
 let saving = false;
 let submitted = null;
 let accSeq = 1;
+let myReportPhone = "";
+let myReportSelected = null;
 
 /* ── 현재 날짜/시간 기본값 생성 ── */
 function getNowDefaults(){
@@ -336,9 +338,10 @@ function levelLabel(lv){
 function render(){
   const app = document.getElementById("app");
   if(!CONFIGURED){ app.innerHTML = renderSetupGuide(); return; }
-  if(view==="form")    { document.body.classList.remove("admin-mode"); app.innerHTML = renderForm(); }
-  if(view==="success") { document.body.classList.remove("admin-mode"); app.innerHTML = renderSuccess(); }
-  if(view==="admin")   { document.body.classList.add("admin-mode");    app.innerHTML = renderAdmin(); }
+  if(view==="form")      { document.body.classList.remove("admin-mode"); app.innerHTML = renderForm(); }
+  if(view==="success")   { document.body.classList.remove("admin-mode"); app.innerHTML = renderSuccess(); }
+  if(view==="admin")     { document.body.classList.add("admin-mode");    app.innerHTML = renderAdmin(); }
+  if(view==="myreport")  { document.body.classList.remove("admin-mode"); app.innerHTML = renderMyReport(); }
   bindEvents();
 }
 
@@ -663,7 +666,8 @@ ${e.submit?`<div class="err-banner">${e.submit}</div>`:""}
   ${saving?"접수 중...":"사고 접수하기"}
 </button>
 
-<div class="admin-link-wrap">
+<div class="admin-link-wrap" style="display:flex;justify-content:center;gap:16px;">
+  <button class="admin-link" id="go-myreport">📋 내 접수 조회</button>
   <button class="admin-link" id="go-admin">관리자 페이지</button>
 </div>`;
 }
@@ -696,7 +700,129 @@ function renderSuccess(){
     <button id="btn-followup" style="width:100%;margin-top:8px;padding:10px;background:#1e2761;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">후속조치 저장</button>
     <div id="followup-msg" style="font-size:12px;color:#2e7d32;margin-top:6px;display:none;">✅ 후속조치가 저장되었습니다.</div>
   </div>`:""}
-  <button class="reset-btn" id="btn-reset">새 사고 접수</button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+    <button class="reset-btn" id="btn-reset">새 사고 접수</button>
+    <button id="btn-go-myreport" style="padding:11px 28px;background:#1e2761;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">📋 내 접수 조회</button>
+  </div>
+</div>`;
+}
+
+/* ── 내 접수 조회 화면 ── */
+function renderMyReport(){
+  const myList = myReportPhone
+    ? Object.entries(entries)
+        .filter(([,e]) => e.phone && e.phone.replace(/\D/g,"") === myReportPhone.replace(/\D/g,""))
+        .sort((a,b) => (b[1].createdAt||"").localeCompare(a[1].createdAt||""))
+    : [];
+
+  const lvStyle = {
+    "1":{bg:"#fff5f5",color:"#b71c1c",border:"#f5c6c6"},
+    "2":{bg:"#fff8f0",color:"#e65100",border:"#fcd8a8"},
+    "3":{bg:"#f0faf0",color:"#2e7d32",border:"#b8e0ba"}
+  };
+
+  // 상세 선택된 사고
+  const sel = myReportSelected ? entries[myReportSelected] : null;
+
+  return `
+<div class="header" style="margin-bottom:1.25rem;">
+  <div class="icon-wrap" style="background:#e8eef7;">📋</div>
+  <div class="form-title">내 접수 조회</div>
+  <div class="form-desc">접수 시 입력한 연락처로 본인 확인 후<br>나의 사고 접수 내역을 확인하고 후속조치를 입력할 수 있습니다.</div>
+</div>
+
+<!-- 연락처 조회 -->
+<div class="card">
+  <div class="section-title">🔍 연락처로 조회</div>
+  <div style="display:flex;gap:8px;">
+    <input id="my-phone" class="input" value="${myReportPhone}" placeholder="010-0000-0000" type="tel" style="flex:1;"/>
+    <button id="btn-my-search" style="padding:10px 18px;background:#1e2761;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">조회</button>
+  </div>
+</div>
+
+${myReportPhone && myList.length===0 ? `
+<div class="card" style="text-align:center;color:#aaa;padding:2rem;font-size:14px;">
+  접수 내역이 없습니다.
+</div>` : ""}
+
+${myList.length>0 ? `
+<!-- 접수 목록 -->
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="padding:12px 16px;font-size:13px;font-weight:700;color:#1e2761;border-bottom:1px solid #eef2f7;">
+    총 ${myList.length}건의 접수 내역
+  </div>
+  ${myList.map(([key,e])=>{
+    const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
+    const isSelected = myReportSelected===key;
+    return `
+  <div style="border-bottom:1px solid #eef2f7;">
+    <!-- 사고 요약 행 -->
+    <div onclick="selectMyReport('${key}')"
+      style="padding:12px 16px;cursor:pointer;background:${isSelected?"#f0f4ff":"#fff"};transition:background .15s;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};">
+          Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
+        </span>
+        <span style="font-family:monospace;font-size:11px;color:#999;">${e.accNo||"-"}</span>
+        <span style="margin-left:auto;font-size:11px;color:#aaa;">${(e.createdAt||"").slice(0,16)}</span>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:3px;">${e.site} · ${e.accType} > ${e.accDetail}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#888;">📍 ${e.location||"-"}</span>
+        <span style="font-size:12px;padding:1px 7px;border-radius:5px;font-weight:600;
+          background:${e.status==="완료"?"#e8f5e9":e.status==="처리중"?"#fff8f0":"#f0f4ff"};
+          color:${e.status==="완료"?"#2e7d32":e.status==="처리중"?"#e65100":"#1e2761"};">
+          ${e.status||"접수"}
+        </span>
+        ${e.followUp?`<span style="font-size:12px;color:#2e7d32;">✅ 후속조치 ${e.followUp.split("\n\n").filter(Boolean).length}건</span>`:""}
+      </div>
+    </div>
+
+    <!-- 상세 + 후속조치 입력 (선택 시 펼침) -->
+    ${isSelected?`
+    <div style="background:#f9fbfd;border-top:1px dashed #dce8f4;padding:14px 16px;">
+
+      <!-- 접수 상세 -->
+      <div style="font-size:12px;font-weight:700;color:#888;margin-bottom:8px;">📄 접수 내용</div>
+      <div style="background:#fff;border:1px solid #dce8f4;border-radius:9px;padding:12px;font-size:13px;line-height:2;margin-bottom:14px;">
+        <strong>발생일시</strong>: ${e.accDateTime||"-"}<br>
+        <strong>긴급도</strong>: ${["","Level 1 최긴급","Level 2 긴급","Level 3 일반"][+e.level]||"-"}<br>
+        <strong>라인중단</strong>: ${e.lineStop||"-"} &nbsp;|&nbsp; <strong>고객사영향</strong>: ${e.customerEffect||"-"}<br>
+        <strong>현재 상황</strong>: ${(e.situation||"-").replace(/\n/g,"<br>")}
+        ${e.actionTaken&&e.actionTaken!=="없음"?`<br><strong>즉시 조치</strong>: ${e.actionTaken}`:""}
+      </div>
+
+      <!-- 후속조치 이력 -->
+      ${e.followUp?`
+      <div style="font-size:12px;font-weight:700;color:#2e7d32;margin-bottom:8px;">✅ 후속조치 이력</div>
+      <div style="margin-bottom:14px;">
+        ${e.followUp.split("\n\n").filter(Boolean).map((item,idx)=>`
+        <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:9px;padding:10px 12px;margin-bottom:8px;font-size:13px;color:#1a1a1a;line-height:1.7;">
+          <div style="font-size:11px;color:#2e7d32;font-weight:700;margin-bottom:4px;">후속조치 ${idx+1}</div>
+          ${item.replace(/\n/g,"<br>")}
+        </div>`).join("")}
+      </div>`:""}
+
+      <!-- 후속조치 입력 -->
+      <div style="font-size:12px;font-weight:700;color:#e05c00;margin-bottom:8px;">📝 후속조치 입력 (2차 보고)</div>
+      <textarea id="followup-input-${key}" class="textarea"
+        placeholder="후속조치 내용을 입력해 주세요.&#10;예) 파손 부품 교체 완료, 고객사 보고 완료, 재발방지 교육 실시 등"
+        style="min-height:100px;font-size:14px;margin-bottom:8px;"></textarea>
+      <button onclick="saveFollowUp('${key}')"
+        style="width:100%;padding:11px;background:#e05c00;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+        📤 후속조치 저장 (2차 보고)
+      </button>
+      <div id="followup-ok-${key}" style="display:none;text-align:center;font-size:13px;color:#2e7d32;margin-top:8px;font-weight:600;">
+        ✅ 후속조치가 저장되었습니다.
+      </div>
+    </div>`:""}
+  </div>`;
+  }).join("")}
+</div>`:""
+}
+
+<div style="text-align:center;margin-top:1.5rem;">
+  <button id="btn-my-back" style="padding:10px 24px;background:#f5f5f5;border:none;border-radius:9px;font-size:14px;color:#666;cursor:pointer;font-family:inherit;">← 접수 폼으로 돌아가기</button>
 </div>`;
 }
 
@@ -983,8 +1109,9 @@ function bindEvents(){
       };
     });
 
-    $("btn-submit") && ($("btn-submit").onclick = handleSubmit);
-    $("go-admin")   && ($("go-admin").onclick   = () => showLoginModal());
+    $("btn-submit")   && ($("btn-submit").onclick   = handleSubmit);
+    $("go-admin")     && ($("go-admin").onclick     = () => showLoginModal());
+    $("go-myreport")  && ($("go-myreport").onclick  = () => { view="myreport"; render(); });
 
     // 인사사고 대상자 입력 바인딩
     document.querySelectorAll(".victim-name").forEach(el=>{
@@ -1022,6 +1149,11 @@ function bindEvents(){
       form = makeEmptyForm();
       errors={}; submitted=null; view="form"; render();
     });
+    $("btn-go-myreport") && ($("btn-go-myreport").onclick = () => {
+      if(submitted) myReportPhone = submitted.phone;
+      myReportSelected = null;
+      view="myreport"; render();
+    });
 
     // 후속조치 저장
     $("btn-followup") && ($("btn-followup").onclick = async () => {
@@ -1042,7 +1174,23 @@ function bindEvents(){
     });
   }
 
-  if(view==="admin"){
+  if(view==="myreport"){
+    const $ = id => document.getElementById(id);
+    $("btn-my-back") && ($("btn-my-back").onclick = () => { view="form"; render(); });
+    $("btn-my-search") && ($("btn-my-search").onclick = () => {
+      const v = $("my-phone").value;
+      myReportPhone = v; myReportSelected = null; render();
+    });
+    $("my-phone") && ($("my-phone").onkeydown = e => {
+      if(e.key==="Enter"){
+        myReportPhone = $("my-phone").value; myReportSelected=null; render();
+      }
+    });
+    $("my-phone") && ($("my-phone").oninput = e => {
+      const v = fmt(e.target.value);
+      myReportPhone = v; e.target.value = v;
+    });
+  }
     $("go-form")   && ($("go-form").onclick   = () => { view="form"; render(); });
     $("go-logout") && ($("go-logout").onclick = () => { view="form"; render(); });
     $("a-search")  && ($("a-search").oninput  = e => { filter.search=e.target.value; render(); });
@@ -1069,6 +1217,31 @@ function bindEvents(){
     }
   }
 }
+
+/* ── 내 접수 조회 - 사고 선택 ── */
+window.selectMyReport = function(key){
+  myReportSelected = myReportSelected===key ? null : key;
+  render();
+};
+
+/* ── 내 접수 조회 - 후속조치 저장 ── */
+window.saveFollowUp = async function(key){
+  const el = document.getElementById(`followup-input-${key}`);
+  const okEl = document.getElementById(`followup-ok-${key}`);
+  if(!el) return;
+  const text = el.value.trim();
+  if(!text){ alert("후속조치 내용을 입력해 주세요."); return; }
+  const prev = (entries[key]||{}).followUp || "";
+  const now = new Date().toLocaleString("ko-KR");
+  const updated = prev ? prev+"\n\n["+now+"]\n"+text : "["+now+"]\n"+text;
+  try{
+    await update(ref(db,`accidents/${key}`),{followUp: updated, status:"처리중"});
+    el.value = "";
+    if(okEl){ okEl.style.display="block"; setTimeout(()=>{ okEl.style.display="none"; },3000); }
+  }catch(err){
+    alert("저장 중 오류가 발생했습니다. 다시 시도해 주세요.");
+  }
+};
 
 /* ── 인사사고 대상자 추가/삭제 ── */
 window.addPerson = function(type){
