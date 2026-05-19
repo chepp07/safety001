@@ -1191,6 +1191,8 @@ function bindEvents(){
       myReportPhone = v; e.target.value = v;
     });
   }
+
+  if(view==="admin"){
     $("go-form")   && ($("go-form").onclick   = () => { view="form"; render(); });
     $("go-logout") && ($("go-logout").onclick = () => { view="form"; render(); });
     $("a-search")  && ($("a-search").oninput  = e => { filter.search=e.target.value; render(); });
