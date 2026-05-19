@@ -544,7 +544,22 @@ function renderForm(){
 
   <div class="field">
     <div class="label">라인중단 여부 <span class="req">*</span></div>
-    <div class="radio-row">${yesNoBtns("lineStop", form.lineStop)}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${[
+        {val:"라인중단발생", color:"#b71c1c", bg:"#fff5f5", border:"#f5c6c6", desc:"현재 라인이 중단된 상태"},
+        {val:"라인중단예상", color:"#e65100", bg:"#fff8f0", border:"#fcd8a8", desc:"중단 가능성이 높은 상태"},
+        {val:"미장착",       color:"#7b5e00", bg:"#fffde7", border:"#ffe082", desc:"부품 미장착으로 생산 차질"},
+        {val:"라인영향없음", color:"#2e7d32", bg:"#f0faf0", border:"#b8e0ba", desc:"라인 정상 운영 중"},
+      ].map(o=>`
+      <button data-field="lineStop" data-val="${o.val}"
+        style="width:100%;padding:10px 14px;border-radius:9px;border:1.5px solid ${form.lineStop===o.val?o.color:o.border};
+               background:${form.lineStop===o.val?o.bg:"#fff"};
+               cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:10px;transition:all .15s;">
+        <span style="width:10px;height:10px;border-radius:50%;background:${o.color};flex-shrink:0;"></span>
+        <span style="font-size:13px;font-weight:${form.lineStop===o.val?"700":"500"};color:${form.lineStop===o.val?o.color:"#444"};">${o.val}</span>
+        <span style="font-size:11px;color:#aaa;margin-left:4px;">${o.desc}</span>
+      </button>`).join("")}
+    </div>
     ${e.lineStop?`<div class="err-msg">${e.lineStop}</div>`:""}
   </div>
 
@@ -692,7 +707,7 @@ function renderAdmin(){
   const lv1 = list.filter(([,e])=>e.level==="1").length;
   const lv2 = list.filter(([,e])=>e.level==="2").length;
   const lv3 = list.filter(([,e])=>e.level==="3").length;
-  const lineStop = list.filter(([,e])=>e.lineStop==="예").length;
+  const lineStop = list.filter(([,e])=>e.lineStop==="라인중단발생"||e.lineStop==="라인중단예상"||e.lineStop==="미장착").length;
 
   let filtered = list.filter(([,e])=>{
     if(filter.accType!=="전체" && e.accType!==filter.accType) return false;
@@ -724,9 +739,13 @@ function renderAdmin(){
       <td style="padding:10px 11px;white-space:nowrap;">${e.accType||"-"}</td>
       <td style="padding:10px 11px;color:#666;">${e.accDetail||"-"}</td>
       <td style="padding:10px 11px;text-align:center;">
-        ${e.lineStop==="예"
-          ?`<span style="background:#fff0f0;color:#b71c1c;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">O</span>`
-          :`<span style="background:#f5f5f5;color:#aaa;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">X</span>`}
+        ${ e.lineStop==="라인중단발생"
+          ? `<span style="background:#fff0f0;color:#b71c1c;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">중단발생</span>`
+          : e.lineStop==="라인중단예상"
+          ? `<span style="background:#fff8f0;color:#e65100;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">중단예상</span>`
+          : e.lineStop==="미장착"
+          ? `<span style="background:#fffde7;color:#7b5e00;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">미장착</span>`
+          : `<span style="background:#f0faf0;color:#2e7d32;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">영향없음</span>`}
       </td>
       <td style="padding:10px 11px;text-align:center;">
         ${e.customerEffect==="예"
