@@ -269,15 +269,42 @@ let saving = false;
 let submitted = null;
 let accSeq = 1;
 
-let form = {
-  site: "", accType: "", accDetail: "",
-  level: "", lineStop: "", customerEffect: "",
-  reporter: "", rank: "", phone: "",
-  accYear: "", accMonth: "", accDay: "", accAmPm: "오전", accHour: "", accMin: "",
-  location: "", situation: "",
-  actionTaken: "", supportNeeded: "",
-  checks: [false, false, false]
-};
+/* ── 현재 날짜/시간 기본값 생성 ── */
+function getNowDefaults(){
+  const now = new Date();
+  const h24 = now.getHours();
+  const ampm = h24 < 12 ? "오전" : "오후";
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const min = Math.floor(now.getMinutes() / 5) * 5; // 5분 단위 반올림
+  return {
+    accYear:  String(now.getFullYear()),
+    accMonth: String(now.getMonth()+1).padStart(2,"0"),
+    accDay:   String(now.getDate()).padStart(2,"0"),
+    accAmPm:  ampm,
+    accHour:  String(h12).padStart(2,"0"),
+    accMin:   String(min).padStart(2,"0"),
+  };
+}
+
+function makeEmptyForm(){
+  const dt = getNowDefaults();
+  return {
+    site: "", accType: "", accDetail: "",
+    isComplex: false,
+    accTypes: [], accDetails: [],
+    level: "", lineStop: "", customerEffect: "",
+    reporter: "", rank: "", phone: "",
+    ...dt,
+    location: "", situation: "",
+    actionTaken: "", supportNeeded: "",
+    accidentType: "",
+    victims: [{name:"", affiliation:"", unknown:false}],
+    perpetrators: [{name:"", affiliation:"", unknown:false}],
+    checks: [false, false, false]
+  };
+}
+
+let form = makeEmptyForm();
 let errors = {};
 let filter = { accType: "전체", level: "전체", search: "" };
 
@@ -336,17 +363,33 @@ function renderForm(){
   const e = errors;
   const siteOpts = `<option value="">사업소 선택</option>` + SITES.map(s=>`<option value="${s}"${form.site===s?" selected":""}>${s}</option>`).join("");
 
-  const accTypeOpts = ["인사사고","제품사고","공급사고"].map(t=>`
-    <button class="radio-btn${form.accType===t?" on":""}" data-field="accType" data-val="${t}">${t}</button>`).join("");
+  const accTypeOpts = ["인사사고","제품사고","공급사고","차량사고"].map(t=>`
+    <button class="radio-btn${form.isComplex ? (form.accTypes.includes(t)?" on":"") : (form.accType===t?" on":"")}"
+      data-type-btn="${t}">${t}</button>`).join("");
 
   const accDetailMap = {
     "인사사고": ["중대재해","일반재해","경미사고","아차사고"],
     "제품사고": ["파손","낙하","충격","오염","포장불량","운송중 손상"],
-    "공급사고": ["이종","불량","결품","누락","서열오류","납입지연","수량불일치","라인투입오류"]
+    "공급사고": ["이종","불량","결품","누락","서열오류","납입지연","수량불일치","라인투입오류"],
+    "차량사고": ["자차사고","대물사고"]
   };
-  const detailBtns = form.accType
-    ? (accDetailMap[form.accType]||[]).map(d=>`
-        <button class="radio-btn${form.accDetail===d?" on":""}" data-field="accDetail" data-val="${d}">${d}</button>`).join("")
+
+  // 복합사고: 선택된 유형들의 세부유형 모두 표시
+  // 단일사고: 선택된 유형의 세부유형만 표시
+  const activeTypes = form.isComplex ? form.accTypes : (form.accType ? [form.accType] : []);
+  const detailBtns = activeTypes.length > 0
+    ? activeTypes.map(t => {
+        const details = accDetailMap[t] || [];
+        return `<div style="margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;padding:2px 8px;background:#f0f4f8;border-radius:5px;display:inline-block;">${t}</div>
+          <div class="radio-row" style="flex-wrap:wrap;">
+            ${details.map(d => {
+              const isOn = form.isComplex ? form.accDetails.includes(d) : form.accDetail===d;
+              return `<button class="radio-btn${isOn?" on":""}" data-detail-btn="${d}" data-detail-type="${t}">${d}</button>`;
+            }).join("")}
+          </div>
+        </div>`;
+      }).join("")
     : `<div style="font-size:13px;color:#bbb;padding:4px 0;">사고 유형을 먼저 선택해 주세요.</div>`;
 
   const levelBtns = [
@@ -417,7 +460,9 @@ function renderForm(){
   </div>
 
   <div class="field">
-    <div class="label">사고 발생 일시 <span class="req">*</span></div>
+    <div class="label">사고 발생 일시 <span class="req">*</span>
+      <span style="font-size:11px;color:#aaa;font-weight:400;margin-left:4px;">현재 시각 자동 입력 — 필요 시 수정</span>
+    </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
       <select id="f-acc-year" class="select${e.accYear?" err":""}" style="flex:1;min-width:80px;">
         <option value="">년도</option>
@@ -459,15 +504,30 @@ function renderForm(){
 <div class="card">
   <div class="section-title">🗂️ 사고 분류</div>
 
+  <!-- 복합사고 토글 -->
+  <div class="field" style="margin-bottom:14px;">
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:${form.isComplex?"#fff3eb":"#f5f8fc"};border:1.5px solid ${form.isComplex?"#e05c00":"#ddd"};border-radius:9px;">
+      <input type="checkbox" id="chk-complex" ${form.isComplex?"checked":""} style="width:17px;height:17px;accent-color:#e05c00;cursor:pointer;flex-shrink:0;"/>
+      <div>
+        <div style="font-size:14px;font-weight:600;color:${form.isComplex?"#e05c00":"#555"};">복합사고</div>
+        <div style="font-size:12px;color:#999;margin-top:1px;">2가지 이상의 사고 유형이 동시에 발생한 경우 체크</div>
+      </div>
+    </label>
+  </div>
+
   <div class="field">
-    <div class="label">사고 유형 <span class="req">*</span></div>
+    <div class="label">사고 유형 <span class="req">*</span>
+      ${form.isComplex?`<span style="font-size:11px;color:#e05c00;font-weight:400;margin-left:4px;">복합사고 — 중복선택 가능</span>`:""}
+    </div>
     <div class="radio-row">${accTypeOpts}</div>
     ${e.accType?`<div class="err-msg">${e.accType}</div>`:""}
   </div>
 
   <div class="field">
-    <div class="label">세부 유형 <span class="req">*</span></div>
-    <div class="radio-row">${detailBtns}</div>
+    <div class="label">세부 유형 <span class="req">*</span>
+      ${form.isComplex?`<span style="font-size:11px;color:#e05c00;font-weight:400;margin-left:4px;">복합사고 — 중복선택 가능</span>`:""}
+    </div>
+    <div id="detail-btns-wrap">${detailBtns}</div>
     ${e.accDetail?`<div class="err-msg">${e.accDetail}</div>`:""}
   </div>
 </div>
@@ -494,6 +554,64 @@ function renderForm(){
     ${e.customerEffect?`<div class="err-msg">${e.customerEffect}</div>`:""}
   </div>
 </div>
+
+<!-- ── 인사사고 대상자 (인사사고 선택 시만 표시) ── -->
+${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인사사고")?`
+<div class="card">
+  <div class="section-title">🧑‍⚕️ 사고 대상자</div>
+
+  <div class="field">
+    <div class="label">사고 유형 구분 <span class="req">*</span></div>
+    <div class="radio-row">
+      ${["단독사고","쌍방사고"].map(t=>`
+        <button class="radio-btn${form.accidentType===t?" on":""}" data-field="accidentType" data-val="${t}">${t}</button>`).join("")}
+    </div>
+    ${errors.accidentType?`<div class="err-msg">${errors.accidentType}</div>`:""}
+  </div>
+
+  <!-- 피해자 -->
+  <div class="field">
+    <div class="label">피해자 <span class="req">*</span></div>
+    <div id="victims-wrap">
+      ${form.victims.map((v,i)=>`
+      <div style="background:#fff8f8;border:1px solid #f5c6c6;border-radius:9px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+          <input class="input victim-name" data-vi="${i}" value="${v.name}" placeholder="성명" style="flex:1;" ${v.unknown?"disabled":""}/>
+          <input class="input victim-aff" data-vi="${i}" value="${v.affiliation}" placeholder="소속" style="flex:1;" ${v.unknown?"disabled":""}/>
+          ${i>0?`<button onclick="removePerson('victims',${i})" style="background:none;border:none;color:#ccc;font-size:18px;cursor:pointer;flex-shrink:0;">✕</button>`:""}
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
+          <input type="checkbox" class="victim-unknown" data-vi="${i}" ${v.unknown?"checked":""} style="accent-color:#e05c00;width:15px;height:15px;"/>
+          인적사항 미확인
+        </label>
+      </div>`).join("")}
+    </div>
+    <button onclick="addPerson('victims')" style="width:100%;padding:9px;border:1.5px dashed #ddd;border-radius:9px;background:none;font-size:13px;color:#888;cursor:pointer;margin-top:4px;">+ 피해자 추가</button>
+    ${errors.victims?`<div class="err-msg">${errors.victims}</div>`:""}
+  </div>
+
+  <!-- 가해자 (쌍방사고 시) -->
+  ${form.accidentType==="쌍방사고"?`
+  <div class="field">
+    <div class="label">가해자 <span class="req">*</span></div>
+    <div id="perps-wrap">
+      ${form.perpetrators.map((p,i)=>`
+      <div style="background:#f8f8ff;border:1px solid #c6c6f5;border-radius:9px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+          <input class="input perp-name" data-pi="${i}" value="${p.name}" placeholder="성명" style="flex:1;" ${p.unknown?"disabled":""}/>
+          <input class="input perp-aff" data-pi="${i}" value="${p.affiliation}" placeholder="소속" style="flex:1;" ${p.unknown?"disabled":""}/>
+          ${i>0?`<button onclick="removePerson('perpetrators',${i})" style="background:none;border:none;color:#ccc;font-size:18px;cursor:pointer;flex-shrink:0;">✕</button>`:""}
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
+          <input type="checkbox" class="perp-unknown" data-pi="${i}" ${p.unknown?"checked":""} style="accent-color:#e05c00;width:15px;height:15px;"/>
+          인적사항 미확인
+        </label>
+      </div>`).join("")}
+    </div>
+    <button onclick="addPerson('perpetrators')" style="width:100%;padding:9px;border:1.5px dashed #ddd;border-radius:9px;background:none;font-size:13px;color:#888;cursor:pointer;margin-top:4px;">+ 가해자 추가</button>
+    ${errors.perpetrators?`<div class="err-msg">${errors.perpetrators}</div>`:""}
+  </div>`:""}
+</div>`:""}
 
 <!-- ── 상황 및 조치 ── -->
 <div class="card">
@@ -554,6 +672,14 @@ function renderSuccess(){
     <strong>긴급도</strong>: <span class="${lv.cls}">${lv.text}</span><br>
     <strong>라인중단</strong>: ${e.lineStop} &nbsp;|&nbsp; <strong>고객사 영향</strong>: ${e.customerEffect}<br>
     <strong>접수일시</strong>: ${e.createdAt}
+  </div>
+  <!-- 후속조치 추가 입력 -->
+  <div style="background:#f5f8fc;border-radius:10px;padding:1rem;margin-bottom:1rem;text-align:left;">
+    <div style="font-size:13px;font-weight:700;color:#e05c00;margin-bottom:10px;">📋 후속조치 추가 입력</div>
+    <div style="font-size:12px;color:#888;margin-bottom:8px;">초기 접수 후 추가 조치사항이 있으면 입력해 주세요.</div>
+    <textarea id="follow-up-text" class="textarea" placeholder="후속조치 내용을 입력해 주세요." style="min-height:80px;font-size:14px;"></textarea>
+    <button id="btn-followup" style="width:100%;margin-top:8px;padding:10px;background:#1e2761;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">후속조치 저장</button>
+    <div id="followup-msg" style="font-size:12px;color:#2e7d32;margin-top:6px;display:none;">✅ 후속조치가 저장되었습니다.</div>
   </div>`:""}
   <button class="reset-btn" id="btn-reset">새 사고 접수</button>
 </div>`;
@@ -570,7 +696,7 @@ function renderAdmin(){
 
   let filtered = list.filter(([,e])=>{
     if(filter.accType!=="전체" && e.accType!==filter.accType) return false;
-    if(filter.level!=="전체" && e.level!==filter.level) return false;
+    if(filter.level!=="전체" && String(e.level)!==String(filter.level)) return false;
     if(filter.search && !e.reporter.includes(filter.search) && !e.site.includes(filter.search) && !(e.accDetail||"").includes(filter.search)) return false;
     return true;
   });
@@ -634,9 +760,18 @@ function renderAdmin(){
           <div style="margin-bottom:6px;"><span style="color:#aaa;">현재 상황</span><br>
             <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 11px;margin-top:4px;color:#333;line-height:1.7;">${(e.situation||"-").replace(/\n/g,"<br>")}</div>
           </div>
-          <div><span style="color:#aaa;">즉시 조치</span><br>
+          <div style="margin-bottom:6px;"><span style="color:#aaa;">즉시 조치</span><br>
             <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 11px;margin-top:4px;color:#333;line-height:1.7;">${(e.actionTaken||"없음").replace(/\n/g,"<br>")}</div>
           </div>
+          ${e.followUp?`<div style="margin-bottom:6px;"><span style="color:#aaa;">후속조치</span><br>
+            <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;padding:8px 11px;margin-top:4px;color:#2e7d32;line-height:1.7;">${e.followUp.replace(/\n/g,"<br>")}</div>
+          </div>`:""}
+          ${e.victims?`<div style="margin-bottom:6px;"><span style="color:#aaa;">인사사고 대상자 (${e.accidentType||""})</span><br>
+            <div style="background:#fff5f5;border:1px solid #f5c6c6;border-radius:7px;padding:8px 11px;margin-top:4px;font-size:12px;color:#333;line-height:1.8;">
+              <strong>피해자:</strong> ${(()=>{try{return JSON.parse(e.victims).map(v=>v.unknown?"미확인":`${v.name} (${v.affiliation})`).join(", ");}catch{return e.victims;}})()}<br>
+              ${e.perpetrators?`<strong>가해자:</strong> ${(()=>{try{return JSON.parse(e.perpetrators).map(p=>p.unknown?"미확인":`${p.name} (${p.affiliation})`).join(", ");}catch{return e.perpetrators;}})()}`:""}
+            </div>
+          </div>`:""}
         </div>
       </td>
     </tr>`;
@@ -756,13 +891,62 @@ function bindEvents(){
     $("f-action")   && ($("f-action").oninput     = e => { form.actionTaken = e.target.value; });
     $("f-support")  && ($("f-support").oninput    = e => { form.supportNeeded = e.target.value; });
 
-    // 라디오 버튼 (유형/세부/예아니오)
+    // 복합사고 토글
+    const chkComplex = document.getElementById("chk-complex");
+    if(chkComplex) chkComplex.onchange = () => {
+      form.isComplex = chkComplex.checked;
+      form.accType=""; form.accDetail="";
+      form.accTypes=[]; form.accDetails=[];
+      delete errors.accType; delete errors.accDetail;
+      render();
+    };
+
+    // 사고유형 버튼
+    document.querySelectorAll("[data-type-btn]").forEach(b => {
+      b.onclick = () => {
+        const t = b.dataset.typeBtn;
+        if(form.isComplex){
+          if(form.accTypes.includes(t)) form.accTypes = form.accTypes.filter(x=>x!==t);
+          else form.accTypes.push(t);
+          // 제거된 유형의 세부유형도 제거
+          const accDetailMap2 = {
+            "인사사고":["중대재해","일반재해","경미사고","아차사고"],
+            "제품사고":["파손","낙하","충격","오염","포장불량","운송중 손상"],
+            "공급사고":["이종","불량","결품","누락","서열오류","납입지연","수량불일치","라인투입오류"],
+            "차량사고":["자차사고","대물사고"]
+          };
+          if(!form.accTypes.includes(t)){
+            form.accDetails = form.accDetails.filter(d=>!(accDetailMap2[t]||[]).includes(d));
+          }
+        } else {
+          form.accType = t; form.accDetail = "";
+        }
+        delete errors.accType;
+        render();
+      };
+    });
+
+    // 세부유형 버튼
+    document.querySelectorAll("[data-detail-btn]").forEach(b => {
+      b.onclick = () => {
+        const d = b.dataset.detailBtn;
+        if(form.isComplex){
+          if(form.accDetails.includes(d)) form.accDetails = form.accDetails.filter(x=>x!==d);
+          else form.accDetails.push(d);
+        } else {
+          form.accDetail = d;
+        }
+        delete errors.accDetail;
+        render();
+      };
+    });
+
+    // 기존 data-field 버튼 (라인중단, 고객사영향 등)
     document.querySelectorAll("[data-field]").forEach(b => {
       b.onclick = () => {
         const field = b.dataset.field;
         const val   = b.dataset.val;
-        if(field==="accType"){ form.accType=val; form.accDetail=""; delete errors.accType; }
-        else { form[field]=val; delete errors[field]; }
+        form[field]=val; delete errors[field];
         render();
       };
     });
@@ -782,16 +966,60 @@ function bindEvents(){
 
     $("btn-submit") && ($("btn-submit").onclick = handleSubmit);
     $("go-admin")   && ($("go-admin").onclick   = () => showLoginModal());
+
+    // 인사사고 대상자 입력 바인딩
+    document.querySelectorAll(".victim-name").forEach(el=>{
+      el.oninput = ()=>{ form.victims[+el.dataset.vi].name=el.value; };
+    });
+    document.querySelectorAll(".victim-aff").forEach(el=>{
+      el.oninput = ()=>{ form.victims[+el.dataset.vi].affiliation=el.value; };
+    });
+    document.querySelectorAll(".victim-unknown").forEach(el=>{
+      el.onchange = ()=>{
+        form.victims[+el.dataset.vi].unknown=el.checked;
+        if(el.checked){ form.victims[+el.dataset.vi].name="미확인"; form.victims[+el.dataset.vi].affiliation="미확인"; }
+        else { form.victims[+el.dataset.vi].name=""; form.victims[+el.dataset.vi].affiliation=""; }
+        render();
+      };
+    });
+    document.querySelectorAll(".perp-name").forEach(el=>{
+      el.oninput = ()=>{ form.perpetrators[+el.dataset.pi].name=el.value; };
+    });
+    document.querySelectorAll(".perp-aff").forEach(el=>{
+      el.oninput = ()=>{ form.perpetrators[+el.dataset.pi].affiliation=el.value; };
+    });
+    document.querySelectorAll(".perp-unknown").forEach(el=>{
+      el.onchange = ()=>{
+        form.perpetrators[+el.dataset.pi].unknown=el.checked;
+        if(el.checked){ form.perpetrators[+el.dataset.pi].name="미확인"; form.perpetrators[+el.dataset.pi].affiliation="미확인"; }
+        else { form.perpetrators[+el.dataset.pi].name=""; form.perpetrators[+el.dataset.pi].affiliation=""; }
+        render();
+      };
+    });
   }
 
   if(view==="success"){
     $("btn-reset") && ($("btn-reset").onclick = () => {
-      form = {site:"",accType:"",accDetail:"",level:"",lineStop:"",customerEffect:"",
-              reporter:"",rank:"",phone:"",
-              accYear:"",accMonth:"",accDay:"",accAmPm:"오전",accHour:"",accMin:"",
-              location:"",situation:"",actionTaken:"",supportNeeded:"",
-              checks:[false,false,false]};
+      form = makeEmptyForm();
       errors={}; submitted=null; view="form"; render();
+    });
+
+    // 후속조치 저장
+    $("btn-followup") && ($("btn-followup").onclick = async () => {
+      const text = $("follow-up-text").value.trim();
+      if(!text){ alert("후속조치 내용을 입력해 주세요."); return; }
+      if(!submitted) return;
+      // Firebase에서 해당 키 찾아서 업데이트
+      const snap = Object.entries(entries).find(([,e])=>e.accNo===submitted.accNo);
+      if(snap){
+        const prev = snap[1].followUp || "";
+        const now = new Date().toLocaleString("ko-KR");
+        const updated = prev ? prev+"\n\n["+now+"]\n"+text : "["+now+"]\n"+text;
+        await update(ref(db,`accidents/${snap[0]}`),{followUp: updated, status:"처리중"});
+        $("followup-msg").style.display="block";
+        $("follow-up-text").value="";
+        setTimeout(()=>{ if($("followup-msg")) $("followup-msg").style.display="none"; },3000);
+      }
     });
   }
 
@@ -822,6 +1050,18 @@ function bindEvents(){
     }
   }
 }
+
+/* ── 인사사고 대상자 추가/삭제 ── */
+window.addPerson = function(type){
+  if(type==="victims") form.victims.push({name:"",affiliation:"",unknown:false});
+  else form.perpetrators.push({name:"",affiliation:"",unknown:false});
+  render();
+};
+window.removePerson = function(type, idx){
+  if(type==="victims") form.victims.splice(idx,1);
+  else form.perpetrators.splice(idx,1);
+  render();
+};
 
 /* ── 상세 행 펼치기/접기 ── */
 window.toggleDetail = function(id){
@@ -855,9 +1095,17 @@ function downloadExcel(){
 
 /* ── 로그인 모달 ── */
 function showLoginModal(){
+  const prevView = view;
   view="admin"; render();
   const modal = document.getElementById("login-modal");
-  if(modal) modal.style.display="flex";
+  if(modal){
+    modal.style.display="flex";
+    // 취소 시 이전 화면으로 복귀
+    document.getElementById("modal-cancel").onclick = () => {
+      modal.style.display="none";
+      view="form"; render();
+    };
+  }
 }
 function doModalLogin(){
   const pw = document.getElementById("modal-pw").value;
@@ -881,6 +1129,13 @@ async function handleSubmit(){
   if(!form.accYear||!form.accMonth||!form.accDay) errs.accYear="사고 발생 날짜를 선택해 주세요.";
   if(!form.accHour||!form.accMin) errs.accHour="사고 발생 시간을 선택해 주세요.";
   if(!form.location.trim()) errs.location="사고 발생 위치를 입력해 주세요.";
+  if(form.isComplex){
+    if(form.accTypes.length===0) errs.accType="사고 유형을 하나 이상 선택해 주세요.";
+    if(form.accDetails.length===0) errs.accDetail="세부 유형을 하나 이상 선택해 주세요.";
+  } else {
+    if(!form.accType) errs.accType="사고 유형을 선택해 주세요.";
+    if(!form.accDetail) errs.accDetail="세부 유형을 선택해 주세요.";
+  }
   if(!form.accType)       errs.accType="사고 유형을 선택해 주세요.";
   if(!form.accDetail)     errs.accDetail="세부 유형을 선택해 주세요.";
   if(!form.level)         errs.level="긴급도를 선택해 주세요.";
@@ -888,6 +1143,17 @@ async function handleSubmit(){
   if(!form.customerEffect) errs.customerEffect="고객사 영향 여부를 선택해 주세요.";
   if(!form.situation.trim()) errs.situation="현재 상황을 입력해 주세요.";
   if(form.checks.some(c=>!c)) errs.checks="모든 확인 사항을 체크해 주세요.";
+  // 인사사고 대상자 검증
+  const hasPersonalAcc = form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인사사고";
+  if(hasPersonalAcc){
+    if(!form.accidentType) errs.accidentType="단독/쌍방 여부를 선택해 주세요.";
+    const victimOk = form.victims.every(v=>v.unknown||v.name.trim());
+    if(!victimOk) errs.victims="피해자 성명을 입력하거나 '미확인'을 체크해 주세요.";
+    if(form.accidentType==="쌍방사고"){
+      const perpOk = form.perpetrators.every(p=>p.unknown||p.name.trim());
+      if(!perpOk) errs.perpetrators="가해자 성명을 입력하거나 '미확인'을 체크해 주세요.";
+    }
+  }
   if(Object.keys(errs).length){ errors=errs; render(); window.scrollTo(0,0); return; }
 
   saving=true; render();
@@ -900,14 +1166,21 @@ async function handleSubmit(){
     phone: form.phone,
     accDateTime: `${form.accYear}년 ${form.accMonth}월 ${form.accDay}일 ${form.accAmPm} ${form.accHour}시 ${form.accMin}분`,
     location: form.location.trim(),
-    accType: form.accType,
-    accDetail: form.accDetail,
+    isComplex: form.isComplex,
+    accType: form.isComplex ? form.accTypes.join(", ") : form.accType,
+    accDetail: form.isComplex ? form.accDetails.join(", ") : form.accDetail,
+    accTypes: form.isComplex ? form.accTypes.join(", ") : "",
+    accDetails: form.isComplex ? form.accDetails.join(", ") : "",
     level: form.level,
     lineStop: form.lineStop,
     customerEffect: form.customerEffect,
     situation: form.situation.trim(),
     actionTaken: form.actionTaken.trim()||"없음",
     supportNeeded: form.supportNeeded.trim()||"없음",
+    accidentType: form.accidentType||"",
+    victims: (form.isComplex?form.accTypes.includes("인사사고"):form.accType==="인사사고") ? JSON.stringify(form.victims) : "",
+    perpetrators: (form.isComplex?form.accTypes.includes("인사사고"):form.accType==="인사사고")&&form.accidentType==="쌍방사고" ? JSON.stringify(form.perpetrators) : "",
+    followUp: "",
     status: "접수",
     createdAt: new Date().toLocaleString("ko-KR")
   };
