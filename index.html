@@ -1389,57 +1389,18 @@ async function handleSubmit(){
   saving=false; render();
 }
 
-/* ── Slack 알림 발송 ── */
+/* ── 알림 발송 (GAS 경유 → Slack + SMS) ── */
 async function sendSlackAlert(e){
-  const SLACK_WEBHOOK = "https://hooks.slack.com/services/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";
-
-  const levelEmoji = {"1":"🔴","2":"🟠","3":"🟢"}[e.level] || "⚪";
-  const levelText  = {"1":"Level 1 최긴급","2":"Level 2 긴급","3":"Level 3 일반"}[e.level] || "-";
-
-  const msg = {
-    text: `${levelEmoji} *[사고 접수] ${e.accNo}*`,
-    blocks: [
-      {
-        type: "header",
-        text: { type: "plain_text", text: `${levelEmoji} 사고 접수 알림 — ${e.accNo}`, emoji: true }
-      },
-      {
-        type: "section",
-        fields: [
-          { type: "mrkdwn", text: `*긴급도*\n${levelText}` },
-          { type: "mrkdwn", text: `*사업소*\n${e.site}` },
-          { type: "mrkdwn", text: `*사고유형*\n${e.accType} > ${e.accDetail}` },
-          { type: "mrkdwn", text: `*발생일시*\n${e.accDateTime}` },
-          { type: "mrkdwn", text: `*라인중단*\n${e.lineStop==="예"?"🔴 예":"✅ 아니오"}` },
-          { type: "mrkdwn", text: `*고객사영향*\n${e.customerEffect==="예"?"🟠 예":"✅ 아니오"}` },
-          { type: "mrkdwn", text: `*접수자*\n${e.reporter} ${e.rank} (${e.phone})` },
-          { type: "mrkdwn", text: `*발생위치*\n${e.location}` },
-        ]
-      },
-      {
-        type: "section",
-        text: { type: "mrkdwn", text: `*현재 상황*\n${e.situation}` }
-      },
-      {
-        type: "section",
-        text: { type: "mrkdwn", text: `*즉시 조치*\n${e.actionTaken||"없음"}` }
-      },
-      {
-        type: "context",
-        elements: [{ type: "mrkdwn", text: `접수일시: ${e.createdAt}` }]
-      },
-      { type: "divider" }
-    ]
-  };
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyS-dsOL7tjKLcrDrXV-iDZurGxAhzgpT0GOWF4QWEYpWyFygqMZjIsKcpQL0zuESMn/exec";
 
   try {
-    await fetch(SLACK_WEBHOOK, {
+    await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(msg)
+      body: JSON.stringify(e)
     });
   } catch(err) {
-    console.warn("Slack 알림 발송 실패:", err);
+    console.warn("알림 발송 실패:", err);
   }
 }
 
