@@ -1392,15 +1392,17 @@ async function handleSubmit(){
 /* ── 알림 발송 (GAS 경유 → Slack + SMS) ── */
 async function sendSlackAlert(e){
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyS-dsOL7tjKLcrDrXV-iDZurGxAhzgpT0GOWF4QWEYpWyFygqMZjIsKcpQL0zuESMn/exec";
-
   try {
+    const formData = new FormData();
+    formData.append("payload", JSON.stringify(e));
     await fetch(GAS_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(e)
+      mode: "no-cors",
+      body: formData
     });
+    console.log("✅ GAS 알림 발송 요청 완료");
   } catch(err) {
-    console.warn("알림 발송 실패:", err);
+    console.warn("❌ 알림 발송 실패:", err);
   }
 }
 
