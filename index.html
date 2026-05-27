@@ -1497,8 +1497,6 @@ function renderAdmin(){
 function bindEvents(){
   const $ = id => document.getElementById(id);
 
-  const $ = id => document.getElementById(id);
-
   if(view==="main"){
     $("btn-main-form")    && ($("btn-main-form").onclick    = () => { view="form"; render(); });
     $("btn-main-manual")  && ($("btn-main-manual").onclick  = () => { view="manual"; render(); });
@@ -1733,7 +1731,6 @@ function bindEvents(){
   }
 
   if(view==="accdetail"){
-    const $ = id => document.getElementById(id);
     $("btn-acc-back") && ($("btn-acc-back").onclick = () => {
       view="form"; window._accDetailKey=null;
       history.replaceState(null,"",location.pathname);
@@ -1742,7 +1739,7 @@ function bindEvents(){
     $("btn-acc-admin") && ($("btn-acc-admin").onclick = () => showLoginModal());
   }
 
-  if(view==="myreport"){    const $ = id => document.getElementById(id);
+  if(view==="myreport"){
     $("btn-my-back") && ($("btn-my-back").onclick = () => { view="form"; render(); });
     $("btn-my-search") && ($("btn-my-search").onclick = () => {
       const v = $("my-phone").value;
