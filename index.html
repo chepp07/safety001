@@ -247,6 +247,7 @@ const firebaseConfig = {
   appId: "1:753126039012:web:68ec71700a164db531fbf1",
   measurementId: "G-DXS3VQE8R3"
 };
+
 /* ───────────────────────────────────────────── */
 
 const CONFIGURED = !firebaseConfig.apiKey.startsWith("YOUR");
@@ -451,7 +452,7 @@ function renderForm(){
     <div class="label">직급 <span class="req">*</span></div>
     <select id="f-rank" class="select${e.rank?" err":""}">
       <option value="">직급 선택</option>
-      ${["사원","조장","반장","주임","대리","과장","차장","부장","부소장","소장","임원","기타"].map(r=>`<option value="${r}"${form.rank===r?" selected":""}>${r}</option>`).join("")}
+      ${["사원","조장","반장","주임","대리","과장","차장","부장","부소장","소장","상무","기타"].map(r=>`<option value="${r}"${form.rank===r?" selected":""}>${r}</option>`).join("")}
     </select>
     ${e.rank?`<div class="err-msg">${e.rank}</div>`:""}
   </div>
@@ -1212,8 +1213,16 @@ function bindEvents(){
 
     const modal = $("login-modal");
     if(modal){
-      modal.onclick = e => { if(e.target===modal) modal.style.display="none"; };
-      $("modal-cancel") && ($("modal-cancel").onclick = () => { modal.style.display="none"; });
+      modal.onclick = e => {
+        if(e.target===modal){
+          modal.style.display="none";
+          view="form"; render();
+        }
+      };
+      $("modal-cancel") && ($("modal-cancel").onclick = () => {
+        modal.style.display="none";
+        view="form"; render();
+      });
       $("modal-login")  && ($("modal-login").onclick  = doModalLogin);
       $("modal-pw")     && ($("modal-pw").onkeydown   = e => { if(e.key==="Enter") doModalLogin(); });
     }
@@ -1289,12 +1298,18 @@ function downloadExcel(){
 
 /* ── 로그인 모달 ── */
 function showLoginModal(){
-  const prevView = view;
   view="admin"; render();
   const modal = document.getElementById("login-modal");
   if(modal){
     modal.style.display="flex";
-    // 취소 시 이전 화면으로 복귀
+    // 바깥 클릭 시 폼으로 복귀
+    modal.onclick = e => {
+      if(e.target===modal){
+        modal.style.display="none";
+        view="form"; render();
+      }
+    };
+    // 취소 버튼 클릭 시 폼으로 복귀
     document.getElementById("modal-cancel").onclick = () => {
       modal.style.display="none";
       view="form"; render();
@@ -1330,8 +1345,6 @@ async function handleSubmit(){
     if(!form.accType) errs.accType="사고 유형을 선택해 주세요.";
     if(!form.accDetail) errs.accDetail="세부 유형을 선택해 주세요.";
   }
-  if(!form.accType)       errs.accType="사고 유형을 선택해 주세요.";
-  if(!form.accDetail)     errs.accDetail="세부 유형을 선택해 주세요.";
   if(!form.level)         errs.level="긴급도를 선택해 주세요.";
   if(!form.lineStop)      errs.lineStop="라인중단 여부를 선택해 주세요.";
   if(!form.customerEffect) errs.customerEffect="고객사 영향 여부를 선택해 주세요.";
