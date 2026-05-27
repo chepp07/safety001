@@ -1,10 +1,10 @@
-const CACHE_NAME = 'accident-report-v1';
+const CACHE_NAME = 'safety001-v2';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/safety001/',
+  '/safety001/index.html',
+  '/safety001/manifest.json',
+  '/safety001/icon-192.png',
+  '/safety001/icon-512.png'
 ];
 
 // 설치 시 캐시 저장

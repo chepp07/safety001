@@ -1,11 +1,12 @@
 {
-  "name": "현장 사고 접수",
-  "short_name": "사고접수",
-  "description": "현장 사고 즉시 접수 및 자동 보고 시스템",
-  "start_url": "/",
+  "name": "광명사업부 안전관리 시스템",
+  "short_name": "안전관리",
+  "description": "광명사업부 안전·품질·물류 통합관리 시스템",
+  "start_url": "/safety001/",
+  "scope": "/safety001/",
   "display": "standalone",
   "background_color": "#f0f4f8",
-  "theme_color": "#e05c00",
+  "theme_color": "#1e2761",
   "orientation": "portrait",
   "lang": "ko",
   "icons": [
