@@ -1892,8 +1892,8 @@ function renderAdmin(){
                   : `${s.name||"-"}`}
               </td>
               <td style="padding:10px 11px;font-size:12px;background:#fff8f0;">
-                <div style="color:#e05c00;font-weight:600;">${s.realEmail||"-"}</div>
-                <div style="color:#aaa;font-size:11px;">${s.realName||"-"}</div>
+                <div style="color:#e05c00;font-weight:600;">${s.realEmail||"<span style='color:#ccc;font-size:11px;'>이전 데이터 (미수집)</span>"}</div>
+                <div style="color:#aaa;font-size:11px;">${s.realName||""}</div>
               </td>
               <td style="padding:10px 11px;" onclick="event.stopPropagation()">
                 <select class="sug-status-sel" data-key="${key}"
@@ -1911,8 +1911,12 @@ function renderAdmin(){
                 ${s.anonymous?`
                 <div style="margin-top:10px;background:#fff8f0;border:1px solid #fcd8a8;border-radius:8px;padding:10px 12px;">
                   <div style="font-size:11px;font-weight:700;color:#e05c00;margin-bottom:4px;">🔑 관리자 전용 — 실제 계정 정보</div>
-                  <div style="font-size:13px;color:#333;">이름: <strong>${s.realName||"-"}</strong></div>
-                  <div style="font-size:13px;color:#333;">이메일: <strong>${s.realEmail||"-"}</strong></div>
+                  ${s.realEmail ? `
+                  <div style="font-size:13px;color:#333;">이름: <strong>${s.realName||"미입력"}</strong></div>
+                  <div style="font-size:13px;color:#333;">이메일: <strong>${s.realEmail}</strong></div>
+                  ` : `
+                  <div style="font-size:12px;color:#aaa;">이 제안은 계정 추적 기능 추가 이전에 저장된 데이터입니다.</div>
+                  `}
                 </div>`:""}
               </td>
             </tr>`).join("")}
