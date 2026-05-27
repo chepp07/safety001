@@ -238,8 +238,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   GoogleAuthProvider,
   signOut,
   updateProfile
@@ -374,27 +373,40 @@ function isWebView(){
 
 /* ── Google 로그인 처리 ── */
 async function handleGoogleLogin(errElId){
-  // WebView 환경이면 크롬으로 강제 오픈
+  const errEl = document.getElementById(errElId);
+
+  // WebView 환경이면 크롬으로 안내
   if(isWebView()){
-    const currentUrl = encodeURIComponent(location.href);
-    // 크롬으로 열기 (Android Intent)
-    const chromeUrl = 'intent://' + location.host + location.pathname +
-      '#Intent;scheme=https;package=com.android.chrome;end';
-    try {
-      location.href = chromeUrl;
-    } catch(e) {
-      // 실패 시 일반 브라우저로
-      location.href = location.href;
+    if(errEl){
+      errEl.textContent = "카카오톡·앱 내 브라우저에서는 Google 로그인이 지원되지 않습니다. 크롬 브라우저로 접속해 주세요.";
+      errEl.style.display = "block";
     }
+    setTimeout(() => {
+      location.href = 'intent://' + location.host + location.pathname +
+        '#Intent;scheme=https;package=com.android.chrome;end';
+    }, 2000);
     return;
   }
-  // 일반 브라우저
+
+  // 일반 브라우저 → Popup 방식
   try {
     const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const result = await signInWithPopup(auth, provider);
+    if(result && result.user){
+      currentUser = result.user;
+      isAdmin = ADMIN_EMAILS.includes(result.user.email);
+      view = "main";
+      render();
+    }
   } catch(err) {
-    const errEl = document.getElementById(errElId);
-    if(errEl){ errEl.textContent="Google 로그인에 실패했습니다."; errEl.style.display="block"; }
+    console.error("Google 로그인 오류:", err.code, err.message);
+    const msg = err.code === 'auth/popup-blocked'
+      ? "팝업이 차단되었습니다. 브라우저에서 팝업을 허용해 주세요."
+      : err.code === 'auth/popup-closed-by-user'
+      ? "로그인 창이 닫혔습니다. 다시 시도해 주세요."
+      : "Google 로그인에 실패했습니다. (" + err.code + ")";
+    if(errEl){ errEl.textContent=msg; errEl.style.display="block"; }
   }
 }
 const VIEW_BACK = {
@@ -2429,19 +2441,6 @@ if(CONFIGURED){
   db = getDatabase(app);
   auth = getAuth(app);
   entriesRef = ref(db,"accidents");
-
-  // Google Redirect 결과 처리
-  getRedirectResult(auth).then(result => {
-    if(result && result.user){
-      console.log("Google 로그인 성공:", result.user.email);
-      currentUser = result.user;
-      isAdmin = ADMIN_EMAILS.includes(result.user.email);
-      view = "main";
-      render();
-    }
-  }).catch(err => {
-    console.warn("Redirect 결과 처리 오류:", err.message);
-  });
 
   // 로그인 상태 감지
   onAuthStateChanged(auth, user => {
