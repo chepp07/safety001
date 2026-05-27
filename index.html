@@ -266,7 +266,7 @@ const CHECKS = [
 
 let db, entriesRef;
 let entries = {};
-let view = "form"; // form | success | admin | myreport
+let view = "main"; // main | form | success | admin | myreport | accdetail | manual | suggest
 let saving = false;
 let submitted = null;
 let accSeq = 1;
@@ -342,12 +342,281 @@ function levelLabel(lv){
 function render(){
   const app = document.getElementById("app");
   if(!CONFIGURED){ app.innerHTML = renderSetupGuide(); return; }
+  if(view==="main")      { document.body.classList.remove("admin-mode"); app.innerHTML = renderMain(); }
   if(view==="form")      { document.body.classList.remove("admin-mode"); app.innerHTML = renderForm(); }
   if(view==="success")   { document.body.classList.remove("admin-mode"); app.innerHTML = renderSuccess(); }
   if(view==="admin")     { document.body.classList.add("admin-mode");    app.innerHTML = renderAdmin(); }
   if(view==="myreport")  { document.body.classList.remove("admin-mode"); app.innerHTML = renderMyReport(); }
   if(view==="accdetail") { document.body.classList.remove("admin-mode"); app.innerHTML = renderAccDetail(); }
+  if(view==="manual")    { document.body.classList.remove("admin-mode"); app.innerHTML = renderManual(); }
+  if(view==="suggest")   { document.body.classList.remove("admin-mode"); app.innerHTML = renderSuggest(); }
   bindEvents();
+}
+
+}
+
+/* ── 메인 화면 ── */
+function renderMain(){
+  return `
+<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;">
+  <div style="text-align:center;padding:2.5rem 1rem 2rem;">
+    <div style="width:72px;height:72px;border-radius:50%;background:#1e2761;
+      margin:0 auto 1.25rem;display:flex;align-items:center;justify-content:center;font-size:32px;">
+      🛡️
+    </div>
+    <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">현장 안전관리 시스템</div>
+    <div style="font-size:13px;color:#888;line-height:1.6;">광명사업부 안전·품질·물류 통합관리</div>
+  </div>
+
+  <div style="padding:0 1rem 2rem;max-width:500px;margin:0 auto;width:100%;">
+
+    <button id="btn-main-form" style="width:100%;margin-bottom:14px;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+      <div style="background:#fff;border-radius:16px;border:1.5px solid #dce8f4;
+        padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;
+        box-shadow:0 2px 8px rgba(0,0,0,.06);">
+        <div style="width:52px;height:52px;border-radius:13px;background:#fff0e0;
+          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🚨</div>
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">현장 사고 접수</div>
+          <div style="font-size:12px;color:#888;">사고 발생 즉시 접수 · 담당자 자동 알림</div>
+        </div>
+        <div style="color:#ccc;font-size:20px;">›</div>
+      </div>
+    </button>
+
+    <button id="btn-main-manual" style="width:100%;margin-bottom:14px;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+      <div style="background:#fff;border-radius:16px;border:1.5px solid #dce8f4;
+        padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;
+        box-shadow:0 2px 8px rgba(0,0,0,.06);">
+        <div style="width:52px;height:52px;border-radius:13px;background:#e8eef7;
+          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">📋</div>
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">사고처리 매뉴얼</div>
+          <div style="font-size:12px;color:#888;">사고 유형별 대응 절차 · 긴급 연락처</div>
+        </div>
+        <div style="color:#ccc;font-size:20px;">›</div>
+      </div>
+    </button>
+
+    <button id="btn-main-suggest" style="width:100%;margin-bottom:14px;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+      <div style="background:#fff;border-radius:16px;border:1.5px solid #dce8f4;
+        padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;
+        box-shadow:0 2px 8px rgba(0,0,0,.06);">
+        <div style="width:52px;height:52px;border-radius:13px;background:#e8f5e9;
+          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">💡</div>
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">안전개선 제안</div>
+          <div style="font-size:12px;color:#888;">현장 개선 아이디어 · 위험요소 신고</div>
+        </div>
+        <div style="color:#ccc;font-size:20px;">›</div>
+      </div>
+    </button>
+
+    <div style="text-align:center;margin-top:0.5rem;">
+      <button class="admin-link" id="go-admin-main">관리자 페이지</button>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding-bottom:2rem;">
+    <div style="font-size:11px;color:#ccc;">광명사업부 · 안전관리 시스템</div>
+  </div>
+</div>`;
+}
+
+/* ── 사고처리 매뉴얼 화면 ── */
+function renderManual(){
+  const sections = [
+    { icon:"🧑‍⚕️", title:"인사사고 대응절차", color:"#b71c1c", bg:"#fff5f5", steps:[
+      "부상자 안전 확인 및 119 신고 (중상 시)",
+      "현장 통제 및 2차 사고 예방 조치",
+      "사고 현장 사진 촬영 (현장 보존)",
+      "즉시 사고 접수 (앱 사용)",
+      "TF장 및 사업소장 직접 보고",
+      "작업중지 여부 판단 및 조치",
+      "재발방지 대책 수립 및 보고"
+    ]},
+    { icon:"📦", title:"제품사고 대응절차", color:"#e65100", bg:"#fff8f0", steps:[
+      "피해 제품 현장 격리 및 추가 손상 방지",
+      "피해 수량 및 품번 확인",
+      "현장 사진 촬영 (손상 상태 기록)",
+      "즉시 사고 접수 (앱 사용)",
+      "대체품 확보 가능 여부 확인",
+      "고객사 납입 일정 영향 검토",
+      "원인 분석 및 재발방지 대책 수립"
+    ]},
+    { icon:"🚚", title:"공급사고 대응절차", color:"#1e2761", bg:"#f0f4ff", steps:[
+      "불량·이종·결품 수량 즉시 확인",
+      "라인중단 여부 및 예상 시간 파악",
+      "즉시 사고 접수 (앱 사용)",
+      "고객사 생산관리 담당자 직접 연락",
+      "긴급 대체품 수배 및 운송 조치",
+      "1차 협력사 원인 조사 요청",
+      "수정 납입 계획 수립 및 보고"
+    ]},
+    { icon:"🚗", title:"차량사고 대응절차", color:"#7b5e00", bg:"#fffde7", steps:[
+      "부상자 확인 및 119 신고 (부상 시)",
+      "2차 사고 방지 (삼각대 설치 등)",
+      "현장 사진 촬영 (차량 손상 기록)",
+      "즉시 사고 접수 (앱 사용)",
+      "경찰 신고 (대물사고 시)",
+      "보험사 접수 및 담당자 보고",
+      "사고 경위서 작성 및 제출"
+    ]}
+  ];
+
+  return `
+<div class="page" style="max-width:600px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+    <button id="btn-manual-back" style="background:none;border:none;cursor:pointer;font-size:22px;color:#888;padding:4px;">‹</button>
+    <div>
+      <div style="font-size:18px;font-weight:700;">사고처리 매뉴얼</div>
+      <div style="font-size:12px;color:#aaa;">사고 유형별 대응 절차</div>
+    </div>
+  </div>
+
+  ${sections.map(s=>`
+  <div class="card" style="margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div style="width:42px;height:42px;border-radius:10px;background:${s.bg};
+        display:flex;align-items:center;justify-content:center;font-size:22px;">${s.icon}</div>
+      <div style="font-size:15px;font-weight:700;color:${s.color};">${s.title}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${s.steps.map((step,i)=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#333;line-height:1.6;">
+        <span style="background:${s.color};color:#fff;font-size:10px;font-weight:700;
+          min-width:18px;height:18px;border-radius:50%;display:flex;align-items:center;
+          justify-content:center;flex-shrink:0;margin-top:2px;">${i+1}</span>
+        <span>${step}</span>
+      </div>`).join("")}
+    </div>
+  </div>`).join("")}
+
+  <div class="card" style="background:#1e2761;border-color:#1e2761;margin-bottom:14px;">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:12px;">📞 긴급 연락처</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      ${[
+        {label:"119 (소방/구급)", num:"119"},
+        {label:"112 (경찰)", num:"112"},
+        {label:"한국가스안전공사", num:"1544-4500"},
+        {label:"고용노동부 신고", num:"1350"},
+      ].map(c=>`
+      <a href="tel:${c.num}" style="background:rgba(255,255,255,.1);border-radius:9px;
+        padding:10px 12px;text-decoration:none;display:block;">
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:3px;">${c.label}</div>
+        <div style="font-size:16px;font-weight:700;color:#fff;">${c.num}</div>
+      </a>`).join("")}
+    </div>
+  </div>
+
+  <div style="text-align:center;">
+    <button id="btn-manual-back2" style="padding:11px 28px;background:#f5f5f5;border:none;
+      border-radius:9px;font-size:14px;color:#666;cursor:pointer;font-family:inherit;">
+      ← 메인으로
+    </button>
+  </div>
+</div>`;
+}
+
+/* ── 안전개선 제안 화면 ── */
+function renderSuggest(){
+  const sug = window._suggest || {
+    site:"", category:"", title:"", detail:"",
+    anonymous:false, name:"", phone:"", submitted:false
+  };
+
+  if(sug.submitted) return `
+<div class="page" style="max-width:580px;">
+  <div class="success-wrap">
+    <div class="success-icon">💡</div>
+    <div class="success-title">제안이 접수되었습니다!</div>
+    <div class="success-desc">소중한 의견 감사합니다.<br>검토 후 개선 활동에 반영하겠습니다.</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+      <button id="btn-suggest-another" style="padding:11px 24px;background:#2e7d32;color:#fff;
+        border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+        추가 제안하기
+      </button>
+      <button id="btn-suggest-back" style="padding:11px 24px;background:#f5f5f5;border:none;
+        border-radius:9px;font-size:14px;color:#666;cursor:pointer;font-family:inherit;">
+        메인으로
+      </button>
+    </div>
+  </div>
+</div>`;
+
+  const siteOpts = `<option value="">사업소 선택</option>` +
+    SITES.map(s=>`<option value="${s}"${sug.site===s?" selected":""}>${s}</option>`).join("");
+  const categories = ["안전설비 개선","작업환경 개선","위험요소 신고","업무프로세스 개선","기타"];
+
+  return `
+<div class="page" style="max-width:580px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+    <button id="btn-suggest-back-top" style="background:none;border:none;cursor:pointer;font-size:22px;color:#888;padding:4px;">‹</button>
+    <div>
+      <div style="font-size:18px;font-weight:700;">안전개선 제안</div>
+      <div style="font-size:12px;color:#aaa;">현장 개선 아이디어 · 위험요소 신고</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📍 기본 정보</div>
+    <div class="field">
+      <div class="label">사업소 <span class="req">*</span></div>
+      <select id="sug-site" class="select">${siteOpts}</select>
+    </div>
+    <div class="field">
+      <div class="label">제안 분류 <span class="req">*</span></div>
+      <div class="radio-row" style="flex-wrap:wrap;">
+        ${categories.map(c=>`
+        <button class="radio-btn${sug.category===c?" on":""}" data-sug-cat="${c}">${c}</button>`).join("")}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">💡 제안 내용</div>
+    <div class="field">
+      <div class="label">제안 제목 <span class="req">*</span></div>
+      <input id="sug-title" class="input" value="${sug.title}" placeholder="제안 내용을 한 줄로 요약해 주세요." maxlength="60"/>
+    </div>
+    <div class="field">
+      <div class="label">상세 내용 <span class="req">*</span></div>
+      <textarea id="sug-detail" class="textarea" style="min-height:120px;"
+        placeholder="현재 문제점과 개선 방향을 구체적으로 작성해 주세요.">${sug.detail}</textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">👤 제안자 정보</div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;
+        padding:10px 12px;background:${sug.anonymous?"#f0faf0":"#f5f8fc"};
+        border:1.5px solid ${sug.anonymous?"#2e7d32":"#ddd"};border-radius:9px;">
+        <input type="checkbox" id="sug-anon" ${sug.anonymous?"checked":""}
+          style="width:17px;height:17px;accent-color:#2e7d32;cursor:pointer;"/>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:${sug.anonymous?"#2e7d32":"#555"};">익명 제안</div>
+          <div style="font-size:12px;color:#999;">이름과 연락처를 공개하지 않습니다.</div>
+        </div>
+      </label>
+    </div>
+    ${!sug.anonymous?`
+    <div class="field">
+      <div class="label">성명</div>
+      <input id="sug-name" class="input" value="${sug.name}" placeholder="성함 (선택)" maxlength="20"/>
+    </div>
+    <div class="field">
+      <div class="label">연락처</div>
+      <input id="sug-phone" class="input" value="${sug.phone}" placeholder="010-0000-0000 (선택)" type="tel"/>
+    </div>`:""}
+  </div>
+
+  <div id="sug-err" style="display:none;" class="err-banner"></div>
+
+  <button id="btn-suggest-submit" class="submit-btn" style="background:#2e7d32;">
+    <span style="font-size:18px;">💡</span> 제안 접수하기
+  </button>
+</div>`;
 }
 
 /* ── Firebase 설정 안내 ── */
@@ -713,6 +982,7 @@ ${e.submit?`<div class="err-banner">${e.submit}</div>`:""}
 </button>
 
 <div class="admin-link-wrap" style="display:flex;justify-content:center;gap:16px;">
+  <button class="admin-link" id="go-main-from-form">← 메인</button>
   <button class="admin-link" id="go-myreport">📋 내 접수 조회</button>
   <button class="admin-link" id="go-admin">관리자 페이지</button>
 </div>`;
@@ -1229,6 +1499,62 @@ function renderAdmin(){
 function bindEvents(){
   const $ = id => document.getElementById(id);
 
+  const $ = id => document.getElementById(id);
+
+  if(view==="main"){
+    $("btn-main-form")    && ($("btn-main-form").onclick    = () => { view="form"; render(); });
+    $("btn-main-manual")  && ($("btn-main-manual").onclick  = () => { view="manual"; render(); });
+    $("btn-main-suggest") && ($("btn-main-suggest").onclick = () => {
+      window._suggest = {site:"",category:"",title:"",detail:"",anonymous:false,name:"",phone:"",submitted:false};
+      view="suggest"; render();
+    });
+    $("go-admin-main") && ($("go-admin-main").onclick = () => showLoginModal());
+  }
+
+  if(view==="manual"){
+    $("btn-manual-back")  && ($("btn-manual-back").onclick  = () => { view="main"; render(); });
+    $("btn-manual-back2") && ($("btn-manual-back2").onclick = () => { view="main"; render(); });
+  }
+
+  if(view==="suggest"){
+    $("btn-suggest-back-top") && ($("btn-suggest-back-top").onclick = () => { view="main"; render(); });
+    $("btn-suggest-back")     && ($("btn-suggest-back").onclick     = () => { view="main"; render(); });
+    $("btn-suggest-another")  && ($("btn-suggest-another").onclick  = () => {
+      window._suggest = {site:"",category:"",title:"",detail:"",anonymous:false,name:"",phone:"",submitted:false};
+      render();
+    });
+    $("sug-site")   && ($("sug-site").onchange  = e => { window._suggest.site=e.target.value; });
+    $("sug-title")  && ($("sug-title").oninput   = e => { window._suggest.title=e.target.value; });
+    $("sug-detail") && ($("sug-detail").oninput  = e => { window._suggest.detail=e.target.value; });
+    $("sug-name")   && ($("sug-name").oninput    = e => { window._suggest.name=e.target.value; });
+    $("sug-phone")  && ($("sug-phone").oninput   = e => { window._suggest.phone=fmt(e.target.value); $("sug-phone").value=window._suggest.phone; });
+    $("sug-anon")   && ($("sug-anon").onchange   = e => { window._suggest.anonymous=e.target.checked; render(); });
+
+    document.querySelectorAll("[data-sug-cat]").forEach(b => {
+      b.onclick = () => { window._suggest.category = b.dataset.sugCat; render(); };
+    });
+
+    $("btn-suggest-submit") && ($("btn-suggest-submit").onclick = async () => {
+      const s = window._suggest;
+      const errEl = $("sug-err");
+      if(!s.site||!s.category||!s.title.trim()||!s.detail.trim()){
+        errEl.textContent = "사업소, 분류, 제목, 상세 내용을 모두 입력해 주세요.";
+        errEl.style.display="block"; return;
+      }
+      errEl.style.display="none";
+      await push(ref(db,"suggestions"),{
+        site: s.site, category: s.category,
+        title: s.title.trim(), detail: s.detail.trim(),
+        anonymous: s.anonymous,
+        name: s.anonymous?"익명":s.name||"미입력",
+        phone: s.anonymous?"-":s.phone||"미입력",
+        status:"접수", createdAt: new Date().toLocaleString("ko-KR")
+      });
+      window._suggest.submitted = true;
+      render();
+    });
+  }
+
   if(view==="form"){
     $("f-site")     && ($("f-site").onchange     = e => { form.site = e.target.value; delete errors.site; });
     $("f-reporter") && ($("f-reporter").oninput   = e => { form.reporter = e.target.value; delete errors.reporter; });
@@ -1318,9 +1644,10 @@ function bindEvents(){
       };
     });
 
-    $("btn-submit")   && ($("btn-submit").onclick   = handleSubmit);
-    $("go-admin")     && ($("go-admin").onclick     = () => showLoginModal());
-    $("go-myreport")  && ($("go-myreport").onclick  = () => { view="myreport"; render(); });
+    $("btn-submit")          && ($("btn-submit").onclick          = handleSubmit);
+    $("go-admin")            && ($("go-admin").onclick            = () => showLoginModal());
+    $("go-myreport")         && ($("go-myreport").onclick         = () => { view="myreport"; render(); });
+    $("go-main-from-form")   && ($("go-main-from-form").onclick   = () => { view="main"; render(); });
 
     // 사진 업로드
     const photoInput = document.getElementById("photo-input");
@@ -1737,7 +2064,7 @@ if(CONFIGURED){
     // URL 파라미터 ?a=ACC-번호 처리 → 해당 사고 직접 조회
     const urlParams = new URLSearchParams(window.location.search);
     const accParam = urlParams.get("a") || urlParams.get("acc");
-    if(accParam && view === "form"){
+    if(accParam && (view === "form" || view === "main")){
       const found = Object.entries(entries).find(([,e]) => e.accNo === accParam);
       if(found){
         view = "accdetail";
