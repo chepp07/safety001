@@ -362,6 +362,20 @@ function levelLabel(lv){
   return {text:"-", cls:""};
 }
 
+/* ── 뒤로가기 스택 관리 ── */
+const VIEW_BACK = {
+  "register"  : "login",
+  "form"      : "main",
+  "success"   : "main",
+  "admin"     : "main",
+  "myreport"  : "main",
+  "accdetail" : "main",
+  "manual"    : "main",
+  "suggest"   : "main",
+};
+// 뒤로가기 불가 화면 (앱 종료 대신 유지)
+const VIEW_ROOT = ["login", "main"];
+
 /* ── 렌더 ── */
 function render(){
   const app = document.getElementById("app");
@@ -377,7 +391,43 @@ function render(){
   if(view==="manual")    { document.body.classList.remove("admin-mode"); app.innerHTML = renderManual(); }
   if(view==="suggest")   { document.body.classList.remove("admin-mode"); app.innerHTML = renderSuggest(); }
   bindEvents();
+
+  // 히스토리에 현재 뷰 상태 저장 (루트 화면 제외)
+  if(!VIEW_ROOT.includes(view)){
+    history.pushState({ view }, "", location.pathname + location.search);
+  }
 }
+
+/* ── 휴대폰 뒤로가기 버튼 처리 ── */
+window.addEventListener("popstate", (e) => {
+  const prevView = e.state && e.state.view;
+
+  // 루트 화면(login/main)으로 이미 돌아온 경우 → 한 번 더 누르면 종료 허용
+  if(VIEW_ROOT.includes(view)){
+    return; // 브라우저 기본 동작 허용 (앱 종료)
+  }
+
+  // 뒤로가기 대상 화면 결정
+  const backView = VIEW_BACK[view] || "main";
+
+  // 비회원이 form에서 뒤로가면 로그인으로
+  if(view === "form" && isGuest){
+    isGuest = false;
+    view = "login";
+  } else {
+    view = backView;
+  }
+
+  // accdetail에서 뒤로가면 키 초기화
+  if(view !== "accdetail"){
+    window._accDetailKey = null;
+  }
+
+  render();
+
+  // 히스토리 중복 방지
+  history.replaceState({ view }, "", location.pathname + location.search);
+});
 
 /* ── 로그인 화면 ── */
 function renderLogin(){
