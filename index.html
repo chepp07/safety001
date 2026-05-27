@@ -1565,9 +1565,9 @@ if(CONFIGURED){
   onValue(entriesRef, snapshot=>{
     entries = snapshot.val() || {};
 
-    // URL 파라미터 ?acc=ACC-번호 처리 → 해당 사고 직접 조회
+    // URL 파라미터 ?a=ACC-번호 처리 → 해당 사고 직접 조회
     const urlParams = new URLSearchParams(window.location.search);
-    const accParam = urlParams.get("acc");
+    const accParam = urlParams.get("a") || urlParams.get("acc");
     if(accParam && view === "form"){
       const found = Object.entries(entries).find(([,e]) => e.accNo === accParam);
       if(found){
