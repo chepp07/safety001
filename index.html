@@ -362,7 +362,41 @@ function levelLabel(lv){
   return {text:"-", cls:""};
 }
 
-/* ── 뒤로가기 스택 관리 ── */
+/* ── WebView 환경 감지 ── */
+function isWebView(){
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes('wv') ||
+         ua.includes('webview') ||
+         (ua.includes('android') && !ua.includes('chrome')) ||
+         ua.includes('fbav') ||
+         ua.includes('instagram');
+}
+
+/* ── Google 로그인 처리 ── */
+async function handleGoogleLogin(errElId){
+  // WebView 환경이면 크롬으로 강제 오픈
+  if(isWebView()){
+    const currentUrl = encodeURIComponent(location.href);
+    // 크롬으로 열기 (Android Intent)
+    const chromeUrl = 'intent://' + location.host + location.pathname +
+      '#Intent;scheme=https;package=com.android.chrome;end';
+    try {
+      location.href = chromeUrl;
+    } catch(e) {
+      // 실패 시 일반 브라우저로
+      location.href = location.href;
+    }
+    return;
+  }
+  // 일반 브라우저
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithRedirect(auth, provider);
+  } catch(err) {
+    const errEl = document.getElementById(errElId);
+    if(errEl){ errEl.textContent="Google 로그인에 실패했습니다."; errEl.style.display="block"; }
+  }
+}
 const VIEW_BACK = {
   "register"  : "login",
   "form"      : "main",
@@ -450,7 +484,7 @@ function renderLogin(){
     style="width:100%;padding:13px;border:1.5px solid #ddd;border-radius:10px;
     background:#fff;font-size:15px;font-weight:600;color:#333;cursor:pointer;
     font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;
-    margin-bottom:16px;transition:border-color .15s;">
+    margin-bottom:8px;transition:border-color .15s;">
     <svg width="20" height="20" viewBox="0 0 48 48">
       <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
       <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -459,6 +493,9 @@ function renderLogin(){
     </svg>
     Google 계정으로 로그인
   </button>
+  <div style="font-size:11px;color:#bbb;text-align:center;margin-bottom:12px;">
+    ※ 카카오톡·앱 내 브라우저에서는 크롬으로 열어 사용해 주세요
+  </div>
 
   <!-- 구분선 -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
@@ -1782,15 +1819,7 @@ function bindEvents(){
 
   /* ── 로그인 ── */
   if(view==="login"){
-    $("btn-google-login") && ($("btn-google-login").onclick = async () => {
-      try {
-        const provider = new GoogleAuthProvider();
-        await signInWithRedirect(auth, provider);
-      } catch(err) {
-        const errEl = $("login-err");
-        if(errEl){ errEl.textContent="Google 로그인에 실패했습니다."; errEl.style.display="block"; }
-      }
-    });
+    $("btn-google-login") && ($("btn-google-login").onclick = () => handleGoogleLogin("login-err"));
     $("btn-email-login") && ($("btn-email-login").onclick = async () => {
       const email = $("login-email").value.trim();
       const pw    = $("login-pw").value;
@@ -1818,15 +1847,7 @@ function bindEvents(){
 
   /* ── 회원가입 ── */
   if(view==="register"){
-    $("btn-google-register") && ($("btn-google-register").onclick = async () => {
-      try {
-        const provider = new GoogleAuthProvider();
-        await signInWithRedirect(auth, provider);
-      } catch(err) {
-        const errEl = $("reg-err");
-        if(errEl){ errEl.textContent="Google 로그인에 실패했습니다."; errEl.style.display="block"; }
-      }
-    });
+    $("btn-google-register") && ($("btn-google-register").onclick = () => handleGoogleLogin("reg-err"));
     $("btn-email-register") && ($("btn-email-register").onclick = async () => {
       const name  = $("reg-name").value.trim();
       const email = $("reg-email").value.trim();
