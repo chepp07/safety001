@@ -238,7 +238,8 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut,
   updateProfile
@@ -1734,7 +1735,7 @@ function bindEvents(){
     $("btn-google-login") && ($("btn-google-login").onclick = async () => {
       try {
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        await signInWithRedirect(auth, provider);
       } catch(err) {
         const errEl = $("login-err");
         if(errEl){ errEl.textContent="Google 로그인에 실패했습니다."; errEl.style.display="block"; }
@@ -1770,7 +1771,7 @@ function bindEvents(){
     $("btn-google-register") && ($("btn-google-register").onclick = async () => {
       try {
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        await signInWithRedirect(auth, provider);
       } catch(err) {
         const errEl = $("reg-err");
         if(errEl){ errEl.textContent="Google 로그인에 실패했습니다."; errEl.style.display="block"; }
@@ -2357,6 +2358,16 @@ if(CONFIGURED){
   db = getDatabase(app);
   auth = getAuth(app);
   entriesRef = ref(db,"accidents");
+
+  // Google Redirect 결과 처리
+  getRedirectResult(auth).then(result => {
+    if(result && result.user){
+      // 리다이렉트 후 로그인 성공 → onAuthStateChanged가 자동 처리
+      console.log("Google 로그인 성공:", result.user.email);
+    }
+  }).catch(err => {
+    console.warn("Redirect 결과 처리 오류:", err.message);
+  });
 
   // 로그인 상태 감지
   onAuthStateChanged(auth, user => {
