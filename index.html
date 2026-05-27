@@ -233,6 +233,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, update, remove }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  updateProfile
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 /* ─────────────────────────────────────────────
    Firebase 프로젝트 설정을 여기에 붙여넣으세요
@@ -253,6 +263,16 @@ const firebaseConfig = {
 const CONFIGURED = !firebaseConfig.apiKey.startsWith("YOUR");
 const ADMIN_PW = "safety2025";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyS-dsOL7tjKLcrDrXV-iDZurGxAhzgpT0GOWF4QWEYpWyFygqMZjIsKcpQL0zuESMn/exec";
+const APP_NAME = "광명사업부 안전관리 시스템";
+
+/* ── 관리자 이메일 목록 ── */
+const ADMIN_EMAILS = [
+  "dlacksgus@gmail.com",
+  "rlarufo123456@gmail.com",
+  "look830724@gmail.com",
+  "ab734741@gmail.com",
+  "chepp07@gmail.com"
+];
 
 /* ── 사업소 목록 ── */
 const SITES = ["광명1범퍼사업소","광명2범퍼사업소","광명1서열사업소","광명2서열사업소","광명JIT사업소","광명장비사업소","기타"];
@@ -264,14 +284,17 @@ const CHECKS = [
   "허위 보고 시 규정에 따라 처리될 수 있음을 확인했습니다."
 ];
 
-let db, entriesRef;
+let db, auth, entriesRef;
 let entries = {};
-let view = "main"; // main | form | success | admin | myreport | accdetail | manual | suggest
+let view = "login"; // login | register | main | form | success | admin | myreport | accdetail | manual | suggest
 let saving = false;
 let submitted = null;
 let accSeq = 1;
 let myReportPhone = "";
 let myReportSelected = null;
+let currentUser = null;  // 현재 로그인한 사용자
+let isAdmin = false;     // 관리자 여부
+let isGuest = false;     // 비회원 여부
 
 /* ── 현재 날짜/시간 기본값 생성 ── */
 function getNowDefaults(){
@@ -342,6 +365,8 @@ function levelLabel(lv){
 function render(){
   const app = document.getElementById("app");
   if(!CONFIGURED){ app.innerHTML = renderSetupGuide(); return; }
+  if(view==="login")     { document.body.classList.remove("admin-mode"); app.innerHTML = renderLogin(); }
+  if(view==="register")  { document.body.classList.remove("admin-mode"); app.innerHTML = renderRegister(); }
   if(view==="main")      { document.body.classList.remove("admin-mode"); app.innerHTML = renderMain(); }
   if(view==="form")      { document.body.classList.remove("admin-mode"); app.innerHTML = renderForm(); }
   if(view==="success")   { document.body.classList.remove("admin-mode"); app.innerHTML = renderSuccess(); }
@@ -353,17 +378,192 @@ function render(){
   bindEvents();
 }
 
-/* ── 메인 화면 ── */
-function renderMain(){
+/* ── 로그인 화면 ── */
+function renderLogin(){
   return `
-<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;">
-  <div style="text-align:center;padding:2.5rem 1rem 2rem;">
+<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding:2rem 1rem;max-width:420px;margin:0 auto;">
+
+  <!-- 로고 -->
+  <div style="text-align:center;margin-bottom:2.5rem;">
     <div style="width:72px;height:72px;border-radius:50%;background:#1e2761;
-      margin:0 auto 1.25rem;display:flex;align-items:center;justify-content:center;font-size:32px;">
+      margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:32px;">
       🛡️
     </div>
-    <div style="font-size:22px;font-weight:700;color:#1a1a1a;margin-bottom:6px;">현장 안전관리 시스템</div>
-    <div style="font-size:13px;color:#888;line-height:1.6;">광명사업부 안전·품질·물류 통합관리</div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${APP_NAME}</div>
+    <div style="font-size:13px;color:#888;">로그인 후 이용하실 수 있습니다.</div>
+  </div>
+
+  <!-- 구글 로그인 -->
+  <button id="btn-google-login"
+    style="width:100%;padding:13px;border:1.5px solid #ddd;border-radius:10px;
+    background:#fff;font-size:15px;font-weight:600;color:#333;cursor:pointer;
+    font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;
+    margin-bottom:16px;transition:border-color .15s;">
+    <svg width="20" height="20" viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    Google 계정으로 로그인
+  </button>
+
+  <!-- 구분선 -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <div style="flex:1;height:1px;background:#eee;"></div>
+    <span style="font-size:12px;color:#bbb;">또는 이메일로 로그인</span>
+    <div style="flex:1;height:1px;background:#eee;"></div>
+  </div>
+
+  <!-- 이메일 로그인 폼 -->
+  <div class="card" style="margin-bottom:0;">
+    <div class="field">
+      <div class="label">이메일</div>
+      <input id="login-email" class="input" type="email" placeholder="이메일 주소 입력"/>
+    </div>
+    <div class="field">
+      <div class="label">비밀번호</div>
+      <input id="login-pw" class="input" type="password" placeholder="비밀번호 입력"/>
+    </div>
+    <div id="login-err" style="display:none;font-size:13px;color:#e05c00;margin-bottom:10px;"></div>
+    <button id="btn-email-login" class="submit-btn">로그인</button>
+  </div>
+
+  <!-- 회원가입 링크 -->
+  <div style="text-align:center;margin-top:1.25rem;">
+    <span style="font-size:13px;color:#888;">계정이 없으신가요?</span>
+    <button id="go-register" style="background:none;border:none;color:#1e2761;font-size:13px;
+      font-weight:700;cursor:pointer;font-family:inherit;margin-left:6px;">회원가입</button>
+  </div>
+
+  <!-- 비회원 접수 버튼 -->
+  <div style="margin-top:1.5rem;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div style="flex:1;height:1px;background:#eee;"></div>
+      <span style="font-size:12px;color:#bbb;">긴급 상황이신가요?</span>
+      <div style="flex:1;height:1px;background:#eee;"></div>
+    </div>
+    <button id="btn-guest-form"
+      style="width:100%;padding:13px;border:1.5px solid #e05c00;border-radius:10px;
+      background:#fff8f3;font-size:15px;font-weight:700;color:#e05c00;cursor:pointer;
+      font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
+      🚨 비회원으로 즉시 사고 접수
+    </button>
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:#bbb;">
+      로그인 없이 사고 접수만 가능합니다
+    </div>
+  </div>
+</div>`;
+}
+
+/* ── 회원가입 화면 ── */
+function renderRegister(){
+  return `
+<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding:2rem 1rem;max-width:420px;margin:0 auto;">
+
+  <!-- 헤더 -->
+  <div style="text-align:center;margin-bottom:2rem;">
+    <div style="width:72px;height:72px;border-radius:50%;background:#1e2761;
+      margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:32px;">
+      🛡️
+    </div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">회원가입</div>
+    <div style="font-size:13px;color:#888;">${APP_NAME}</div>
+  </div>
+
+  <!-- 구글 가입 -->
+  <button id="btn-google-register"
+    style="width:100%;padding:13px;border:1.5px solid #ddd;border-radius:10px;
+    background:#fff;font-size:15px;font-weight:600;color:#333;cursor:pointer;
+    font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;
+    margin-bottom:16px;">
+    <svg width="20" height="20" viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    Google 계정으로 가입
+  </button>
+
+  <!-- 구분선 -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <div style="flex:1;height:1px;background:#eee;"></div>
+    <span style="font-size:12px;color:#bbb;">또는 이메일로 가입</span>
+    <div style="flex:1;height:1px;background:#eee;"></div>
+  </div>
+
+  <!-- 이메일 회원가입 폼 -->
+  <div class="card" style="margin-bottom:0;">
+    <div class="field">
+      <div class="label">이름 <span class="req">*</span></div>
+      <input id="reg-name" class="input" type="text" placeholder="성함을 입력해 주세요" maxlength="20"/>
+    </div>
+    <div class="field">
+      <div class="label">이메일 <span class="req">*</span></div>
+      <input id="reg-email" class="input" type="email" placeholder="이메일 주소 입력"/>
+    </div>
+    <div class="field">
+      <div class="label">비밀번호 <span class="req">*</span></div>
+      <input id="reg-pw" class="input" type="password" placeholder="6자리 이상 입력"/>
+    </div>
+    <div class="field">
+      <div class="label">비밀번호 확인 <span class="req">*</span></div>
+      <input id="reg-pw2" class="input" type="password" placeholder="비밀번호 재입력"/>
+    </div>
+    <div id="reg-err" style="display:none;font-size:13px;color:#e05c00;margin-bottom:10px;"></div>
+    <button id="btn-email-register" class="submit-btn">회원가입</button>
+  </div>
+
+  <!-- 로그인 링크 -->
+  <div style="text-align:center;margin-top:1.25rem;">
+    <span style="font-size:13px;color:#888;">이미 계정이 있으신가요?</span>
+    <button id="go-login" style="background:none;border:none;color:#1e2761;font-size:13px;
+      font-weight:700;cursor:pointer;font-family:inherit;margin-left:6px;">로그인</button>
+  </div>
+</div>`;
+}
+
+/* ── 메인 화면 ── */
+function renderMain(){
+  const userName = currentUser ? (currentUser.displayName || currentUser.email.split("@")[0]) : "";
+  const userEmail = currentUser ? currentUser.email : "";
+  const userPhoto = currentUser && currentUser.photoURL;
+
+  return `
+<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;">
+
+  <!-- 사용자 정보 바 -->
+  <div style="background:#fff;border-bottom:1px solid #eef2f7;padding:10px 1.25rem;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      ${userPhoto
+        ? `<img src="${userPhoto}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;"/>`
+        : `<div style="width:32px;height:32px;border-radius:50%;background:#1e2761;
+            display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;">
+            ${userName.charAt(0).toUpperCase()}
+          </div>`}
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a;">${userName}</div>
+        <div style="font-size:11px;color:#aaa;">${isAdmin?"🛡️ 관리자":"일반 사용자"}</div>
+      </div>
+    </div>
+    <button id="btn-logout"
+      style="padding:6px 12px;background:#f5f5f5;border:none;border-radius:7px;
+      font-size:12px;color:#888;cursor:pointer;font-family:inherit;">
+      로그아웃
+    </button>
+  </div>
+
+  <div style="text-align:center;padding:2rem 1rem 1.5rem;">
+    <div style="width:64px;height:64px;border-radius:50%;background:#1e2761;
+      margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:28px;">
+      🛡️
+    </div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${APP_NAME}</div>
+    <div style="font-size:13px;color:#888;">광명사업부 안전·품질·물류 통합관리</div>
   </div>
 
   <div style="padding:0 1rem 2rem;max-width:500px;margin:0 auto;width:100%;">
@@ -410,13 +610,28 @@ function renderMain(){
       </div>
     </button>
 
+    <!-- 관리자만 보이는 버튼 -->
+    ${isAdmin?`
+    <button id="btn-main-admin" style="width:100%;margin-bottom:14px;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+      <div style="background:#1e2761;border-radius:16px;border:1.5px solid #1e2761;
+        padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;">
+        <div style="width:52px;height:52px;border-radius:13px;background:rgba(255,255,255,.15);
+          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🛡️</div>
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:3px;">관리자 대시보드</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.6);">전체 사고 현황 · 통계 · 관리</div>
+        </div>
+        <div style="color:rgba(255,255,255,.4);font-size:20px;">›</div>
+      </div>
+    </button>`:""}
+
     <div style="text-align:center;margin-top:0.5rem;">
-      <button class="admin-link" id="go-admin-main">관리자 페이지</button>
+      <button class="admin-link" id="go-myreport-main">📋 내 접수 조회</button>
     </div>
   </div>
 
   <div style="text-align:center;padding-bottom:2rem;">
-    <div style="font-size:11px;color:#ccc;">광명사업부 · 안전관리 시스템</div>
+    <div style="font-size:11px;color:#ccc;">${APP_NAME}</div>
   </div>
 </div>`;
 }
@@ -980,9 +1195,9 @@ ${e.submit?`<div class="err-banner">${e.submit}</div>`:""}
 </button>
 
 <div class="admin-link-wrap" style="display:flex;justify-content:center;gap:16px;">
-  <button class="admin-link" id="go-main-from-form">← 메인</button>
-  <button class="admin-link" id="go-myreport">📋 내 접수 조회</button>
-  <button class="admin-link" id="go-admin">관리자 페이지</button>
+  <button class="admin-link" id="go-main-from-form">← ${isGuest?"로그인":"메인"}</button>
+  ${!isGuest?`<button class="admin-link" id="go-myreport">📋 내 접수 조회</button>`:""}
+  ${!isGuest&&isAdmin?`<button class="admin-link" id="go-admin">관리자 페이지</button>`:""}
 </div>`;
 }
 
@@ -995,6 +1210,13 @@ function renderSuccess(){
   <div class="success-icon">✅</div>
   <div class="success-title">사고 접수가 완료되었습니다.</div>
   <div class="success-desc">담당자에게 즉시 통보됩니다.<br>Level 1·2 사고는 전화로 추가 보고를 병행해 주세요.</div>
+
+  ${isGuest?`
+  <div style="background:#fff8f0;border:1.5px solid #fcd8a8;border-radius:10px;
+    padding:12px 16px;margin-bottom:1rem;font-size:13px;color:#e65100;line-height:1.7;">
+    💡 <strong>회원 가입 후 더 많은 기능을 이용할 수 있어요!</strong><br>
+    내 접수 조회 · 후속조치 입력 · 사고처리 매뉴얼 · 안전개선 제안
+  </div>`:""}
   ${e?`
   <div class="acc-no-badge">${e.accNo}</div>
   <div class="receipt">
@@ -1016,7 +1238,17 @@ function renderSuccess(){
   </div>`:""}
   <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
     <button class="reset-btn" id="btn-reset">새 사고 접수</button>
-    <button id="btn-go-myreport" style="padding:11px 28px;background:#1e2761;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">📋 내 접수 조회</button>
+    ${isGuest?`
+    <button id="btn-guest-to-login"
+      style="padding:11px 28px;background:#1e2761;color:#fff;border:none;border-radius:9px;
+      font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+      🔐 로그인 / 회원가입
+    </button>`:`
+    <button id="btn-go-myreport"
+      style="padding:11px 28px;background:#1e2761;color:#fff;border:none;border-radius:9px;
+      font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+      📋 내 접수 조회
+    </button>`}
   </div>
 </div>`;
 }
@@ -1497,14 +1729,90 @@ function renderAdmin(){
 function bindEvents(){
   const $ = id => document.getElementById(id);
 
+  /* ── 로그인 ── */
+  if(view==="login"){
+    $("btn-google-login") && ($("btn-google-login").onclick = async () => {
+      try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      } catch(err) {
+        const errEl = $("login-err");
+        if(errEl){ errEl.textContent="Google 로그인에 실패했습니다."; errEl.style.display="block"; }
+      }
+    });
+    $("btn-email-login") && ($("btn-email-login").onclick = async () => {
+      const email = $("login-email").value.trim();
+      const pw    = $("login-pw").value;
+      const errEl = $("login-err");
+      if(!email||!pw){ errEl.textContent="이메일과 비밀번호를 입력해 주세요."; errEl.style.display="block"; return; }
+      try {
+        await signInWithEmailAndPassword(auth, email, pw);
+      } catch(err) {
+        errEl.textContent = "이메일 또는 비밀번호가 올바르지 않습니다.";
+        errEl.style.display="block";
+      }
+    });
+    $("login-pw") && ($("login-pw").onkeydown = e => { if(e.key==="Enter") $("btn-email-login").click(); });
+    $("go-register") && ($("go-register").onclick = () => { view="register"; render(); });
+
+    // 비회원 즉시 접수
+    $("btn-guest-form") && ($("btn-guest-form").onclick = () => {
+      isGuest = true;
+      currentUser = null;
+      isAdmin = false;
+      view = "form";
+      render();
+    });
+  }
+
+  /* ── 회원가입 ── */
+  if(view==="register"){
+    $("btn-google-register") && ($("btn-google-register").onclick = async () => {
+      try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      } catch(err) {
+        const errEl = $("reg-err");
+        if(errEl){ errEl.textContent="Google 로그인에 실패했습니다."; errEl.style.display="block"; }
+      }
+    });
+    $("btn-email-register") && ($("btn-email-register").onclick = async () => {
+      const name  = $("reg-name").value.trim();
+      const email = $("reg-email").value.trim();
+      const pw    = $("reg-pw").value;
+      const pw2   = $("reg-pw2").value;
+      const errEl = $("reg-err");
+      if(!name||!email||!pw||!pw2){ errEl.textContent="모든 항목을 입력해 주세요."; errEl.style.display="block"; return; }
+      if(pw !== pw2){ errEl.textContent="비밀번호가 일치하지 않습니다."; errEl.style.display="block"; return; }
+      if(pw.length < 6){ errEl.textContent="비밀번호는 6자리 이상이어야 합니다."; errEl.style.display="block"; return; }
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, pw);
+        await updateProfile(cred.user, { displayName: name });
+      } catch(err) {
+        const msg = err.code==="auth/email-already-in-use" ? "이미 사용 중인 이메일입니다." : "회원가입에 실패했습니다.";
+        errEl.textContent=msg; errEl.style.display="block";
+      }
+    });
+    $("go-login") && ($("go-login").onclick = () => { view="login"; render(); });
+  }
+
+  /* ── 메인 ── */
   if(view==="main"){
+    $("btn-logout") && ($("btn-logout").onclick = async () => {
+      await signOut(auth);
+      view="login"; render();
+    });
     $("btn-main-form")    && ($("btn-main-form").onclick    = () => { view="form"; render(); });
     $("btn-main-manual")  && ($("btn-main-manual").onclick  = () => { view="manual"; render(); });
     $("btn-main-suggest") && ($("btn-main-suggest").onclick = () => {
       window._suggest = {site:"",category:"",title:"",detail:"",anonymous:false,name:"",phone:"",submitted:false};
       view="suggest"; render();
     });
-    $("go-admin-main") && ($("go-admin-main").onclick = () => showLoginModal());
+    $("btn-main-admin")   && ($("btn-main-admin").onclick   = () => { view="admin"; render(); });
+    $("go-myreport-main") && ($("go-myreport-main").onclick = () => {
+      if(currentUser) myReportPhone = currentUser.phoneNumber || "";
+      view="myreport"; render();
+    });
   }
 
   if(view==="manual"){
@@ -1643,7 +1951,11 @@ function bindEvents(){
     $("btn-submit")          && ($("btn-submit").onclick          = handleSubmit);
     $("go-admin")            && ($("go-admin").onclick            = () => showLoginModal());
     $("go-myreport")         && ($("go-myreport").onclick         = () => { view="myreport"; render(); });
-    $("go-main-from-form")   && ($("go-main-from-form").onclick   = () => { view="main"; render(); });
+    $("go-main-from-form")   && ($("go-main-from-form").onclick   = () => {
+      if(isGuest){ isGuest=false; view="login"; }
+      else { view="main"; }
+      render();
+    });
 
     // 사진 업로드
     const photoInput = document.getElementById("photo-input");
@@ -1704,6 +2016,9 @@ function bindEvents(){
     $("btn-reset") && ($("btn-reset").onclick = () => {
       form = makeEmptyForm();
       errors={}; submitted=null; view="form"; render();
+    });
+    $("btn-guest-to-login") && ($("btn-guest-to-login").onclick = () => {
+      isGuest=false; view="login"; render();
     });
     $("btn-go-myreport") && ($("btn-go-myreport").onclick = () => {
       if(submitted) myReportPhone = submitted.phone;
@@ -1919,24 +2234,12 @@ function downloadExcel(){
   a.click(); URL.revokeObjectURL(url);
 }
 
-/* ── 로그인 모달 ── */
+/* ── 관리자 화면 진입 ── */
 function showLoginModal(){
-  view="admin"; render();
-  const modal = document.getElementById("login-modal");
-  if(modal){
-    modal.style.display="flex";
-    // 바깥 클릭 시 폼으로 복귀
-    modal.onclick = e => {
-      if(e.target===modal){
-        modal.style.display="none";
-        view="form"; render();
-      }
-    };
-    // 취소 버튼 클릭 시 폼으로 복귀
-    document.getElementById("modal-cancel").onclick = () => {
-      modal.style.display="none";
-      view="form"; render();
-    };
+  if(isAdmin){
+    view="admin"; render();
+  } else {
+    alert("관리자 권한이 없습니다.\n관리자 계정으로 로그인해 주세요.");
   }
 }
 function doModalLogin(){
@@ -2052,22 +2355,37 @@ async function sendSlackAlert(e){
 if(CONFIGURED){
   const app = initializeApp(firebaseConfig);
   db = getDatabase(app);
+  auth = getAuth(app);
   entriesRef = ref(db,"accidents");
-  onValue(entriesRef, snapshot=>{
-    entries = snapshot.val() || {};
 
-    // URL 파라미터 ?a=ACC-번호 처리 → 해당 사고 직접 조회
-    const urlParams = new URLSearchParams(window.location.search);
-    const accParam = urlParams.get("a") || urlParams.get("acc");
-    if(accParam && (view === "form" || view === "main")){
-      const found = Object.entries(entries).find(([,e]) => e.accNo === accParam);
-      if(found){
-        view = "accdetail";
-        window._accDetailKey = found[0];
+  // 로그인 상태 감지
+  onAuthStateChanged(auth, user => {
+    if(user){
+      currentUser = user;
+      isAdmin = ADMIN_EMAILS.includes(user.email);
+      // 데이터 구독
+      onValue(entriesRef, snapshot => {
+        entries = snapshot.val() || {};
+        // URL 파라미터 처리
+        const urlParams = new URLSearchParams(window.location.search);
+        const accParam = urlParams.get("a") || urlParams.get("acc");
+        if(accParam && (view==="login"||view==="main")){
+          const found = Object.entries(entries).find(([,e]) => e.accNo === accParam);
+          if(found){ view="accdetail"; window._accDetailKey=found[0]; }
+        } else if(view==="login" || view==="register"){
+          view="main";
+        }
+        render();
+      });
+    } else {
+      currentUser = null;
+      isAdmin = false;
+      // 비회원 접수 중이면 그대로 유지
+      if(!isGuest){
+        view = "login";
+        render();
       }
     }
-
-    render();
   });
 } else {
   render();
