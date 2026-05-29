@@ -493,6 +493,14 @@ function renderLogin(){
     <div style="font-size:13px;color:#888;">로그인 후 이용하실 수 있습니다.</div>
   </div>
 
+  ${window._pendingAccNo ? `
+  <div style="background:#fff0e0;border:1.5px solid #fcd8a8;border-radius:10px;
+    padding:12px 16px;margin-bottom:16px;font-size:13px;color:#e65100;line-height:1.7;">
+    <div style="font-weight:700;margin-bottom:3px;">🚨 사고 알림으로 접속하셨습니다.</div>
+    로그인 후 사고 상세 내용을 바로 확인할 수 있습니다.<br>
+    <span style="font-size:11px;color:#aaa;">${window._pendingAccNo}</span>
+  </div>` : ""}
+
   <!-- 구글 로그인 -->
   ${isWebView() ? `
   <div style="background:#fff8f0;border:1.5px solid #fcd8a8;border-radius:10px;
@@ -1522,13 +1530,19 @@ ${e.followUp?`
   <button id="btn-acc-back"
     style="padding:11px 24px;background:#f5f5f5;border:none;border-radius:9px;
     font-size:14px;color:#666;cursor:pointer;font-family:inherit;">
-    ← 메인으로
+    ← ${currentUser ? "메인으로" : "로그인"}
   </button>
+  ${currentUser ? `
   <button id="btn-acc-admin"
     style="padding:11px 24px;background:#1e2761;color:#fff;border:none;border-radius:9px;
     font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-    🛡️ 관리자 페이지
-  </button>
+    🛡️ ${isAdmin ? "관리자 페이지" : "메인으로"}
+  </button>` : `
+  <button id="btn-acc-login"
+    style="padding:11px 24px;background:#1e2761;color:#fff;border:none;border-radius:9px;
+    font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+    🔐 로그인 / 회원가입
+  </button>`}
 </div>`;
 }
 
@@ -2252,11 +2266,19 @@ function bindEvents(){
 
   if(view==="accdetail"){
     $("btn-acc-back") && ($("btn-acc-back").onclick = () => {
-      view="form"; window._accDetailKey=null;
+      window._accDetailKey = null;
       history.replaceState(null,"",location.pathname);
+      if(currentUser){ view="main"; }
+      else { view="login"; }
       render();
     });
-    $("btn-acc-admin") && ($("btn-acc-admin").onclick = () => showLoginModal());
+    $("btn-acc-admin") && ($("btn-acc-admin").onclick = () => {
+      if(isAdmin){ view="admin"; render(); }
+      else { view="main"; render(); }
+    });
+    $("btn-acc-login") && ($("btn-acc-login").onclick = () => {
+      view="login"; render();
+    });
   }
 
   if(view==="myreport"){
@@ -2712,19 +2734,33 @@ if(CONFIGURED){
   auth = getAuth(app);
   entriesRef = ref(db,"accidents");
 
+  // 페이지 로드 시 URL 파라미터 미리 저장 (로그인 전에도 보존)
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _accParam = _urlParams.get("a") || _urlParams.get("acc");
+  if(_accParam) window._pendingAccNo = _accParam;
+
   // 로그인 상태 감지
   onAuthStateChanged(auth, user => {
     if(user){
       currentUser = user;
       isAdmin = ADMIN_EMAILS.includes(user.email);
-      // 데이터 구독
       onValue(entriesRef, snapshot => {
         entries = snapshot.val() || {};
-        // suggestions 구독
         onValue(ref(db,"suggestions"), snap => {
           suggestions = snap.val() || {};
-          if(view==="login" || view==="register"){
-            view="main";
+
+          // 대기 중인 사고번호 처리
+          if(window._pendingAccNo){
+            const found = Object.entries(entries).find(([,e]) => e.accNo === window._pendingAccNo);
+            if(found){
+              view = "accdetail";
+              window._accDetailKey = found[0];
+              window._pendingAccNo = null;
+            } else if(view==="login"||view==="register"){
+              view = "main";
+            }
+          } else if(view==="login" || view==="register"){
+            view = "main";
           }
           render();
         });
@@ -2732,10 +2768,26 @@ if(CONFIGURED){
     } else {
       currentUser = null;
       isAdmin = false;
-      // 비회원 접수 중이면 그대로 유지
       if(!isGuest){
-        view = "login";
-        render();
+        // SMS 링크로 접속했으면 → 로그인 없이 바로 사고 상세 표시
+        if(window._pendingAccNo){
+          // Firebase에서 데이터 한 번만 읽어서 상세 표시
+          onValue(entriesRef, snapshot => {
+            entries = snapshot.val() || {};
+            const found = Object.entries(entries).find(([,e]) => e.accNo === window._pendingAccNo);
+            if(found){
+              view = "accdetail";
+              window._accDetailKey = found[0];
+              window._pendingAccNo = null;
+            } else {
+              view = "login";
+            }
+            render();
+          });
+        } else {
+          view = "login";
+          render();
+        }
       }
     }
   });
