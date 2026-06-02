@@ -990,15 +990,53 @@ function renderForm(){
     <button class="radio-btn${form.isComplex ? (form.accTypes.includes(t)?" on":"") : (form.accType===t?" on":"")}"
       data-type-btn="${t}">${t}</button>`).join("");
 
+  // ── 세부유형 + 설명 정의 ──
   const accDetailMap = {
-    "인사사고": ["중대재해","일반재해","경미사고","아차사고"],
-    "제품사고": ["파손","낙하","충격","오염","포장불량","운송중 손상"],
-    "공급사고": ["이종","불량","결품","누락","서열오류","납입지연","수량불일치","라인투입오류"],
-    "차량사고": ["자차사고","대물사고"]
+    "인사사고": [
+      { val:"중대재해",  desc:"사망·3일 이상 휴업이 필요한 부상 또는 질병" },
+      { val:"일반재해",  desc:"병원 치료가 필요한 부상 (1~2일 휴업 포함)" },
+      { val:"경미사고",  desc:"응급처치 수준의 가벼운 부상 (휴업 없음)" },
+      { val:"아차사고",  desc:"다칠 뻔했으나 실제 부상은 없었던 위험 상황" },
+    ],
+    "제품사고": [
+      { val:"파손·충격", desc:"낙하·충돌·압력 등으로 인한 제품 파손 또는 변형" },
+      { val:"오염·이물", desc:"이물질 혼입, 먼지·유분 등 오염으로 품질 불량" },
+      { val:"포장불량",  desc:"포장재 파손, 라벨 오류, 포장 규격 미준수" },
+      { val:"운송중 손상",desc:"운반·상하차·보관 중 발생한 제품 손상" },
+    ],
+    "공급사고": [
+      { val:"이종·혼입", desc:"다른 품번·사양의 부품이 섞여 납입된 경우" },
+      { val:"불량품 납입",desc:"품질 기준 미달 부품이 공급된 경우" },
+      { val:"결품·수량오류",desc:"납입 수량 부족, 누락, 수량 불일치" },
+      { val:"서열오류",   desc:"서열·순서가 생산 계획과 다르게 납입된 경우" },
+      { val:"납입지연",   desc:"약정 시간보다 늦게 납입되어 라인에 영향" },
+      { val:"라인투입오류",desc:"잘못된 라인·공정에 부품이 투입된 경우" },
+    ],
+    "차량사고": [
+      { val:"자차사고",  desc:"당사 차량 단독 사고 (접촉·전복·충돌 등)" },
+      { val:"대물사고",  desc:"타인 차량·시설물·재산에 피해를 입힌 사고" },
+    ],
   };
 
-  // 복합사고: 선택된 유형들의 세부유형 모두 표시
-  // 단일사고: 선택된 유형의 세부유형만 표시
+  // 선택된 세부유형 설명 찾기
+  const getDetailDesc = (type, detailVal) => {
+    const list = accDetailMap[type] || [];
+    const found = list.find(d => d.val === detailVal);
+    return found ? found.desc : "";
+  };
+
+  // 현재 선택된 세부유형 설명
+  let selectedDetailDesc = "";
+  if(!form.isComplex && form.accDetail){
+    selectedDetailDesc = getDetailDesc(form.accType, form.accDetail);
+  } else if(form.isComplex && form.accDetails.length > 0){
+    const lastDetail = form.accDetails[form.accDetails.length - 1];
+    for(const t of form.accTypes){
+      const desc = getDetailDesc(t, lastDetail);
+      if(desc){ selectedDetailDesc = desc; break; }
+    }
+  }
+
   const activeTypes = form.isComplex ? form.accTypes : (form.accType ? [form.accType] : []);
   const detailBtns = activeTypes.length > 0
     ? activeTypes.map(t => {
@@ -1007,8 +1045,8 @@ function renderForm(){
           <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;padding:2px 8px;background:#f0f4f8;border-radius:5px;display:inline-block;">${t}</div>
           <div class="radio-row" style="flex-wrap:wrap;">
             ${details.map(d => {
-              const isOn = form.isComplex ? form.accDetails.includes(d) : form.accDetail===d;
-              return `<button class="radio-btn${isOn?" on":""}" data-detail-btn="${d}" data-detail-type="${t}">${d}</button>`;
+              const isOn = form.isComplex ? form.accDetails.includes(d.val) : form.accDetail===d.val;
+              return `<button class="radio-btn${isOn?" on":""}" data-detail-btn="${d.val}" data-detail-type="${t}">${d.val}</button>`;
             }).join("")}
           </div>
         </div>`;
@@ -1151,6 +1189,11 @@ function renderForm(){
       ${form.isComplex?`<span style="font-size:11px;color:#e05c00;font-weight:400;margin-left:4px;">복합사고 — 중복선택 가능</span>`:""}
     </div>
     <div id="detail-btns-wrap">${detailBtns}</div>
+    ${selectedDetailDesc ? `
+    <div style="margin-top:8px;background:#f0f4ff;border-left:3px solid #1e2761;border-radius:0 8px 8px 0;
+      padding:8px 12px;font-size:12px;color:#1e2761;line-height:1.6;">
+      <span style="font-weight:700;">ℹ️ </span>${selectedDetailDesc}
+    </div>` : ""}
     ${e.accDetail?`<div class="err-msg">${e.accDetail}</div>`:""}
   </div>
 </div>
@@ -2112,14 +2155,14 @@ function bindEvents(){
           if(form.accTypes.includes(t)) form.accTypes = form.accTypes.filter(x=>x!==t);
           else form.accTypes.push(t);
           // 제거된 유형의 세부유형도 제거
-          const accDetailMap2 = {
+          const detailVals = {
             "인사사고":["중대재해","일반재해","경미사고","아차사고"],
-            "제품사고":["파손","낙하","충격","오염","포장불량","운송중 손상"],
-            "공급사고":["이종","불량","결품","누락","서열오류","납입지연","수량불일치","라인투입오류"],
+            "제품사고":["파손·충격","오염·이물","포장불량","운송중 손상"],
+            "공급사고":["이종·혼입","불량품 납입","결품·수량오류","서열오류","납입지연","라인투입오류"],
             "차량사고":["자차사고","대물사고"]
           };
           if(!form.accTypes.includes(t)){
-            form.accDetails = form.accDetails.filter(d=>!(accDetailMap2[t]||[]).includes(d));
+            form.accDetails = form.accDetails.filter(d=>!(detailVals[t]||[]).includes(d));
           }
         } else {
           form.accType = t; form.accDetail = "";
