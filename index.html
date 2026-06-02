@@ -217,6 +217,10 @@
     .radio-row { gap: 6px; }
     .radio-btn { padding: 7px 12px; font-size: 13px; }
   }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.4); }
+    }
 </style>
 </head>
 <body>
@@ -265,6 +269,243 @@ const ADMIN_PW = "safety2025";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyS-dsOL7tjKLcrDrXV-iDZurGxAhzgpT0GOWF4QWEYpWyFygqMZjIsKcpQL0zuESMn/exec";
 const APP_NAME = "광명사업부 안전관리 시스템";
 
+/* ── 언어 설정 ── */
+let lang = localStorage.getItem("accLang") || "ko"; // ko | zh
+
+const T = {
+  ko: {
+    langBtn:        "🇨🇳 中文",
+    formTitle:      "현장 사고 접수",
+    formDesc:       "사고 발생 즉시 접수해 주세요.\nLevel 1·2는 전화 보고를 병행해 주세요.",
+    secSite:        "📍 사업소",
+    site:           "사업소",
+    secReporter:    "👤 접수자 정보",
+    reporter:       "접수자 성명",
+    rank:           "직급",
+    phone:          "연락처",
+    secDateTime:    "🕐 사고 발생 일시",
+    dateTimeAuto:   "현재 시각 자동 입력 — 필요 시 수정",
+    location:       "사고 발생 위치",
+    secClass:       "🗂️ 사고 분류",
+    complex:        "복합사고",
+    complexDesc:    "2가지 이상의 사고 유형이 동시에 발생한 경우 체크",
+    accType:        "사고 유형",
+    complexHint:    "복합사고 — 중복선택 가능",
+    accDetail:      "세부 유형",
+    secUrgency:     "🚨 긴급도",
+    secLineStop:    "⚡ 라인중단 여부",
+    secCustEffect:  "🏭 고객사 영향",
+    yesNo:          ["예","아니오"],
+    secPerson:      "🧑‍⚕️ 인사사고 대상자",
+    alone:          "단독사고",
+    both:           "쌍방사고",
+    victim:         "피해자",
+    perp:           "가해자",
+    addPerson:      "+ 추가",
+    unknown:        "미확인",
+    affiliation:    "소속",
+    secAction:      "📝 현황 및 조치",
+    voiceBtn:       "🎤 음성으로 빠른 입력",
+    voiceOn:        "음성 입력 중... (탭하여 중지)",
+    voiceGuideTitle:"🎤 지금 말씀해 주세요!",
+    voiceGuideItems:[
+      {label:"발생 위치",    ex:"1공장 도킹존"},
+      {label:"무슨 일이 있었는지", ex:"부품 낙하로 작업자 손 부상"},
+      {label:"현재 상태",    ex:"라인 중단, 119 신고 완료"},
+      {label:"추가 필요사항",ex:"안전팀 출동 요청"},
+    ],
+    voiceExample:   "전체 예시",
+    voiceExText:    "\"1공장 도킹존, 부품 낙하로 작업자 손 부상, 라인 중단, 119 신고 완료\"",
+    situation:      "현재 상황",
+    situationPh:    "사고 발생 경위 및 현재 상황을 간략히 기술해 주세요.",
+    action:         "즉시 조치 내용",
+    actionPh:       "취한 즉시 조치를 입력해 주세요. (없으면 '없음' 입력)",
+    support:        "추가 지원 필요 여부",
+    supportPh:      "예: 안전팀 현장 출동 요청 (없으면 '없음' 입력)",
+    secPhoto:       "📷 현장 사진 첨부",
+    photoDesc:      "최대 3장까지 첨부 가능 · JPG, PNG, GIF 지원",
+    photoSelect:    "사진 선택",
+    photoMax:       "최대 3장 첨부 완료",
+    photoUploading: "업로드중...",
+    secCheck:       "✅ 확인 사항",
+    checks: [
+      "현장을 통제하거나 2차 사고를 예방하기 위한 즉시 조치를 취했습니다.",
+      "사진 촬영 등 현장 기록을 완료하였습니다.",
+      "허위 보고 시 규정에 따라 처리될 수 있음을 확인했습니다."
+    ],
+    submitBtn:      "사고 접수하기",
+    submitting:     "접수 중...",
+    goMain:         "← 메인",
+    goLogin:        "← 로그인",
+    myReport:       "📋 내 접수 조회",
+    adminPage:      "관리자 페이지",
+    successTitle:   "사고 접수가 완료되었습니다.",
+    successDesc:    "담당자에게 즉시 통보됩니다.\nLevel 1·2 사고는 전화로 추가 보고를 병행해 주세요.",
+    newAccident:    "새 사고 접수",
+    voiceLang:      "ko-KR",
+    ranks: ["사원","조장","반장","주임","대리","과장","차장","부장","부소장","소장","상무","기타"],
+    lineStops: [
+      {val:"라인중단발생", color:"#b71c1c", bg:"#fff5f5", border:"#f5c6c6", desc:"현재 라인이 중단된 상태"},
+      {val:"라인중단예상", color:"#e65100", bg:"#fff8f0", border:"#fcd8a8", desc:"중단 가능성이 높은 상태"},
+      {val:"미장착",       color:"#7b5e00", bg:"#fffde7", border:"#ffe082", desc:"부품 미장착으로 생산 차질"},
+      {val:"라인영향없음", color:"#2e7d32", bg:"#f0faf0", border:"#b8e0ba", desc:"라인 정상 운영 중"},
+    ],
+    levels: [
+      {val:"1", label:"Level 1", sub:"최긴급", bg:"#fff5f5", color:"#b71c1c", border:"#f5c6c6"},
+      {val:"2", label:"Level 2", sub:"긴급",   bg:"#fff8f0", color:"#e65100", border:"#fcd8a8"},
+      {val:"3", label:"Level 3", sub:"일반",   bg:"#f0faf0", color:"#2e7d32", border:"#b8e0ba"},
+    ],
+    accTypes: ["인사사고","제품사고","공급사고","차량사고"],
+    accDetailMap: {
+      "인사사고": [
+        {val:"중대재해",   desc:"사망·3일 이상 휴업이 필요한 부상 또는 질병"},
+        {val:"일반재해",   desc:"병원 치료가 필요한 부상 (1~2일 휴업 포함)"},
+        {val:"경미사고",   desc:"응급처치 수준의 가벼운 부상 (휴업 없음)"},
+        {val:"아차사고",   desc:"다칠 뻔했으나 실제 부상은 없었던 위험 상황"},
+      ],
+      "제품사고": [
+        {val:"파손·충격",  desc:"낙하·충돌·압력 등으로 인한 제품 파손 또는 변형"},
+        {val:"오염·이물",  desc:"이물질 혼입, 먼지·유분 등 오염으로 품질 불량"},
+        {val:"포장불량",   desc:"포장재 파손, 라벨 오류, 포장 규격 미준수"},
+        {val:"운송중 손상",desc:"운반·상하차·보관 중 발생한 제품 손상"},
+      ],
+      "공급사고": [
+        {val:"이종·혼입",  desc:"다른 품번·사양의 부품이 섞여 납입된 경우"},
+        {val:"불량품 납입",desc:"품질 기준 미달 부품이 공급된 경우"},
+        {val:"결품·수량오류",desc:"납입 수량 부족, 누락, 수량 불일치"},
+        {val:"서열오류",   desc:"서열·순서가 생산 계획과 다르게 납입된 경우"},
+        {val:"납입지연",   desc:"약정 시간보다 늦게 납입되어 라인에 영향"},
+        {val:"라인투입오류",desc:"잘못된 라인·공정에 부품이 투입된 경우"},
+      ],
+      "차량사고": [
+        {val:"자차사고",   desc:"당사 차량 단독 사고 (접촉·전복·충돌 등)"},
+        {val:"대물사고",   desc:"타인 차량·시설물·재산에 피해를 입힌 사고"},
+      ],
+    },
+  },
+  zh: {
+    langBtn:        "🇰🇷 한국어",
+    formTitle:      "现场事故报告",
+    formDesc:       "发生事故后请立即填写。\nLevel 1·2 请同时进行电话报告。",
+    secSite:        "📍 事业所",
+    site:           "事业所",
+    secReporter:    "👤 报告人信息",
+    reporter:       "报告人姓名",
+    rank:           "职级",
+    phone:          "联系电话",
+    secDateTime:    "🕐 事故发生时间",
+    dateTimeAuto:   "自动填入当前时间 — 如需修改请编辑",
+    location:       "事故发生地点",
+    secClass:       "🗂️ 事故分类",
+    complex:        "复合事故",
+    complexDesc:    "同时发生两种以上事故类型时勾选",
+    accType:        "事故类型",
+    complexHint:    "复合事故 — 可多选",
+    accDetail:      "细分类型",
+    secUrgency:     "🚨 紧急程度",
+    secLineStop:    "⚡ 停线情况",
+    secCustEffect:  "🏭 客户影响",
+    yesNo:          ["是","否"],
+    secPerson:      "🧑‍⚕️ 人员事故对象",
+    alone:          "单方事故",
+    both:           "双方事故",
+    victim:         "受害者",
+    perp:           "肇事者",
+    addPerson:      "+ 添加",
+    unknown:        "不明",
+    affiliation:    "所属",
+    secAction:      "📝 现状及处置",
+    voiceBtn:       "🎤 语音快速输入",
+    voiceOn:        "语音输入中... (点击停止)",
+    voiceGuideTitle:"🎤 请您说话！",
+    voiceGuideItems:[
+      {label:"发生地点",  ex:"1工厂对接区"},
+      {label:"发生了什么",ex:"零件跌落导致工人手部受伤"},
+      {label:"当前状态",  ex:"停线，已呼叫119"},
+      {label:"需要协助",  ex:"请求安全团队到场"},
+    ],
+    voiceExample:   "示例",
+    voiceExText:    "\"1工厂对接区，零件跌落导致工人手部受伤，停线，已呼叫119\"",
+    situation:      "当前状况",
+    situationPh:    "请简要描述事故经过和当前状况。",
+    action:         "即时处置内容",
+    actionPh:       "请填写已采取的即时措施。(无则填写'无')",
+    support:        "是否需要额外支援",
+    supportPh:      "例：请求安全团队到场 (无则填写'无')",
+    secPhoto:       "📷 现场照片",
+    photoDesc:      "最多可附3张 · 支持JPG, PNG, GIF",
+    photoSelect:    "选择照片",
+    photoMax:       "已附3张（最大）",
+    photoUploading: "上传中...",
+    secCheck:       "✅ 确认事项",
+    checks: [
+      "已采取措施控制现场或防止二次事故。",
+      "已完成拍照等现场记录工作。",
+      "确认虚假报告将依规处理。"
+    ],
+    submitBtn:      "提交事故报告",
+    submitting:     "提交中...",
+    goMain:         "← 主页",
+    goLogin:        "← 登录",
+    myReport:       "📋 我的报告查询",
+    adminPage:      "管理员页面",
+    successTitle:   "事故报告已提交完成。",
+    successDesc:    "负责人将立即收到通知。\nLevel 1·2 请同时进行电话报告。",
+    newAccident:    "新增事故报告",
+    voiceLang:      "zh-CN",
+    ranks: ["员工","组长","班长","主任","代理","科长","次长","部长","副所长","所长","常务","其他"],
+    lineStops: [
+      {val:"라인중단발생", color:"#b71c1c", bg:"#fff5f5", border:"#f5c6c6", desc:"当前生产线已停止"},
+      {val:"라인중단예상", color:"#e65100", bg:"#fff8f0", border:"#fcd8a8", desc:"停线可能性较高"},
+      {val:"미장착",       color:"#7b5e00", bg:"#fffde7", border:"#ffe082", desc:"零件未装配导致生产受阻"},
+      {val:"라인영향없음", color:"#2e7d32", bg:"#f0faf0", border:"#b8e0ba", desc:"生产线正常运行"},
+    ],
+    levels: [
+      {val:"1", label:"Level 1", sub:"最紧急", bg:"#fff5f5", color:"#b71c1c", border:"#f5c6c6"},
+      {val:"2", label:"Level 2", sub:"紧急",   bg:"#fff8f0", color:"#e65100", border:"#fcd8a8"},
+      {val:"3", label:"Level 3", sub:"一般",   bg:"#f0faf0", color:"#2e7d32", border:"#b8e0ba"},
+    ],
+    accTypes: ["人员事故","产品事故","供应事故","车辆事故"],
+    accDetailMap: {
+      "人员事故": [
+        {val:"重大灾害",   desc:"死亡或需休假3天以上的伤害或疾病"},
+        {val:"一般灾害",   desc:"需就医的伤害（含1~2天休假）"},
+        {val:"轻微事故",   desc:"仅需急救处理的轻伤（无需休假）"},
+        {val:"险情事故",   desc:"险些受伤但实际未造成伤害的危险情况"},
+      ],
+      "产品事故": [
+        {val:"破损·冲击",  desc:"因跌落·碰撞·压力等造成的产品破损或变形"},
+        {val:"污染·异物",  desc:"异物混入、灰尘油污等污染导致品质不良"},
+        {val:"包装不良",   desc:"包装材料破损、标签错误、包装规格不符"},
+        {val:"运输中损坏",  desc:"搬运·装卸·保管过程中产生的产品损坏"},
+      ],
+      "供应事故": [
+        {val:"异种·混入",  desc:"不同品番·规格的零件混入供应"},
+        {val:"不良品供应",  desc:"不符合品质标准的零件被供应"},
+        {val:"缺件·数量错误",desc:"供应数量不足、漏发、数量不一致"},
+        {val:"序列错误",   desc:"零件序列·顺序与生产计划不符"},
+        {val:"供应延迟",   desc:"晚于约定时间供应，影响生产线"},
+        {val:"投入错误",   desc:"零件投入了错误的生产线·工序"},
+      ],
+      "车辆事故": [
+        {val:"自车事故",   desc:"本公司车辆单方事故（接触·翻覆·碰撞等）"},
+        {val:"对物事故",   desc:"对他人车辆·设施·财产造成损害的事故"},
+      ],
+    },
+    // 한국어 필드값 → 중국어 매핑 (Firebase 저장은 한국어 유지)
+    accTypeMap: {"人员事故":"인사사고","产品事故":"제품사고","供应事故":"공급사고","车辆事故":"차량사고"},
+    accDetailKo: {
+      "重大灾害":"중대재해","一般灾害":"일반재해","轻微事故":"경미사고","险情事故":"아차사고",
+      "破损·冲击":"파손·충격","污染·异物":"오염·이물","包装不良":"포장불량","运输中损坏":"운송중 손상",
+      "异种·混入":"이종·혼입","不良品供应":"불량품 납입","缺件·数量错误":"결품·수량오류",
+      "序列错误":"서열오류","供应延迟":"납입지연","投入错误":"라인투입오류",
+      "自车事故":"자차사고","对物事故":"대물사고",
+    },
+  },
+};
+
+function t(key){ return T[lang][key] || T.ko[key] || key; }
+
 /* ── 관리자 이메일 목록 ── */
 const ADMIN_EMAILS = [
   "dlacksgus@gmail.com",
@@ -278,11 +519,7 @@ const ADMIN_EMAILS = [
 const SITES = ["광명1범퍼사업소","광명2범퍼사업소","광명1서열사업소","광명2서열사업소","광명JIT사업소","광명장비사업소","기타"];
 
 /* ── 체크리스트 ── */
-const CHECKS = [
-  "현장을 통제하거나 2차 사고를 예방하기 위한 즉시 조치를 취했습니다.",
-  "사진 촬영 등 현장 기록을 완료하였습니다.",
-  "허위 보고 시 규정에 따라 처리될 수 있음을 확인했습니다."
-];
+const CHECKS = T[lang].checks;
 
 let db, auth, entriesRef;
 let entries = {};
@@ -331,6 +568,7 @@ function makeEmptyForm(){
     perpetrators: [{name:"", affiliation:"", unknown:false}],
     photos: [],        // 업로드된 이미지 URL 배열
     photosPreviews: [], // 미리보기용 base64 배열
+    _voiceOn: false,   // 음성 입력 활성화 여부
     checks: [false, false, false]
   };
 }
@@ -907,7 +1145,7 @@ function renderSuggest(){
   <div class="card">
     <div class="section-title">📍 기본 정보</div>
     <div class="field">
-      <div class="label">사업소 <span class="req">*</span></div>
+      <div class="label">${t("site")} <span class="req">*</span></div>
       <select id="sug-site" class="select">${siteOpts}</select>
     </div>
     <div class="field">
@@ -986,72 +1224,46 @@ function renderForm(){
   const e = errors;
   const siteOpts = `<option value="">사업소 선택</option>` + SITES.map(s=>`<option value="${s}"${form.site===s?" selected":""}>${s}</option>`).join("");
 
-  const accTypeOpts = ["인사사고","제품사고","공급사고","차량사고"].map(t=>`
-    <button class="radio-btn${form.isComplex ? (form.accTypes.includes(t)?" on":"") : (form.accType===t?" on":"")}"
-      data-type-btn="${t}">${t}</button>`).join("");
+  // ── 번역 사전에서 사고유형/세부유형 로드 ──
+  const accDetailMap = T[lang].accDetailMap;
+  const accTypes = T[lang].accTypes;
 
-  // ── 세부유형 + 설명 정의 ──
-  const accDetailMap = {
-    "인사사고": [
-      { val:"중대재해",  desc:"사망·3일 이상 휴업이 필요한 부상 또는 질병" },
-      { val:"일반재해",  desc:"병원 치료가 필요한 부상 (1~2일 휴업 포함)" },
-      { val:"경미사고",  desc:"응급처치 수준의 가벼운 부상 (휴업 없음)" },
-      { val:"아차사고",  desc:"다칠 뻔했으나 실제 부상은 없었던 위험 상황" },
-    ],
-    "제품사고": [
-      { val:"파손·충격", desc:"낙하·충돌·압력 등으로 인한 제품 파손 또는 변형" },
-      { val:"오염·이물", desc:"이물질 혼입, 먼지·유분 등 오염으로 품질 불량" },
-      { val:"포장불량",  desc:"포장재 파손, 라벨 오류, 포장 규격 미준수" },
-      { val:"운송중 손상",desc:"운반·상하차·보관 중 발생한 제품 손상" },
-    ],
-    "공급사고": [
-      { val:"이종·혼입", desc:"다른 품번·사양의 부품이 섞여 납입된 경우" },
-      { val:"불량품 납입",desc:"품질 기준 미달 부품이 공급된 경우" },
-      { val:"결품·수량오류",desc:"납입 수량 부족, 누락, 수량 불일치" },
-      { val:"서열오류",   desc:"서열·순서가 생산 계획과 다르게 납입된 경우" },
-      { val:"납입지연",   desc:"약정 시간보다 늦게 납입되어 라인에 영향" },
-      { val:"라인투입오류",desc:"잘못된 라인·공정에 부품이 투입된 경우" },
-    ],
-    "차량사고": [
-      { val:"자차사고",  desc:"당사 차량 단독 사고 (접촉·전복·충돌 등)" },
-      { val:"대물사고",  desc:"타인 차량·시설물·재산에 피해를 입힌 사고" },
-    ],
-  };
+  const accTypeOpts = accTypes.map(tp=>`
+    <button class="radio-btn${form.isComplex ? (form.accTypes.includes(tp)?" on":"") : (form.accType===tp?" on":"")}"
+      data-type-btn="${tp}">${tp}</button>`).join("");
 
-  // 선택된 세부유형 설명 찾기
   const getDetailDesc = (type, detailVal) => {
     const list = accDetailMap[type] || [];
     const found = list.find(d => d.val === detailVal);
     return found ? found.desc : "";
   };
 
-  // 현재 선택된 세부유형 설명
   let selectedDetailDesc = "";
   if(!form.isComplex && form.accDetail){
     selectedDetailDesc = getDetailDesc(form.accType, form.accDetail);
   } else if(form.isComplex && form.accDetails.length > 0){
     const lastDetail = form.accDetails[form.accDetails.length - 1];
-    for(const t of form.accTypes){
-      const desc = getDetailDesc(t, lastDetail);
+    for(const tp of form.accTypes){
+      const desc = getDetailDesc(tp, lastDetail);
       if(desc){ selectedDetailDesc = desc; break; }
     }
   }
 
   const activeTypes = form.isComplex ? form.accTypes : (form.accType ? [form.accType] : []);
   const detailBtns = activeTypes.length > 0
-    ? activeTypes.map(t => {
-        const details = accDetailMap[t] || [];
+    ? activeTypes.map(tp => {
+        const details = accDetailMap[tp] || [];
         return `<div style="margin-bottom:8px;">
-          <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;padding:2px 8px;background:#f0f4f8;border-radius:5px;display:inline-block;">${t}</div>
+          <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;padding:2px 8px;background:#f0f4f8;border-radius:5px;display:inline-block;">${tp}</div>
           <div class="radio-row" style="flex-wrap:wrap;">
             ${details.map(d => {
               const isOn = form.isComplex ? form.accDetails.includes(d.val) : form.accDetail===d.val;
-              return `<button class="radio-btn${isOn?" on":""}" data-detail-btn="${d.val}" data-detail-type="${t}">${d.val}</button>`;
+              return `<button class="radio-btn${isOn?" on":""}" data-detail-btn="${d.val}" data-detail-type="${tp}">${d.val}</button>`;
             }).join("")}
           </div>
         </div>`;
       }).join("")
-    : `<div style="font-size:13px;color:#bbb;padding:4px 0;">사고 유형을 먼저 선택해 주세요.</div>`;
+    : `<div style="font-size:13px;color:#bbb;padding:4px 0;">${lang==="zh"?"请先选择事故类型。":"사고 유형을 먼저 선택해 주세요."}</div>`;
 
   const levelBtns = [
     {lv:"1", cls:"lv1", badge:"최긴급", desc:"인명피해·라인중단·고객사 즉시 대응 필요"},
@@ -1077,19 +1289,30 @@ function renderForm(){
 
   return `
 <div class="header">
+  <!-- 언어 선택 버튼 -->
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+    <button id="btn-lang-toggle"
+      style="padding:6px 16px;border:1.5px solid #dce8f4;border-radius:20px;
+      background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+      color:#1e2761;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      ${t("langBtn")}
+    </button>
+  </div>
   <div class="icon-wrap">🚨</div>
-  <div class="form-title">현장 사고 접수</div>
-  <div class="form-desc">사고 발생 즉시 아래 항목을 입력해 주세요.<br>접수 즉시 담당자에게 자동으로 통보됩니다.</div>
+  <div class="form-title">${t("formTitle")}</div>
+  <div class="form-desc">${lang==="zh"
+    ? "发生事故后请立即填写。<br>Level 1·2 请同时进行电话报告。"
+    : "사고 발생 즉시 아래 항목을 입력해 주세요.<br>접수 즉시 담당자에게 자동으로 통보됩니다."}</div>
   <div class="notice-box">
-    <b>※</b> 인명피해·라인중단 발생 시 즉시 보고 후 현장 통제<br>
-    <b>※</b> 사진은 반드시 현장 상태 그대로 촬영 후 별도 공유<br>
-    <b>※</b> 허위·지연 보고는 사고 대응에 치명적 영향을 줍니다
+    ${lang==="zh"
+      ? "<b>※</b> 发生人员伤亡·停线时立即报告并控制现场<br><b>※</b> 照片必须保持现场原状拍摄后另行发送<br><b>※</b> 虚假·迟报对事故应对有致命影响"
+      : "<b>※</b> 인명피해·라인중단 발생 시 즉시 보고 후 현장 통제<br><b>※</b> 사진은 반드시 현장 상태 그대로 촬영 후 별도 공유<br><b>※</b> 허위·지연 보고는 사고 대응에 치명적 영향을 줍니다"}
   </div>
 </div>
 
 <!-- ── 기본정보 ── -->
 <div class="card">
-  <div class="section-title">📋 기본 정보</div>
+  <div class="section-title">${t("secReporter")}</div>
 
   <div class="field">
     <div class="label">사업소 <span class="req">*</span></div>
@@ -1100,16 +1323,16 @@ function renderForm(){
   </div>
 
   <div class="field">
-    <div class="label">접수자 성명 <span class="req">*</span></div>
+    <div class="label">${t("reporter")} <span class="req">*</span></div>
     <input id="f-reporter" class="input${e.reporter?" err":""}" value="${form.reporter}" placeholder="성함을 입력해 주세요" maxlength="20"/>
     ${e.reporter?`<div class="err-msg">${e.reporter}</div>`:""}
   </div>
 
   <div class="field">
-    <div class="label">직급 <span class="req">*</span></div>
+    <div class="label">${t("rank")} <span class="req">*</span></div>
     <select id="f-rank" class="select${e.rank?" err":""}">
       <option value="">직급 선택</option>
-      ${["사원","조장","반장","주임","대리","과장","차장","부장","부소장","소장","상무","기타"].map(r=>`<option value="${r}"${form.rank===r?" selected":""}>${r}</option>`).join("")}
+      ${T[lang].ranks.map(r=>`<option value="${r}"${form.rank===r?" selected":""}>${r}</option>`).join("")}
     </select>
     ${e.rank?`<div class="err-msg">${e.rank}</div>`:""}
   </div>
@@ -1155,7 +1378,7 @@ function renderForm(){
   </div>
 
   <div class="field">
-    <div class="label">사고 발생 위치 <span class="req">*</span></div>
+    <div class="label">${t("location")} <span class="req">*</span></div>
     <input id="f-location" class="input${e.location?" err":""}" value="${form.location}" placeholder="예: 1공장 도킹존 3번 라인" maxlength="60"/>
     ${e.location?`<div class="err-msg">${e.location}</div>`:""}
   </div>
@@ -1296,21 +1519,59 @@ ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인
 
 <!-- ── 상황 및 조치 ── -->
 <div class="card">
-  <div class="section-title">📝 현황 및 조치</div>
+  <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>📝 현황 및 조치</span>
+    <button id="btn-voice-start"
+      style="display:flex;align-items:center;gap:6px;padding:7px 14px;
+      background:${form._voiceOn?"#e05c00":"#1e2761"};color:#fff;border:none;border-radius:20px;
+      font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;">
+      ${form._voiceOn
+        ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;animation:pulse 1s infinite;"></span> 음성 입력 중... (탭하여 중지)`
+        : `🎤 음성으로 빠른 입력`}
+    </button>
+  </div>
+
+  ${form._voiceOn ? `
+  <div style="background:#fff3eb;border:1.5px solid #e05c00;border-radius:9px;
+    padding:12px 14px;margin-bottom:12px;font-size:13px;color:#e05c00;line-height:1.6;">
+    <div style="font-weight:700;margin-bottom:8px;font-size:14px;">🎤 지금 말씀해 주세요!</div>
+    <div style="background:#fff;border-radius:7px;padding:10px 12px;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">💬 아래 순서대로 말하면 됩니다</div>
+      ${[
+        {no:"1", label:"발생 위치", ex:"1공장 도킹존"},
+        {no:"2", label:"무슨 일이 있었는지", ex:"부품 낙하로 작업자 손 부상"},
+        {no:"3", label:"현재 상태", ex:"라인 중단, 119 신고 완료"},
+        {no:"4", label:"추가 필요사항", ex:"안전팀 출동 요청"},
+      ].map(g=>`
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;">
+        <span style="background:#e05c00;color:#fff;font-size:10px;font-weight:700;
+          min-width:18px;height:18px;border-radius:50%;display:flex;align-items:center;
+          justify-content:center;flex-shrink:0;margin-top:1px;">${g.no}</span>
+        <div style="font-size:12px;">
+          <span style="font-weight:700;color:#333;">${g.label}</span>
+          <span style="color:#aaa;"> — 예) ${g.ex}</span>
+        </div>
+      </div>`).join("")}
+    </div>
+    <div style="font-size:11px;color:#aaa;text-align:center;">
+      전체 예시: <em style="color:#888;">"1공장 도킹존, 부품 낙하로 작업자 손 부상, 라인 중단 상태, 119 신고 완료"</em>
+    </div>
+  </div>` : ""}
 
   <div class="field">
-    <div class="label">현재 상황 <span class="req">*</span></div>
-    <textarea id="f-situation" class="textarea${e.situation?" err":""}" placeholder="사고 발생 경위 및 현재 상황을 간략히 기술해 주세요.">${form.situation}</textarea>
+    <div class="label">${t("situation")} <span class="req">*</span></div>
+    <textarea id="f-situation" class="textarea${e.situation?" err":""}"
+      placeholder="사고 발생 경위 및 현재 상황을 간략히 기술해 주세요.&#10;(🎤 위의 음성 입력 버튼을 활용하면 빠르게 작성할 수 있습니다)">${form.situation}</textarea>
     ${e.situation?`<div class="err-msg">${e.situation}</div>`:""}
   </div>
 
   <div class="field">
-    <div class="label">즉시 조치 내용</div>
+    <div class="label">${t("action")}</div>
     <textarea id="f-action" class="textarea" placeholder="취한 즉시 조치를 입력해 주세요. (없으면 '없음' 입력)">${form.actionTaken}</textarea>
   </div>
 
   <div class="field">
-    <div class="label">추가 지원 필요 여부</div>
+    <div class="label">${t("support")}</div>
     <textarea id="f-support" class="textarea" placeholder="예: 안전팀 현장 출동 요청, 대체품 긴급 수배 등 (없으면 '없음' 입력)">${form.supportNeeded}</textarea>
   </div>
 </div>
@@ -1367,7 +1628,7 @@ ${e.submit?`<div class="err-banner">${e.submit}</div>`:""}
 
 <button class="submit-btn" id="btn-submit" ${saving?"disabled":""}>
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
-  ${saving?"접수 중...":"사고 접수하기"}
+  ${saving?t("submitting"):t("submitBtn")}
 </button>
 
 <div class="admin-link-wrap" style="display:flex;justify-content:center;gap:16px;">
@@ -1384,8 +1645,8 @@ function renderSuccess(){
   return `
 <div class="success-wrap">
   <div class="success-icon">✅</div>
-  <div class="success-title">사고 접수가 완료되었습니다.</div>
-  <div class="success-desc">담당자에게 즉시 통보됩니다.<br>Level 1·2 사고는 전화로 추가 보고를 병행해 주세요.</div>
+  <div class="success-title">${t("successTitle")}</div>
+  <div class="success-desc">${lang==="zh"?"负责人将立即收到通知。<br>Level 1·2 请同时进行电话报告。":"담당자에게 즉시 통보됩니다.<br>Level 1·2 사고는 전화로 추가 보고를 병행해 주세요."}</div>
 
   ${isGuest?`
   <div style="background:#fff8f0;border:1.5px solid #fcd8a8;border-radius:10px;
@@ -1777,6 +2038,14 @@ function renderAdmin(){
     <tr id="${detailId}" style="display:none;background:#f9fbfd;">
       <td colspan="12" style="padding:0;">
         <div style="padding:14px 16px;font-size:13px;line-height:2;border-top:1px dashed #dce8f4;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:12px;font-weight:700;color:#1e2761;">📋 상세 내용</div>
+            <button onclick="openEditModal('${key}')"
+              style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;
+              font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
+              ✏️ 내용 수정 + 재발송
+            </button>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin-bottom:10px;">
             <div><span style="color:#aaa;">발생위치</span> &nbsp;<strong>${e.location||"-"}</strong></div>
             <div><span style="color:#aaa;">사고발생일시</span> &nbsp;<strong>${e.accDateTime||"-"}</strong></div>
@@ -2156,10 +2425,7 @@ function bindEvents(){
           else form.accTypes.push(t);
           // 제거된 유형의 세부유형도 제거
           const detailVals = {
-            "인사사고":["중대재해","일반재해","경미사고","아차사고"],
-            "제품사고":["파손·충격","오염·이물","포장불량","운송중 손상"],
-            "공급사고":["이종·혼입","불량품 납입","결품·수량오류","서열오류","납입지연","라인투입오류"],
-            "차량사고":["자차사고","대물사고"]
+            ...Object.fromEntries(Object.entries(T[lang].accDetailMap).map(([k,v])=>[k,v.map(d=>d.val)]))
           };
           if(!form.accTypes.includes(t)){
             form.accDetails = form.accDetails.filter(d=>!(detailVals[t]||[]).includes(d));
@@ -2216,8 +2482,21 @@ function bindEvents(){
     $("go-main-from-form")   && ($("go-main-from-form").onclick   = () => {
       if(isGuest){ isGuest=false; view="login"; }
       else { view="main"; }
+      if(_recognition){ _recognition.stop(); _recognition=null; }
       render();
     });
+
+    // 언어 전환
+    $("btn-lang-toggle") && ($("btn-lang-toggle").onclick = () => {
+      lang = lang==="ko" ? "zh" : "ko";
+      localStorage.setItem("accLang", lang);
+      form.accType=""; form.accDetail="";
+      form.accTypes=[]; form.accDetails=[];
+      render();
+    });
+
+    // 음성 입력 버튼
+    $("btn-voice-start") && ($("btn-voice-start").onclick = () => startVoiceInput());
 
     // 사진 업로드
     const photoInput = document.getElementById("photo-input");
@@ -2410,6 +2689,79 @@ window.saveFollowUp = async function(key){
     alert("저장 중 오류가 발생했습니다. 다시 시도해 주세요.");
   }
 };
+
+/* ── 음성 인식 ── */
+let _recognition = null;
+
+function startVoiceInput(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    alert("이 브라우저는 음성 인식을 지원하지 않습니다.\n크롬(Chrome) 브라우저를 사용해 주세요.");
+    return;
+  }
+
+  if(_recognition){
+    _recognition.stop();
+    _recognition = null;
+    form._voiceOn = false;
+    render();
+    return;
+  }
+
+  _recognition = new SpeechRecognition();
+  _recognition.lang = t("voiceLang"); // ko-KR 또는 zh-CN
+  _recognition.continuous = true;       // 말하는 동안 계속 인식
+  _recognition.interimResults = true;   // 중간 결과도 표시
+
+  let finalTranscript = form.situation || "";
+  let interimTranscript = "";
+
+  _recognition.onstart = () => {
+    form._voiceOn = true;
+    render();
+  };
+
+  _recognition.onresult = (e) => {
+    interimTranscript = "";
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      if(e.results[i].isFinal){
+        finalTranscript += e.results[i][0].transcript;
+      } else {
+        interimTranscript += e.results[i][0].transcript;
+      }
+    }
+    // textarea에 실시간 반영
+    const ta = document.getElementById("f-situation");
+    if(ta){
+      ta.value = finalTranscript + (interimTranscript ? " ···" + interimTranscript : "");
+      form.situation = ta.value;
+    }
+  };
+
+  _recognition.onerror = (e) => {
+    console.warn("음성 인식 오류:", e.error);
+    if(e.error === "not-allowed"){
+      alert("마이크 접근 권한이 필요합니다.\n브라우저 설정에서 마이크 권한을 허용해 주세요.");
+    }
+    _recognition = null;
+    form._voiceOn = false;
+    render();
+  };
+
+  _recognition.onend = () => {
+    // 최종 텍스트 저장
+    const ta = document.getElementById("f-situation");
+    if(ta){
+      ta.value = finalTranscript;
+      form.situation = finalTranscript;
+    }
+    _recognition = null;
+    form._voiceOn = false;
+    render();
+  };
+
+  _recognition.start();
+}
 
 /* ── 사진 삭제 ── */
 window.removePhoto = function(idx){
@@ -2623,6 +2975,99 @@ window.toggleSugDetail = function(id){
   el.style.display = el.style.display==="none" ? "table-row" : "none";
 };
 
+/* ── 관리자 사고 수정 모달 ── */
+let _editKey = null;
+let _editForm = null;
+
+window.openEditModal = function(key){
+  _editKey = key;
+  const e = entries[key];
+  if(!e) return;
+  _editForm = {
+    accType:    e.accType    || "",
+    accDetail:  e.accDetail  || "",
+    level:      e.level      || "",
+    lineStop:   e.lineStop   || "",
+    customerEffect: e.customerEffect || "",
+    location:   e.location   || "",
+    situation:  e.situation  || "",
+    actionTaken:e.actionTaken|| "",
+    supportNeeded: e.supportNeeded || "",
+  };
+  // 모달 표시
+  const modal = document.getElementById("edit-modal");
+  if(modal){
+    document.getElementById("edit-accType").value    = _editForm.accType;
+    document.getElementById("edit-accDetail").value  = _editForm.accDetail;
+    document.getElementById("edit-level").value      = _editForm.level;
+    document.getElementById("edit-lineStop").value   = _editForm.lineStop;
+    document.getElementById("edit-custEffect").value = _editForm.customerEffect;
+    document.getElementById("edit-location").value   = _editForm.location;
+    document.getElementById("edit-situation").value  = _editForm.situation;
+    document.getElementById("edit-action").value     = _editForm.actionTaken;
+    document.getElementById("edit-support").value    = _editForm.supportNeeded;
+    modal.style.display = "flex";
+  }
+};
+
+window.closeEditModal = function(){
+  const modal = document.getElementById("edit-modal");
+  if(modal) modal.style.display = "none";
+  _editKey = null; _editForm = null;
+};
+
+window.saveEditAndResend = async function(){
+  if(!_editKey || !_editForm) return;
+  const e = entries[_editKey];
+  if(!e) return;
+
+  const modal = document.getElementById("edit-modal");
+  const newData = {
+    accType:        document.getElementById("edit-accType").value.trim(),
+    accDetail:      document.getElementById("edit-accDetail").value.trim(),
+    level:          document.getElementById("edit-level").value,
+    lineStop:       document.getElementById("edit-lineStop").value,
+    customerEffect: document.getElementById("edit-custEffect").value,
+    location:       document.getElementById("edit-location").value.trim(),
+    situation:      document.getElementById("edit-situation").value.trim(),
+    actionTaken:    document.getElementById("edit-action").value.trim(),
+    supportNeeded:  document.getElementById("edit-support").value.trim(),
+    updatedAt:      new Date().toLocaleString("ko-KR"),
+    updatedBy:      currentUser ? (currentUser.displayName || currentUser.email) : "관리자",
+  };
+
+  const errEl = document.getElementById("edit-err");
+  if(!newData.accType||!newData.accDetail||!newData.level||!newData.location||!newData.situation){
+    if(errEl){ errEl.textContent="필수 항목을 모두 입력해 주세요."; errEl.style.display="block"; }
+    return;
+  }
+
+  // Firebase 업데이트
+  try {
+    await update(ref(db, `accidents/${_editKey}`), newData);
+
+    // 알림 재발송
+    const updatedEntry = { ...e, ...newData };
+    updatedEntry.accNo = e.accNo;
+    updatedEntry.reporter = e.reporter;
+    updatedEntry.rank = e.rank;
+    updatedEntry.phone = e.phone;
+    updatedEntry.site = e.site;
+    updatedEntry.accDateTime = e.accDateTime;
+    updatedEntry.createdAt = e.createdAt;
+
+    // GAS로 수정 알림 발송
+    await sendSlackAlert({ ...updatedEntry, _isUpdate: true, _updateNote: "관리자가 사고 내용을 수정하였습니다." });
+
+    closeEditModal();
+    alert("✅ 수정 완료 및 알림이 재발송되었습니다.");
+    render();
+  } catch(err) {
+    console.error("수정 저장 오류:", err);
+    if(errEl){ errEl.textContent="저장 중 오류가 발생했습니다."; errEl.style.display="block"; }
+  }
+};
+
 /* ── 상세 행 펼치기/접기 ── */
 window.toggleDetail = function(id){
   const el = document.getElementById(id);
@@ -2675,6 +3120,14 @@ function doModalLogin(){
 
 /* ── 제출 처리 ── */
 async function handleSubmit(){
+  // 중국어 선택 시 Firebase에는 한국어 값으로 저장
+  const toKo = (val) => {
+    if(lang !== "zh" || !val) return val;
+    const typeMap = T.zh.accTypeMap || {};
+    const detailMap = T.zh.accDetailKo || {};
+    return typeMap[val] || detailMap[val] || val;
+  };
+
   if(form.photos.includes("uploading")){
     errors={submit:"사진 업로드가 완료될 때까지 기다려 주세요."};
     render(); window.scrollTo(0,0); return;
@@ -2722,10 +3175,11 @@ async function handleSubmit(){
     rank: form.rank,
     phone: form.phone,
     accDateTime: `${form.accYear}년 ${form.accMonth}월 ${form.accDay}일 ${form.accAmPm} ${form.accHour}시 ${form.accMin}분`,
+
     location: form.location.trim(),
     isComplex: form.isComplex,
-    accType: form.isComplex ? form.accTypes.join(", ") : form.accType,
-    accDetail: form.isComplex ? form.accDetails.join(", ") : form.accDetail,
+    accType:    toKo(form.isComplex ? form.accTypes.join(", ") : form.accType),
+    accDetail:  toKo(form.isComplex ? form.accDetails.join(", ") : form.accDetail),
     accTypes: form.isComplex ? form.accTypes.join(", ") : "",
     accDetails: form.isComplex ? form.accDetails.join(", ") : "",
     level: form.level,
@@ -2879,5 +3333,93 @@ if('serviceWorker' in navigator){
 
 ════════════════════════════════════════════════════════════
 -->
+
+<!-- ── 사고 수정 모달 ── -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:1000;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:520px;
+    max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div style="background:#1e2761;padding:16px 20px;border-radius:16px 16px 0 0;
+      display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#fff;">✏️ 사고 내용 수정</div>
+        <div style="font-size:11px;color:#CADCFC;margin-top:2px;">수정 후 담당자에게 알림이 재발송됩니다</div>
+      </div>
+      <button onclick="closeEditModal()"
+        style="background:rgba(255,255,255,.15);border:none;color:#fff;
+        width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:16px 20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">사고 유형 <span style="color:#e05c00;">*</span></div>
+          <input id="edit-accType" class="input" placeholder="예: 공급사고" style="font-size:13px;padding:8px 10px;"/>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">세부 유형 <span style="color:#e05c00;">*</span></div>
+          <input id="edit-accDetail" class="input" placeholder="예: 이종·혼입" style="font-size:13px;padding:8px 10px;"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">긴급도 <span style="color:#e05c00;">*</span></div>
+          <select id="edit-level" class="select" style="font-size:13px;padding:8px 10px;">
+            <option value="">선택</option>
+            <option value="1">Level 1 최긴급</option>
+            <option value="2">Level 2 긴급</option>
+            <option value="3">Level 3 일반</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">라인중단</div>
+          <select id="edit-lineStop" class="select" style="font-size:13px;padding:8px 10px;">
+            <option value="라인중단발생">라인중단발생</option>
+            <option value="라인중단예상">라인중단예상</option>
+            <option value="미장착">미장착</option>
+            <option value="라인영향없음">라인영향없음</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">고객사 영향</div>
+          <select id="edit-custEffect" class="select" style="font-size:13px;padding:8px 10px;">
+            <option value="예">예</option>
+            <option value="아니오">아니오</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">발생 위치 <span style="color:#e05c00;">*</span></div>
+        <input id="edit-location" class="input" placeholder="발생 위치" style="font-size:13px;padding:8px 10px;"/>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">현재 상황 <span style="color:#e05c00;">*</span></div>
+        <textarea id="edit-situation" class="textarea" style="font-size:13px;min-height:80px;" placeholder="현재 상황"></textarea>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">즉시 조치</div>
+        <textarea id="edit-action" class="textarea" style="font-size:13px;min-height:60px;" placeholder="즉시 조치 내용"></textarea>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">추가 지원</div>
+        <textarea id="edit-support" class="textarea" style="font-size:13px;min-height:50px;" placeholder="추가 지원 필요 여부"></textarea>
+      </div>
+      <div style="background:#fff8f0;border:1px solid #fcd8a8;border-radius:8px;
+        padding:10px 12px;margin-bottom:12px;font-size:12px;color:#e65100;line-height:1.6;">
+        📢 저장 시 수정된 내용으로 <strong>SMS + Slack 알림이 재발송</strong>됩니다.
+      </div>
+      <div id="edit-err" style="display:none;font-size:12px;color:#e05c00;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closeEditModal()"
+          style="flex:1;padding:11px;background:#f5f5f5;border:none;border-radius:9px;
+          font-size:14px;color:#666;cursor:pointer;font-family:inherit;">취소</button>
+        <button onclick="saveEditAndResend()"
+          style="flex:2;padding:11px;background:#e05c00;color:#fff;border:none;border-radius:9px;
+          font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+          ✅ 수정 저장 + 알림 재발송
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
