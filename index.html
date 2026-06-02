@@ -729,7 +729,7 @@ function renderLogin(){
       margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:32px;">
       🛡️
     </div>
-    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${APP_NAME}</div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${lang==="zh"?"现场安全管理系统":APP_NAME}</div>
     <div style="font-size:13px;color:#888;">${lang==="zh"?"登录后可以使用。":"로그인 후 이용하실 수 있습니다."}</div>
   </div>
 
@@ -785,7 +785,7 @@ function renderLogin(){
       <input id="login-email" class="input" type="email" placeholder="${lang==='zh'?'邮箱地址':'이메일 주소 입력'}"/>
     </div>
     <div class="field">
-      <div class="label">비밀번호</div>
+      <div class="label">${lang==="zh"?"密码":"비밀번호"}</div>
       <input id="login-pw" class="input" type="password" placeholder="${lang==='zh'?'请输入密码':'비밀번호 입력'}"/>
     </div>
     <div id="login-err" style="display:none;font-size:13px;color:#e05c00;margin-bottom:10px;"></div>
@@ -813,8 +813,17 @@ function renderLogin(){
       ${lang==="zh"?"🚨 无需登录立即报告事故":"🚨 비회원으로 즉시 사고 접수"}
     </button>
     <div style="text-align:center;margin-top:8px;font-size:11px;color:#bbb;">
-      로그인 없이 사고 접수만 가능합니다
+      ${lang==="zh"?"无需登录，仅可提交事故报告":"로그인 없이 사고 접수만 가능합니다"}
     </div>
+  </div>
+
+  <!-- 언어 전환 -->
+  <div style="text-align:center;margin-top:1.5rem;">
+    <button id="btn-login-lang"
+      style="padding:6px 18px;background:none;border:1.5px solid #eee;border-radius:20px;
+      font-size:13px;color:#aaa;cursor:pointer;font-family:inherit;">
+      ${lang==="zh"?"🇰🇷 한국어로 전환":"🇨🇳 切换中文"}
+    </button>
   </div>
 </div>`;
 }
@@ -831,7 +840,7 @@ function renderRegister(){
       margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:32px;">
       🛡️
     </div>
-    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">회원가입</div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${lang==="zh"?"注册账号":"회원가입"}</div>
     <div style="font-size:13px;color:#888;">${APP_NAME}</div>
   </div>
 
@@ -871,30 +880,30 @@ function renderRegister(){
   <!-- 이메일 회원가입 폼 -->
   <div class="card" style="margin-bottom:0;">
     <div class="field">
-      <div class="label">이름 <span class="req">*</span></div>
+      <div class="label">${lang==="zh"?"姓名":"이름"} <span class="req">*</span></div>
       <input id="reg-name" class="input" type="text" placeholder="성함을 입력해 주세요" maxlength="20"/>
     </div>
     <div class="field">
-      <div class="label">이메일 <span class="req">*</span></div>
+      <div class="label">${lang==="zh"?"邮箱":"이메일"} <span class="req">*</span></div>
       <input id="reg-email" class="input" type="email" placeholder="이메일 주소 입력"/>
     </div>
     <div class="field">
-      <div class="label">비밀번호 <span class="req">*</span></div>
+      <div class="label">${lang==="zh"?"密码":"비밀번호"} <span class="req">*</span></div>
       <input id="reg-pw" class="input" type="password" placeholder="6자리 이상 입력"/>
     </div>
     <div class="field">
-      <div class="label">비밀번호 확인 <span class="req">*</span></div>
+      <div class="label">${lang==="zh"?"确认密码":"비밀번호 확인"} <span class="req">*</span></div>
       <input id="reg-pw2" class="input" type="password" placeholder="비밀번호 재입력"/>
     </div>
     <div id="reg-err" style="display:none;font-size:13px;color:#e05c00;margin-bottom:10px;"></div>
-    <button id="btn-email-register" class="submit-btn">회원가입</button>
+    <button id="btn-email-register" class="submit-btn">${lang==="zh"?"注册":"회원가입"}</button>
   </div>
 
   <!-- 로그인 링크 -->
   <div style="text-align:center;margin-top:1.25rem;">
-    <span style="font-size:13px;color:#888;">이미 계정이 있으신가요?</span>
+    <span style="font-size:13px;color:#888;">${lang==="zh"?"已有账号？":"이미 계정이 있으신가요?"}</span>
     <button id="go-login" style="background:none;border:none;color:#1e2761;font-size:13px;
-      font-weight:700;cursor:pointer;font-family:inherit;margin-left:6px;">로그인</button>
+      font-weight:700;cursor:pointer;font-family:inherit;margin-left:6px;">${lang==="zh"?"登录":"로그인"}</button>
   </div>
 </div>`;
 }
@@ -920,14 +929,21 @@ function renderMain(){
           </div>`}
       <div>
         <div style="font-size:13px;font-weight:600;color:#1a1a1a;">${userName}</div>
-        <div style="font-size:11px;color:#aaa;">${isAdmin?"🛡️ 관리자":"일반 사용자"}</div>
+        <div style="font-size:11px;color:#aaa;">${isAdmin?"🛡️ 관리자":"${lang==='zh'?'普通用户':'일반 사용자'}"}</div>
       </div>
     </div>
-    <button id="btn-logout"
-      style="padding:6px 12px;background:#f5f5f5;border:none;border-radius:7px;
-      font-size:12px;color:#888;cursor:pointer;font-family:inherit;">
-      로그아웃
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="btn-main-lang"
+        style="padding:5px 12px;background:#f0f4ff;border:1.5px solid #dce8f4;border-radius:20px;
+        font-size:12px;font-weight:700;color:#1e2761;cursor:pointer;font-family:inherit;">
+        ${lang==="zh"?"🇰🇷 한국어":"🇨🇳 中文"}
+      </button>
+      <button id="btn-logout"
+        style="padding:6px 12px;background:#f5f5f5;border:none;border-radius:7px;
+        font-size:12px;color:#888;cursor:pointer;font-family:inherit;">
+        ${lang==="zh"?"退出登录":"로그아웃"}
+      </button>
+    </div>
   </div>
 
   <div style="text-align:center;padding:2rem 1rem 1.5rem;">
@@ -999,7 +1015,7 @@ function renderMain(){
     </button>`:""}
 
     <div style="text-align:center;margin-top:0.5rem;">
-      <button class="admin-link" id="go-myreport-main">📋 내 접수 조회</button>
+      <button class="admin-link" id="go-myreport-main">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>
     </div>
   </div>
 
@@ -2306,6 +2322,11 @@ function bindEvents(){
     });
     $("login-pw") && ($("login-pw").onkeydown = e => { if(e.key==="Enter") $("btn-email-login").click(); });
     $("go-register") && ($("go-register").onclick = () => { view="register"; render(); });
+    $("btn-login-lang") && ($("btn-login-lang").onclick = () => {
+      lang = lang==="ko" ? "zh" : "ko";
+      localStorage.setItem("accLang", lang);
+      render();
+    });
 
     // 비회원 즉시 접수
     $("btn-guest-form") && ($("btn-guest-form").onclick = () => {
@@ -2345,6 +2366,11 @@ function bindEvents(){
     $("btn-logout") && ($("btn-logout").onclick = async () => {
       await signOut(auth);
       view="login"; render();
+    });
+    $("btn-main-lang") && ($("btn-main-lang").onclick = () => {
+      lang = lang==="ko" ? "zh" : "ko";
+      localStorage.setItem("accLang", lang);
+      render();
     });
     $("btn-main-form")    && ($("btn-main-form").onclick    = () => { view="form"; render(); });
     $("btn-main-manual")  && ($("btn-main-manual").onclick  = () => { view="manual"; render(); });
@@ -3522,14 +3548,22 @@ if('serviceWorker' in navigator){
       <div style="margin-bottom:10px;">
         <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px;">사고 유형 <span style="color:#e05c00;">*</span></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;" id="edit-type-btns">
-          ${["인사사고","제품사고","공급사고","차량사고"].map(tp=>`
-            <button type="button" onclick="editSelectType('${tp}')"
-              id="edit-type-${tp}"
-              style="padding:7px 14px;border-radius:8px;border:1.5px solid #dce8f4;
-              background:#f5f8fc;font-size:13px;font-weight:600;cursor:pointer;
-              font-family:inherit;color:#555;transition:all .15s;">
-              ${tp}
-            </button>`).join("")}
+          <button type="button" onclick="editSelectType('인사사고')" id="edit-type-인사사고"
+            style="padding:7px 14px;border-radius:8px;border:1.5px solid #dce8f4;
+            background:#f5f8fc;font-size:13px;font-weight:600;cursor:pointer;
+            font-family:inherit;color:#555;transition:all .15s;">인사사고</button>
+          <button type="button" onclick="editSelectType('제품사고')" id="edit-type-제품사고"
+            style="padding:7px 14px;border-radius:8px;border:1.5px solid #dce8f4;
+            background:#f5f8fc;font-size:13px;font-weight:600;cursor:pointer;
+            font-family:inherit;color:#555;transition:all .15s;">제품사고</button>
+          <button type="button" onclick="editSelectType('공급사고')" id="edit-type-공급사고"
+            style="padding:7px 14px;border-radius:8px;border:1.5px solid #dce8f4;
+            background:#f5f8fc;font-size:13px;font-weight:600;cursor:pointer;
+            font-family:inherit;color:#555;transition:all .15s;">공급사고</button>
+          <button type="button" onclick="editSelectType('차량사고')" id="edit-type-차량사고"
+            style="padding:7px 14px;border-radius:8px;border:1.5px solid #dce8f4;
+            background:#f5f8fc;font-size:13px;font-weight:600;cursor:pointer;
+            font-family:inherit;color:#555;transition:all .15s;">차량사고</button>
         </div>
         <input type="hidden" id="edit-accType"/>
       </div>
