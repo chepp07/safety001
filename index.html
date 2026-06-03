@@ -1137,16 +1137,16 @@ function renderSuggest(){
 <div class="page" style="max-width:580px;">
   <div class="success-wrap">
     <div class="success-icon">💡</div>
-    <div class="success-title">제안이 접수되었습니다!</div>
-    <div class="success-desc">소중한 의견 감사합니다.<br>검토 후 개선 활동에 반영하겠습니다.</div>
+    <div class="success-title">${lang==="zh"?"建议已提交！":"제안이 접수되었습니다!"}</div>
+    <div class="success-desc">${lang==="zh"?"感谢您的宝贵意见。<br>审核后将反映到改进活动中。":"소중한 의견 감사합니다.<br>검토 후 개선 활동에 반영하겠습니다."}</div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
       <button id="btn-suggest-another" style="padding:11px 24px;background:#2e7d32;color:#fff;
         border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-        추가 제안하기
+        ${lang==="zh"?"再次提交":"추가 제안하기"}
       </button>
       <button id="btn-suggest-back" style="padding:11px 24px;background:#f5f5f5;border:none;
         border-radius:9px;font-size:14px;color:#666;cursor:pointer;font-family:inherit;">
-        메인으로
+        ${lang==="zh"?"返回主页":"메인으로"}
       </button>
     </div>
   </div>
@@ -1154,48 +1154,54 @@ function renderSuggest(){
 
   const siteOpts = `<option value="">${lang==="zh"?"请选择事业所":"사업소 선택"}</option>` +
     SITES.map(s=>`<option value="${s}"${sug.site===s?" selected":""}>${s}</option>`).join("");
-  const categories = ["안전설비 개선","작업환경 개선","위험요소 신고","업무프로세스 개선","기타"];
+
+  const categories = lang==="zh"
+    ? ["安全设施改善","作业环境改善","危险因素报告","业务流程改善","其他"]
+    : ["안전설비 개선","작업환경 개선","위험요소 신고","업무프로세스 개선","기타"];
+  const categoriesKo = ["안전설비 개선","작업환경 개선","위험요소 신고","업무프로세스 개선","기타"];
 
   return `
 <div class="page" style="max-width:580px;">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
     <button id="btn-suggest-back-top" style="background:none;border:none;cursor:pointer;font-size:22px;color:#888;padding:4px;">‹</button>
     <div>
-      <div style="font-size:18px;font-weight:700;">안전개선 제안</div>
-      <div style="font-size:12px;color:#aaa;">현장 개선 아이디어 · 위험요소 신고</div>
+      <div style="font-size:18px;font-weight:700;">${lang==="zh"?"安全改进建议":"안전개선 제안"}</div>
+      <div style="font-size:12px;color:#aaa;">${lang==="zh"?"现场改进想法·危险因素报告":"현장 개선 아이디어 · 위험요소 신고"}</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="section-title">📍 기본 정보</div>
+    <div class="section-title">📍 ${lang==="zh"?"基本信息":"기본 정보"}</div>
     <div class="field">
-      <div class="label">${t("site")} <span class="req">*</span></div>
+      <div class="label">${lang==="zh"?"事业所":"사업소"} <span class="req">*</span></div>
       <select id="sug-site" class="select">${siteOpts}</select>
     </div>
     <div class="field">
-      <div class="label">제안 분류 <span class="req">*</span></div>
+      <div class="label">${lang==="zh"?"建议分类":"제안 분류"} <span class="req">*</span></div>
       <div class="radio-row" style="flex-wrap:wrap;">
-        ${categories.map(c=>`
-        <button class="radio-btn${sug.category===c?" on":""}" data-sug-cat="${c}">${c}</button>`).join("")}
+        ${categories.map((c,idx)=>`
+        <button class="radio-btn${sug.category===categoriesKo[idx]||sug.category===c?" on":""}"
+          data-sug-cat="${categoriesKo[idx]}">${c}</button>`).join("")}
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="section-title">💡 제안 내용</div>
+    <div class="section-title">💡 ${lang==="zh"?"建议内容":"제안 내용"}</div>
     <div class="field">
-      <div class="label">제안 제목 <span class="req">*</span></div>
-      <input id="sug-title" class="input" value="${sug.title}" placeholder="제안 내용을 한 줄로 요약해 주세요." maxlength="60"/>
+      <div class="label">${lang==="zh"?"建议标题":"제안 제목"} <span class="req">*</span></div>
+      <input id="sug-title" class="input" value="${sug.title}"
+        placeholder="${lang==="zh"?"请用一句话概括建议内容":"제안 내용을 한 줄로 요약해 주세요."}" maxlength="60"/>
     </div>
     <div class="field">
-      <div class="label">상세 내용 <span class="req">*</span></div>
+      <div class="label">${lang==="zh"?"详细内容":"상세 내용"} <span class="req">*</span></div>
       <textarea id="sug-detail" class="textarea" style="min-height:120px;"
-        placeholder="현재 문제점과 개선 방향을 구체적으로 작성해 주세요.">${sug.detail}</textarea>
+        placeholder="${lang==="zh"?"请具体描述当前问题和改进方向。":"현재 문제점과 개선 방향을 구체적으로 작성해 주세요."}">${sug.detail}</textarea>
     </div>
   </div>
 
   <div class="card">
-    <div class="section-title">👤 제안자 정보</div>
+    <div class="section-title">👤 ${lang==="zh"?"建议人信息":"제안자 정보"}</div>
     <div class="field">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;
         padding:10px 12px;background:${sug.anonymous?"#f0faf0":"#f5f8fc"};
@@ -1203,26 +1209,32 @@ function renderSuggest(){
         <input type="checkbox" id="sug-anon" ${sug.anonymous?"checked":""}
           style="width:17px;height:17px;accent-color:#2e7d32;cursor:pointer;"/>
         <div>
-          <div style="font-size:14px;font-weight:600;color:${sug.anonymous?"#2e7d32":"#555"};">익명 제안</div>
-          <div style="font-size:12px;color:#999;">이름과 연락처를 공개하지 않습니다.</div>
+          <div style="font-size:14px;font-weight:600;color:${sug.anonymous?"#2e7d32":"#555"};">
+            ${lang==="zh"?"匿名建议":"익명 제안"}
+          </div>
+          <div style="font-size:12px;color:#999;">
+            ${lang==="zh"?"不公开姓名和联系方式。":"이름과 연락처를 공개하지 않습니다."}
+          </div>
         </div>
       </label>
     </div>
     ${!sug.anonymous?`
     <div class="field">
-      <div class="label">성명</div>
-      <input id="sug-name" class="input" value="${sug.name}" placeholder="성함 (선택)" maxlength="20"/>
+      <div class="label">${lang==="zh"?"姓名":"성명"}</div>
+      <input id="sug-name" class="input" value="${sug.name}"
+        placeholder="${lang==="zh"?"姓名 (可选)":"성함 (선택)"}" maxlength="20"/>
     </div>
     <div class="field">
-      <div class="label">연락처</div>
-      <input id="sug-phone" class="input" value="${sug.phone}" placeholder="${lang==="zh"?"手机号码":"010-0000-0000"} (선택)" type="tel"/>
+      <div class="label">${lang==="zh"?"联系方式":"연락처"}</div>
+      <input id="sug-phone" class="input" value="${sug.phone}"
+        placeholder="${lang==="zh"?"手机号码 (可选)":"010-0000-0000 (선택)"}" type="tel"/>
     </div>`:""}
   </div>
 
   <div id="sug-err" style="display:none;" class="err-banner"></div>
 
   <button id="btn-suggest-submit" class="submit-btn" style="background:#2e7d32;">
-    <span style="font-size:18px;">💡</span> 제안 접수하기
+    <span style="font-size:18px;">💡</span> ${lang==="zh"?"提交建议":"제안 접수하기"}
   </button>
 </div>`;
 }
@@ -1302,8 +1314,11 @@ function renderForm(){
       </div>
     </button>`).join("");
 
-  const yesNoBtns = (field, val) => ["예","아니오"].map(v=>`
-    <button class="radio-btn${val===v?" on":""}" data-field="${field}" data-val="${v}">${v}</button>`).join("");
+  const yesNoBtns = (field, val) => {
+    const pairs = lang==="zh" ? [["예","是"],["아니오","否"]] : [["예","예"],["아니오","아니오"]];
+    return pairs.map(([v, label])=>`
+    <button class="radio-btn${val===v?" on":""}" data-field="${field}" data-val="${v}">${label}</button>`).join("");
+  };
 
   const chkItems = CHECKS.map((t,i)=>`
     <label class="chk-item">
@@ -1458,18 +1473,13 @@ function renderForm(){
   <div class="field">
     <div class="label">라인중단 여부 <span class="req">*</span></div>
     <div style="display:flex;flex-direction:column;gap:8px;">
-      ${[
-        {val:"라인중단발생", color:"#b71c1c", bg:"#fff5f5", border:"#f5c6c6", desc:"현재 라인이 중단된 상태"},
-        {val:"라인중단예상", color:"#e65100", bg:"#fff8f0", border:"#fcd8a8", desc:"중단 가능성이 높은 상태"},
-        {val:"미장착",       color:"#7b5e00", bg:"#fffde7", border:"#ffe082", desc:"부품 미장착으로 생산 차질"},
-        {val:"라인영향없음", color:"#2e7d32", bg:"#f0faf0", border:"#b8e0ba", desc:"라인 정상 운영 중"},
-      ].map(o=>`
+      ${T[lang].lineStops.map(o=>`
       <button data-field="lineStop" data-val="${o.val}"
         style="width:100%;padding:10px 14px;border-radius:9px;border:1.5px solid ${form.lineStop===o.val?o.color:o.border};
                background:${form.lineStop===o.val?o.bg:"#fff"};
                cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:10px;transition:all .15s;">
         <span style="width:10px;height:10px;border-radius:50%;background:${o.color};flex-shrink:0;"></span>
-        <span style="font-size:13px;font-weight:${form.lineStop===o.val?"700":"500"};color:${form.lineStop===o.val?o.color:"#444"};">${o.val}</span>
+        <span style="font-size:13px;font-weight:${form.lineStop===o.val?"700":"500"};color:${form.lineStop===o.val?o.color:"#444"};">${lang==="zh"?{"라인중단발생":"停线发生","라인중단예상":"停线预期","미장착":"未装配","라인영향없음":"无停线影响"}[o.val]||o.val:o.val}</span>
         <span style="font-size:11px;color:#aaa;margin-left:4px;">${o.desc}</span>
       </button>`).join("")}
     </div>
@@ -1491,8 +1501,8 @@ ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인
   <div class="field">
     <div class="label">${lang==="zh"?"事故类型":"사고 유형 구분"} <span class="req">*</span></div>
     <div class="radio-row">
-      ${[lang==="zh"?["单方事故","双方事故"]:["단독사고","쌍방사고"]].map(t=>`
-        <button class="radio-btn${form.accidentType===t?" on":""}" data-field="accidentType" data-val="${t}">${t}</button>`).join("")}
+      ${(lang==="zh"?[["단독사고","单方事故"],["쌍방사고","双方事故"]]:[["단독사고","단독사고"],["쌍방사고","쌍방사고"]]).map(([t,label])=>`
+        <button class="radio-btn${form.accidentType===t?" on":""}" data-field="accidentType" data-val="${t}">${label}</button>`).join("")}
     </div>
     ${errors.accidentType?`<div class="err-msg">${errors.accidentType}</div>`:""}
   </div>
@@ -1618,7 +1628,7 @@ ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인
 <!-- ── 사진 첨부 ── -->
 <div class="card">
   <div class="section-title">📷 현장 사진 첨부</div>
-  <div style="font-size:12px;color:#aaa;margin-bottom:12px;">최대 3장까지 첨부 가능 · JPG, PNG, GIF 지원</div>
+  <div style="font-size:12px;color:#aaa;margin-bottom:12px;">${lang==="zh"?"最多可附3张 · 支持JPG, PNG, GIF":"최대 3장까지 첨부 가능 · JPG, PNG, GIF 지원"}</div>
 
   <!-- 사진 미리보기 -->
   ${form.photosPreviews.length>0?`
@@ -1673,7 +1683,7 @@ ${e.submit?`<div class="err-banner">${e.submit}</div>`:""}
 <div class="admin-link-wrap" style="display:flex;justify-content:center;gap:16px;">
   <button class="admin-link" id="go-main-from-form">${lang==="zh"?(isGuest?"← 登录":"← 主页"):(isGuest?"← 로그인":"← 메인")}</button>
   ${!isGuest?`<button class="admin-link" id="go-myreport">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>`:""}
-  ${!isGuest&&isAdmin?`<button class="admin-link" id="go-admin">관리자 페이지</button>`:""}
+  ${!isGuest&&isAdmin?`<button class="admin-link" id="go-admin">${lang==="zh"?"管理员页面":"관리자 페이지"}</button>`:""}
 </div>`;
 }
 
@@ -2234,7 +2244,7 @@ function renderAdmin(){
               :e.lineStop==="라인중단예상"
               ?`<span style="font-size:10px;background:#fff8f0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">중단예상</span>`
               :e.lineStop==="미장착"
-              ?`<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">미장착</span>`
+              ?`<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">${lang==="zh"?"未装配":"미장착"}</span>`
               :`<span style="font-size:10px;background:#f0faf0;color:#2e7d32;font-weight:700;padding:1px 6px;border-radius:4px;">영향없음</span>`}
             ${e.customerEffect==="예"
               ?`<span style="font-size:10px;background:#fff3e0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">고객사영향</span>`:""}
@@ -3089,7 +3099,7 @@ function updateAdminTable(){
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             ${e.lineStop==="라인중단발생"?`<span style="font-size:10px;background:#fff0f0;color:#b71c1c;font-weight:700;padding:1px 6px;border-radius:4px;">중단발생</span>`
             :e.lineStop==="라인중단예상"?`<span style="font-size:10px;background:#fff8f0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">중단예상</span>`
-            :e.lineStop==="미장착"?`<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">미장착</span>`
+            :e.lineStop==="미장착"?`<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">${lang==="zh"?"未装配":"미장착"}</span>`
             :`<span style="font-size:10px;background:#f0faf0;color:#2e7d32;font-weight:700;padding:1px 6px;border-radius:4px;">영향없음</span>`}
             ${e.customerEffect==="예"?`<span style="font-size:10px;background:#fff3e0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">고객사영향</span>`:""}
             <span style="font-size:11px;color:#aaa;">${e.reporter||""} ${e.rank||""}</span>
@@ -3470,7 +3480,7 @@ if('serviceWorker' in navigator){
           <select id="edit-lineStop" class="select" style="font-size:13px;padding:8px 10px;">
             <option value="라인중단발생">${lang==="zh"?"停线发生":"라인중단발생"}</option>
             <option value="라인중단예상">${lang==="zh"?"预计停线":"라인중단예상"}</option>
-            <option value="미장착">미장착</option>
+            <option value="미장착">${lang==="zh"?"未装配":"미장착"}</option>
             <option value="라인영향없음">${lang==="zh"?"无影响":"라인영향없음"}</option>
           </select>
         </div>
