@@ -881,7 +881,7 @@ function renderRegister(){
   <div class="card" style="margin-bottom:0;">
     <div class="field">
       <div class="label">${lang==="zh"?"姓名":"이름"} <span class="req">*</span></div>
-      <input id="reg-name" class="input" type="text" placeholder="성함을 입력해 주세요" maxlength="20"/>
+      <input id="reg-name" class="input" type="text" placeholder="${lang==="zh"?"请输入姓名":"성함을 입력해 주세요"}" maxlength="20"/>
     </div>
     <div class="field">
       <div class="label">${lang==="zh"?"邮箱":"이메일"} <span class="req">*</span></div>
@@ -915,112 +915,118 @@ function renderMain(){
   const userPhoto = currentUser && currentUser.photoURL;
 
   return `
-<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;">
+<div style="height:100vh;display:flex;flex-direction:column;overflow:hidden;">
 
-  <!-- 사용자 정보 바 -->
-  <div style="background:#fff;border-bottom:1px solid #eef2f7;padding:10px 1.25rem;
-    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;">
-    <div style="display:flex;align-items:center;gap:10px;">
+  <!-- 상단 사용자 정보 바 -->
+  <div style="background:#fff;border-bottom:1px solid #eef2f7;padding:8px 1rem;
+    display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:8px;">
       ${userPhoto
-        ? `<img src="${userPhoto}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;"/>`
-        : `<div style="width:32px;height:32px;border-radius:50%;background:#1e2761;
-            display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;">
+        ? `<img src="${userPhoto}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;"/>`
+        : `<div style="width:28px;height:28px;border-radius:50%;background:#1e2761;
+            display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;">
             ${userName.charAt(0).toUpperCase()}
           </div>`}
       <div>
-        <div style="font-size:13px;font-weight:600;color:#1a1a1a;">${userName}</div>
-        <div style="font-size:11px;color:#aaa;">${isAdmin?"🛡️ 관리자":"${lang==='zh'?'普通用户':'일반 사용자'}"}</div>
+        <div style="font-size:12px;font-weight:600;color:#1a1a1a;">${userName}</div>
+        <div style="font-size:10px;color:#aaa;">${isAdmin?"🛡️ 관리자":lang==="zh"?"普通用户":"일반 사용자"}</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div style="display:flex;align-items:center;gap:6px;">
       <button id="btn-main-lang"
-        style="padding:5px 12px;background:#f0f4ff;border:1.5px solid #dce8f4;border-radius:20px;
-        font-size:12px;font-weight:700;color:#1e2761;cursor:pointer;font-family:inherit;">
+        style="padding:4px 10px;background:#f0f4ff;border:1.5px solid #dce8f4;border-radius:20px;
+        font-size:11px;font-weight:700;color:#1e2761;cursor:pointer;font-family:inherit;">
         ${lang==="zh"?"🇰🇷 한국어":"🇨🇳 中文"}
       </button>
       <button id="btn-logout"
-        style="padding:6px 12px;background:#f5f5f5;border:none;border-radius:7px;
-        font-size:12px;color:#888;cursor:pointer;font-family:inherit;">
-        ${lang==="zh"?"退出登录":"로그아웃"}
+        style="padding:4px 10px;background:#f5f5f5;border:none;border-radius:7px;
+        font-size:11px;color:#888;cursor:pointer;font-family:inherit;">
+        ${lang==="zh"?"退出":"로그아웃"}
       </button>
     </div>
   </div>
 
-  <div style="text-align:center;padding:2rem 1rem 1.5rem;">
-    <div style="width:64px;height:64px;border-radius:50%;background:#1e2761;
-      margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:28px;">
-      🛡️
+  <!-- 중앙 콘텐츠 - 스크롤 가능 영역 -->
+  <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+
+    <!-- 로고/타이틀 - 컴팩트 -->
+    <div style="text-align:center;padding:1rem 1rem 0.5rem;">
+      <div style="width:44px;height:44px;border-radius:50%;background:#1e2761;
+        margin:0 auto 0.5rem;display:flex;align-items:center;justify-content:center;font-size:20px;">
+        🛡️
+      </div>
+      <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">${lang==="zh"?"现场安全管理系统":APP_NAME}</div>
+      <div style="font-size:11px;color:#aaa;">${lang==="zh"?"光明事业部 安全·质量·物流 综合管理":"광명사업부 안전·품질·물류 통합관리"}</div>
     </div>
-    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${APP_NAME}</div>
-    <div style="font-size:13px;color:#888;">${lang==="zh"?"光明事业部 安全·质量·物流 综合管理":"광명사업부 안전·품질·물류 통합관리"}</div>
-  </div>
 
-  <div style="padding:0 1rem 2rem;max-width:500px;margin:0 auto;width:100%;">
+    <!-- 메뉴 버튼들 -->
+    <div style="padding:0.5rem 1rem 0.5rem;max-width:480px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;">
 
-    <button id="btn-main-form" style="width:100%;margin-bottom:14px;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-      <div style="background:#fff;border-radius:16px;border:1.5px solid #dce8f4;
-        padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;
-        box-shadow:0 2px 8px rgba(0,0,0,.06);">
-        <div style="width:52px;height:52px;border-radius:13px;background:#fff0e0;
-          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🚨</div>
-        <div style="flex:1;">
-          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"现场事故报告":"현장 사고 접수"}</div>
-          <div style="font-size:12px;color:#888;">${lang==="zh"?"立即报告事故·自动通知负责人":"사고 발생 즉시 접수 · 담당자 자동 알림"}</div>
+      <button id="btn-main-form" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+        <div style="background:#fff;border-radius:13px;border:1.5px solid #dce8f4;
+          padding:0.85rem 1rem;display:flex;align-items:center;gap:0.75rem;
+          box-shadow:0 2px 6px rgba(0,0,0,.05);">
+          <div style="width:40px;height:40px;border-radius:10px;background:#fff0e0;
+            display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🚨</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:1px;">${lang==="zh"?"现场事故报告":"현장 사고 접수"}</div>
+            <div style="font-size:11px;color:#888;">${lang==="zh"?"立即报告事故·自动通知负责人":"사고 발생 즉시 접수 · 담당자 자동 알림"}</div>
+          </div>
+          <div style="color:#ccc;font-size:18px;">›</div>
         </div>
-        <div style="color:#ccc;font-size:20px;">›</div>
-      </div>
-    </button>
+      </button>
 
-    <button id="btn-main-manual" style="width:100%;margin-bottom:14px;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-      <div style="background:#fff;border-radius:16px;border:1.5px solid #dce8f4;
-        padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;
-        box-shadow:0 2px 8px rgba(0,0,0,.06);">
-        <div style="width:52px;height:52px;border-radius:13px;background:#e8eef7;
-          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">📋</div>
-        <div style="flex:1;">
-          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"事故处理手册":"사고처리 매뉴얼"}</div>
-          <div style="font-size:12px;color:#888;">${lang==="zh"?"各类事故处置程序·紧急联系方式":"사고 유형별 대응 절차 · 긴급 연락처"}</div>
+      <button id="btn-main-manual" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+        <div style="background:#fff;border-radius:13px;border:1.5px solid #dce8f4;
+          padding:0.85rem 1rem;display:flex;align-items:center;gap:0.75rem;
+          box-shadow:0 2px 6px rgba(0,0,0,.05);">
+          <div style="width:40px;height:40px;border-radius:10px;background:#e8eef7;
+            display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📋</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:1px;">${lang==="zh"?"事故处理手册":"사고처리 매뉴얼"}</div>
+            <div style="font-size:11px;color:#888;">${lang==="zh"?"各类事故处置程序·紧急联系方式":"사고 유형별 대응 절차 · 긴급 연락처"}</div>
+          </div>
+          <div style="color:#ccc;font-size:18px;">›</div>
         </div>
-        <div style="color:#ccc;font-size:20px;">›</div>
-      </div>
-    </button>
+      </button>
 
-    <button id="btn-main-suggest" style="width:100%;margin-bottom:14px;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-      <div style="background:#fff;border-radius:16px;border:1.5px solid #dce8f4;
-        padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;
-        box-shadow:0 2px 8px rgba(0,0,0,.06);">
-        <div style="width:52px;height:52px;border-radius:13px;background:#e8f5e9;
-          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">💡</div>
-        <div style="flex:1;">
-          <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"安全改进建议":"안전개선 제안"}</div>
-          <div style="font-size:12px;color:#888;">${lang==="zh"?"现场改进想法·危险因素报告":"현장 개선 아이디어 · 위험요소 신고"}</div>
+      <button id="btn-main-suggest" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+        <div style="background:#fff;border-radius:13px;border:1.5px solid #dce8f4;
+          padding:0.85rem 1rem;display:flex;align-items:center;gap:0.75rem;
+          box-shadow:0 2px 6px rgba(0,0,0,.05);">
+          <div style="width:40px;height:40px;border-radius:10px;background:#e8f5e9;
+            display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">💡</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:1px;">${lang==="zh"?"安全改进建议":"안전개선 제안"}</div>
+            <div style="font-size:11px;color:#888;">${lang==="zh"?"现场改进想法·危险因素报告":"현장 개선 아이디어 · 위험요소 신고"}</div>
+          </div>
+          <div style="color:#ccc;font-size:18px;">›</div>
         </div>
-        <div style="color:#ccc;font-size:20px;">›</div>
-      </div>
-    </button>
+      </button>
 
-    <!-- 관리자만 보이는 버튼 -->
-    ${isAdmin?`
-    <button id="btn-main-admin" style="width:100%;margin-bottom:14px;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-      <div style="background:#1e2761;border-radius:16px;border:1.5px solid #1e2761;
-        padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;">
-        <div style="width:52px;height:52px;border-radius:13px;background:rgba(255,255,255,.15);
-          display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🛡️</div>
-        <div style="flex:1;">
-          <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:3px;">${lang==="zh"?"管理员仪表盘":"관리자 대시보드"}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,.6);">${lang==="zh"?"全部事故现况·统计·管理":"전체 사고 현황 · 통계 · 관리"}</div>
+      ${isAdmin?`
+      <button id="btn-main-admin" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+        <div style="background:#1e2761;border-radius:13px;
+          padding:0.85rem 1rem;display:flex;align-items:center;gap:0.75rem;">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.15);
+            display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🛡️</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:1px;">${lang==="zh"?"管理员仪表盘":"관리자 대시보드"}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.6);">${lang==="zh"?"全部事故现况·统计·管理":"전체 사고 현황 · 통계 · 관리"}</div>
+          </div>
+          <div style="color:rgba(255,255,255,.4);font-size:18px;">›</div>
         </div>
-        <div style="color:rgba(255,255,255,.4);font-size:20px;">›</div>
-      </div>
-    </button>`:""}
+      </button>`:""}
 
-    <div style="text-align:center;margin-top:0.5rem;">
-      <button class="admin-link" id="go-myreport-main">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>
+      <div style="text-align:center;padding-top:2px;">
+        <button class="admin-link" id="go-myreport-main" style="font-size:12px;">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>
+      </div>
+
     </div>
-  </div>
 
-  <div style="text-align:center;padding-bottom:2rem;">
-    <div style="font-size:11px;color:#ccc;">${APP_NAME}</div>
+    <div style="text-align:center;padding:0.5rem 0 0.75rem;">
+      <div style="font-size:10px;color:#ddd;">${APP_NAME}</div>
+    </div>
   </div>
 </div>`;
 }
@@ -1146,7 +1152,7 @@ function renderSuggest(){
   </div>
 </div>`;
 
-  const siteOpts = `<option value="">사업소 선택</option>` +
+  const siteOpts = `<option value="">${lang==="zh"?"请选择事业所":"사업소 선택"}</option>` +
     SITES.map(s=>`<option value="${s}"${sug.site===s?" selected":""}>${s}</option>`).join("");
   const categories = ["안전설비 개선","작업환경 개선","위험요소 신고","업무프로세스 개선","기타"];
 
@@ -1209,7 +1215,7 @@ function renderSuggest(){
     </div>
     <div class="field">
       <div class="label">연락처</div>
-      <input id="sug-phone" class="input" value="${sug.phone}" placeholder="010-0000-0000 (선택)" type="tel"/>
+      <input id="sug-phone" class="input" value="${sug.phone}" placeholder="${lang==="zh"?"手机号码":"010-0000-0000"} (선택)" type="tel"/>
     </div>`:""}
   </div>
 
@@ -1240,7 +1246,7 @@ function renderSetupGuide(){
 /* ── 사고접수 폼 ── */
 function renderForm(){
   const e = errors;
-  const siteOpts = `<option value="">사업소 선택</option>` + SITES.map(s=>`<option value="${s}"${form.site===s?" selected":""}>${s}</option>`).join("");
+  const siteOpts = `<option value="">${lang==="zh"?"请选择事业所":"사업소 선택"}</option>` + SITES.map(s=>`<option value="${s}"${form.site===s?" selected":""}>${s}</option>`).join("");
 
   // ── 번역 사전에서 사고유형/세부유형 로드 ──
   const accDetailMap = T[lang].accDetailMap;
@@ -1284,9 +1290,9 @@ function renderForm(){
     : `<div style="font-size:13px;color:#bbb;padding:4px 0;">${lang==="zh"?"请先选择事故类型。":"사고 유형을 먼저 선택해 주세요."}</div>`;
 
   const levelBtns = [
-    {lv:"1", cls:"lv1", badge:"최긴급", desc:"인명피해·라인중단·고객사 즉시 대응 필요"},
-    {lv:"2", cls:"lv2", badge:"긴급",   desc:"생산 차질 가능·수습 후 30분 내 보고"},
-    {lv:"3", cls:"lv3", badge:"일반",   desc:"생산 영향 없음·정기 보고 포함"}
+    {lv:"1", cls:"lv1", badge:lang==="zh"?"最紧急":"최긴급", desc:lang==="zh"?"人员伤亡·停线·客户需立即响应":"${lang==='zh'?'人员伤亡·停线·需立即对客户响应':'인명피해·라인중단·고객사 즉시 대응 필요'}"},
+    {lv:"2", cls:"lv2", badge:lang==="zh"?"紧急":"긴급", desc:lang==="zh"?"可能影响生产·处理后30分钟内报告":"${lang==='zh'?'生产可能受阻·处置后30分钟内报告':'생산 차질 가능·수습 후 30분 내 보고'}"},
+    {lv:"3", cls:"lv3", badge:lang==="zh"?"一般":"일반", desc:lang==="zh"?"不影响生产·含定期报告":"${lang==='zh'?'无生产影响·含定期报告':'생산 영향 없음·정기 보고 포함'}"}
   ].map(l=>`
     <button class="level-btn ${l.cls}${form.level===l.lv?" on":""}" data-lv="${l.lv}">
       <span class="lv-badge">Level ${l.lv} ${l.badge}</span>
@@ -1333,7 +1339,7 @@ function renderForm(){
   <div class="section-title">${t("secReporter")}</div>
 
   <div class="field">
-    <div class="label">사업소 <span class="req">*</span></div>
+    <div class="label">${lang==="zh"?"事业所":"사업소"} <span class="req">*</span></div>
     <select id="f-site" class="select${e.site?" err":""}">
       ${siteOpts}
     </select>
@@ -1341,93 +1347,93 @@ function renderForm(){
   </div>
 
   <div class="field">
-    <div class="label">${t("reporter")} <span class="req">*</span></div>
-    <input id="f-reporter" class="input${e.reporter?" err":""}" value="${form.reporter}" placeholder="성함을 입력해 주세요" maxlength="20"/>
+    <div class="label">${lang==="zh"?"报告人姓名":"접수자 성명"} <span class="req">*</span></div>
+    <input id="f-reporter" class="input${e.reporter?" err":""}" value="${form.reporter}" placeholder="${lang==='zh'?'请输入姓名':'성함을 입력해 주세요'}" maxlength="20"/>
     ${e.reporter?`<div class="err-msg">${e.reporter}</div>`:""}
   </div>
 
   <div class="field">
-    <div class="label">${t("rank")} <span class="req">*</span></div>
+    <div class="label">${lang==="zh"?"职级":"직급"} <span class="req">*</span></div>
     <select id="f-rank" class="select${e.rank?" err":""}">
-      <option value="">직급 선택</option>
+      <option value="">${lang==="zh"?"请选择职级":"직급 선택"}</option>
       ${T[lang].ranks.map(r=>`<option value="${r}"${form.rank===r?" selected":""}>${r}</option>`).join("")}
     </select>
     ${e.rank?`<div class="err-msg">${e.rank}</div>`:""}
   </div>
 
   <div class="field">
-    <div class="label">접수자 연락처 <span class="req">*</span></div>
-    <input id="f-phone" class="input${e.phone?" err":""}" value="${form.phone}" placeholder="010-0000-0000" type="tel"/>
+    <div class="label">${lang==="zh"?"联系电话":"접수자 연락처"} <span class="req">*</span></div>
+    <input id="f-phone" class="input${e.phone?" err":""}" value="${form.phone}" placeholder="${lang==='zh'?'手机号码':'010-0000-0000'}" type="tel"/>
     ${e.phone?`<div class="err-msg">${e.phone}</div>`:""}
   </div>
 
   <div class="field">
-    <div class="label">사고 발생 일시 <span class="req">*</span>
-      <span style="font-size:11px;color:#aaa;font-weight:400;margin-left:4px;">현재 시각 자동 입력 — 필요 시 수정</span>
+    <div class="label">${lang==="zh"?"事故发生时间":"사고 발생 일시"} <span class="req">*</span>
+      <span style="font-size:11px;color:#aaa;font-weight:400;margin-left:4px;">${lang==="zh"?"自动填入当前时间，如需修改请编辑":"현재 시각 자동 입력 — 필요 시 수정"}</span>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
       <select id="f-acc-year" class="select${e.accYear?" err":""}" style="flex:1;min-width:80px;">
-        <option value="">년도</option>
-        ${[2024,2025,2026,2027].map(y=>`<option value="${y}"${form.accYear===String(y)?" selected":""}>${y}년</option>`).join("")}
+        <option value="">${lang==="zh"?"年":"년도"}</option>
+        ${[2024,2025,2026,2027].map(y=>`<option value="${y}"${form.accYear===String(y)?" selected":""}>${lang==="zh"?y+"年":y+"년"}</option>`).join("")}
       </select>
       <select id="f-acc-month" class="select${e.accMonth?" err":""}" style="flex:1;min-width:60px;">
-        <option value="">월</option>
-        ${Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${String(m).padStart(2,'0')}"${form.accMonth===String(m).padStart(2,'0')?" selected":""}>${m}월</option>`).join("")}
+        <option value="">${lang==="zh"?"月":"월"}</option>
+        ${Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${String(m).padStart(2,'0')}"${form.accMonth===String(m).padStart(2,'0')?" selected":""}>${lang==="zh"?m+"月":m+"월"}</option>`).join("")}
       </select>
       <select id="f-acc-day" class="select${e.accDay?" err":""}" style="flex:1;min-width:60px;">
-        <option value="">일</option>
-        ${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${String(d).padStart(2,'0')}"${form.accDay===String(d).padStart(2,'0')?" selected":""}>${d}일</option>`).join("")}
+        <option value="">${lang==="zh"?"日":"일"}</option>
+        ${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${String(d).padStart(2,'0')}"${form.accDay===String(d).padStart(2,'0')?" selected":""}>${lang==="zh"?d+"日":d+"일"}</option>`).join("")}
       </select>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;">
       <select id="f-acc-ampm" class="select" style="flex:1;min-width:70px;">
-        ${["오전","오후"].map(v=>`<option value="${v}"${form.accAmPm===v?" selected":""}>${v}</option>`).join("")}
+        ${(lang==="zh"?[["오전","上午"],["오후","下午"]]:[["오전","오전"],["오후","오후"]]).map(([v,label])=>`<option value="${v}"${form.accAmPm===v?" selected":""}>${label}</option>`).join("")}
       </select>
       <select id="f-acc-hour" class="select${e.accHour?" err":""}" style="flex:1;min-width:60px;">
-        <option value="">시</option>
-        ${Array.from({length:12},(_,i)=>i+1).map(h=>`<option value="${String(h).padStart(2,'0')}"${form.accHour===String(h).padStart(2,'0')?" selected":""}>${h}시</option>`).join("")}
+        <option value="">${lang==="zh"?"时":"시"}</option>
+        ${Array.from({length:12},(_,i)=>i+1).map(h=>`<option value="${String(h).padStart(2,'0')}"${form.accHour===String(h).padStart(2,'0')?" selected":""}>${lang==="zh"?h+"时":h+"시"}</option>`).join("")}
       </select>
       <select id="f-acc-min" class="select${e.accMin?" err":""}" style="flex:1;min-width:60px;">
-        <option value="">분</option>
-        ${Array.from({length:12},(_,i)=>i*5).map(m=>`<option value="${String(m).padStart(2,'0')}"${form.accMin===String(m).padStart(2,'0')?" selected":""}>${String(m).padStart(2,'0')}분</option>`).join("")}
+        <option value="">${lang==="zh"?"分":"분"}</option>
+        ${Array.from({length:12},(_,i)=>i*5).map(m=>`<option value="${String(m).padStart(2,'0')}"${form.accMin===String(m).padStart(2,'0')?" selected":""}>${String(m).padStart(2,'0')}${lang==="zh"?"分":"분"}</option>`).join("")}
       </select>
     </div>
-    ${e.accYear||e.accHour?`<div class="err-msg">사고 발생 일시를 입력해 주세요.</div>`:""}
+    ${e.accYear||e.accHour?`<div class="err-msg">${lang==="zh"?"请输入事故发生时间":"사고 발생 일시를 입력해 주세요."}</div>`:""}
   </div>
 
   <div class="field">
-    <div class="label">${t("location")} <span class="req">*</span></div>
-    <input id="f-location" class="input${e.location?" err":""}" value="${form.location}" placeholder="예: 1공장 도킹존 3번 라인" maxlength="60"/>
+    <div class="label">${lang==="zh"?"事故发生地点":"사고 발생 위치"} <span class="req">*</span></div>
+    <input id="f-location" class="input${e.location?" err":""}" value="${form.location}" placeholder="${lang==="zh"?"例: 1工厂对接区3号线":"예: 1공장 도킹존 3번 라인"}" maxlength="60"/>
     ${e.location?`<div class="err-msg">${e.location}</div>`:""}
   </div>
 </div>
 
 <!-- ── 사고분류 ── -->
 <div class="card">
-  <div class="section-title">🗂️ 사고 분류</div>
+  <div class="section-title">${t("secClass")}</div>
 
   <!-- 복합사고 토글 -->
   <div class="field" style="margin-bottom:14px;">
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:${form.isComplex?"#fff3eb":"#f5f8fc"};border:1.5px solid ${form.isComplex?"#e05c00":"#ddd"};border-radius:9px;">
       <input type="checkbox" id="chk-complex" ${form.isComplex?"checked":""} style="width:17px;height:17px;accent-color:#e05c00;cursor:pointer;flex-shrink:0;"/>
       <div>
-        <div style="font-size:14px;font-weight:600;color:${form.isComplex?"#e05c00":"#555"};">복합사고</div>
-        <div style="font-size:12px;color:#999;margin-top:1px;">2가지 이상의 사고 유형이 동시에 발생한 경우 체크</div>
+        <div style="font-size:14px;font-weight:600;color:${form.isComplex?"#e05c00":"#555"};">${lang==="zh"?"复合事故":"복합사고"}</div>
+        <div style="font-size:12px;color:#999;margin-top:1px;">${lang==="zh"?"同时发生两种以上事故类型时勾选":"2가지 이상의 사고 유형이 동시에 발생한 경우 체크"}</div>
       </div>
     </label>
   </div>
 
   <div class="field">
-    <div class="label">사고 유형 <span class="req">*</span>
-      ${form.isComplex?`<span style="font-size:11px;color:#e05c00;font-weight:400;margin-left:4px;">복합사고 — 중복선택 가능</span>`:""}
+    <div class="label">${lang==="zh"?"事故类型":"사고 유형"} <span class="req">*</span>
+      ${form.isComplex?`<span style="font-size:11px;color:#e05c00;font-weight:400;margin-left:4px;">${lang==="zh"?"复合事故 — 可多选":"복합사고 — 중복선택 가능"}</span>`:""}
     </div>
     <div class="radio-row">${accTypeOpts}</div>
     ${e.accType?`<div class="err-msg">${e.accType}</div>`:""}
   </div>
 
   <div class="field">
-    <div class="label">세부 유형 <span class="req">*</span>
-      ${form.isComplex?`<span style="font-size:11px;color:#e05c00;font-weight:400;margin-left:4px;">복합사고 — 중복선택 가능</span>`:""}
+    <div class="label">${lang==="zh"?"细分类型":"세부 유형"} <span class="req">*</span>
+      ${form.isComplex?`<span style="font-size:11px;color:#e05c00;font-weight:400;margin-left:4px;">${lang==="zh"?"复合事故 — 可多选":"복합사고 — 중복선택 가능"}</span>`:""}
     </div>
     <div id="detail-btns-wrap">${detailBtns}</div>
     ${selectedDetailDesc ? `
@@ -1471,7 +1477,7 @@ function renderForm(){
   </div>
 
   <div class="field">
-    <div class="label">고객사 영향 여부 <span class="req">*</span></div>
+    <div class="label">${lang==="zh"?"客户影响":"고객사 영향 여부"} <span class="req">*</span></div>
     <div class="radio-row">${yesNoBtns("customerEffect", form.customerEffect)}</div>
     ${e.customerEffect?`<div class="err-msg">${e.customerEffect}</div>`:""}
   </div>
@@ -1480,12 +1486,12 @@ function renderForm(){
 <!-- ── 인사사고 대상자 (인사사고 선택 시만 표시) ── -->
 ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인사사고")?`
 <div class="card">
-  <div class="section-title">🧑‍⚕️ 사고 대상자</div>
+  <div class="section-title">🧑‍⚕️ ${lang==="zh"?"事故人员":"사고 대상자"}</div>
 
   <div class="field">
-    <div class="label">사고 유형 구분 <span class="req">*</span></div>
+    <div class="label">${lang==="zh"?"事故类型":"사고 유형 구분"} <span class="req">*</span></div>
     <div class="radio-row">
-      ${["단독사고","쌍방사고"].map(t=>`
+      ${[lang==="zh"?["单方事故","双方事故"]:["단독사고","쌍방사고"]].map(t=>`
         <button class="radio-btn${form.accidentType===t?" on":""}" data-field="accidentType" data-val="${t}">${t}</button>`).join("")}
     </div>
     ${errors.accidentType?`<div class="err-msg">${errors.accidentType}</div>`:""}
@@ -1493,13 +1499,13 @@ ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인
 
   <!-- 피해자 -->
   <div class="field">
-    <div class="label">피해자 <span class="req">*</span></div>
+    <div class="label">${lang==="zh"?"受害者":"피해자"} <span class="req">*</span></div>
     <div id="victims-wrap">
       ${form.victims.map((v,i)=>`
       <div style="background:#fff8f8;border:1px solid #f5c6c6;border-radius:9px;padding:12px;margin-bottom:8px;">
         <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-          <input class="input victim-name" data-vi="${i}" value="${v.name}" placeholder="성명" style="flex:1;" ${v.unknown?"disabled":""}/>
-          <input class="input victim-aff" data-vi="${i}" value="${v.affiliation}" placeholder="소속" style="flex:1;" ${v.unknown?"disabled":""}/>
+          <input class="input victim-name" data-vi="${i}" value="${v.name}" placeholder="${lang==='zh'?'姓名':'성명'}" style="flex:1;" ${v.unknown?"disabled":""}/>
+          <input class="input victim-aff" data-vi="${i}" value="${v.affiliation}" placeholder="${lang==='zh'?'所属':'소속'}" style="flex:1;" ${v.unknown?"disabled":""}/>
           ${i>0?`<button onclick="removePerson('victims',${i})" style="background:none;border:none;color:#ccc;font-size:18px;cursor:pointer;flex-shrink:0;">✕</button>`:""}
         </div>
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
@@ -1508,14 +1514,14 @@ ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인
         </label>
       </div>`).join("")}
     </div>
-    <button onclick="addPerson('victims')" style="width:100%;padding:9px;border:1.5px dashed #ddd;border-radius:9px;background:none;font-size:13px;color:#888;cursor:pointer;margin-top:4px;">+ 피해자 추가</button>
+    <button onclick="addPerson('victims')" style="width:100%;padding:9px;border:1.5px dashed #ddd;border-radius:9px;background:none;font-size:13px;color:#888;cursor:pointer;margin-top:4px;">${lang==="zh"?"+ 添加受害者":"+ 피해자 추가"}</button>
     ${errors.victims?`<div class="err-msg">${errors.victims}</div>`:""}
   </div>
 
   <!-- 가해자 (쌍방사고 시) -->
   ${form.accidentType==="쌍방사고"?`
   <div class="field">
-    <div class="label">가해자 <span class="req">*</span></div>
+    <div class="label">${lang==="zh"?"肇事者":"가해자"} <span class="req">*</span></div>
     <div id="perps-wrap">
       ${form.perpetrators.map((p,i)=>`
       <div style="background:#f8f8ff;border:1px solid #c6c6f5;border-radius:9px;padding:12px;margin-bottom:8px;">
@@ -1530,7 +1536,7 @@ ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인
         </label>
       </div>`).join("")}
     </div>
-    <button onclick="addPerson('perpetrators')" style="width:100%;padding:9px;border:1.5px dashed #ddd;border-radius:9px;background:none;font-size:13px;color:#888;cursor:pointer;margin-top:4px;">+ 가해자 추가</button>
+    <button onclick="addPerson('perpetrators')" style="width:100%;padding:9px;border:1.5px dashed #ddd;border-radius:9px;background:none;font-size:13px;color:#888;cursor:pointer;margin-top:4px;">${lang==="zh"?"+ 添加肇事者":"+ 가해자 추가"}</button>
     ${errors.perpetrators?`<div class="err-msg">${errors.perpetrators}</div>`:""}
   </div>`:""}
 </div>`:""}
@@ -1642,7 +1648,7 @@ ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인
       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
       <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
     </svg>
-    사진 선택 (${form.photosPreviews.length}/3)
+    ${lang==="zh"?"选择照片("+form.photosPreviews.length+"/3)":"사진 선택 ("+form.photosPreviews.length+"/3)"}
     <input type="file" id="photo-input" accept="image/*" multiple style="display:none;"/>
   </label>`:`
   <div style="text-align:center;font-size:13px;color:#aaa;padding:8px;">
@@ -1665,8 +1671,8 @@ ${e.submit?`<div class="err-banner">${e.submit}</div>`:""}
 </button>
 
 <div class="admin-link-wrap" style="display:flex;justify-content:center;gap:16px;">
-  <button class="admin-link" id="go-main-from-form">← ${isGuest?"로그인":"메인"}</button>
-  ${!isGuest?`<button class="admin-link" id="go-myreport">📋 내 접수 조회</button>`:""}
+  <button class="admin-link" id="go-main-from-form">${lang==="zh"?(isGuest?"← 登录":"← 主页"):(isGuest?"← 로그인":"← 메인")}</button>
+  ${!isGuest?`<button class="admin-link" id="go-myreport">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>`:""}
   ${!isGuest&&isAdmin?`<button class="admin-link" id="go-admin">관리자 페이지</button>`:""}
 </div>`;
 }
@@ -1707,7 +1713,7 @@ function renderSuccess(){
     <div id="followup-msg" style="font-size:12px;color:#2e7d32;margin-top:6px;display:none;">✅ 후속조치가 저장되었습니다.</div>
   </div>`:""}
   <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
-    <button class="reset-btn" id="btn-reset">새 사고 접수</button>
+    <button class="reset-btn" id="btn-reset">${lang==="zh"?"新增事故报告":"새 사고 접수"}</button>
     ${isGuest?`
     <button id="btn-guest-to-login"
       style="padding:11px 28px;background:#1e2761;color:#fff;border:none;border-radius:9px;
@@ -2046,7 +2052,7 @@ function renderAdmin(){
           : e.lineStop==="라인중단예상"
           ? `<span style="background:#fff8f0;color:#e65100;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">중단예상</span>`
           : e.lineStop==="미장착"
-          ? `<span style="background:#fffde7;color:#7b5e00;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">미장착</span>`
+          ? `<span style="background:#fffde7;color:#7b5e00;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">${lang==="zh"?"未装配":"미장착"}</span>`
           : `<span style="background:#f0faf0;color:#2e7d32;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">영향없음</span>`}
       </td>
       <td style="padding:10px 11px;text-align:center;">
@@ -2187,33 +2193,115 @@ function renderAdmin(){
     </select>
   </div>
 
-  <!-- 테이블 -->
-  <div class="card" style="padding:0;overflow:hidden;">
+  <!-- 카드 목록 -->
+  <div id="admin-table">
     ${filtered.length===0
-      ?`<div style="text-align:center;padding:2.5rem;color:#bbb;font-size:14px;">접수된 사고가 없습니다.</div>`
-      :`<div style="overflow-x:auto;">
-        <table id="admin-table" style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead style="background:#f5f8fc;">
-            <tr style="border-bottom:1px solid #dce8f4;">
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;white-space:nowrap;">사고번호</th>
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;white-space:nowrap;">사업소</th>
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">긴급도</th>
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">유형</th>
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">세부유형</th>
-              <th style="padding:9px 11px;text-align:center;font-weight:600;color:#888;white-space:nowrap;">라인<br>중단</th>
-              <th style="padding:9px 11px;text-align:center;font-weight:600;color:#888;white-space:nowrap;">고객사<br>영향</th>
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">접수자/직급</th>
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">연락처</th>
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;white-space:nowrap;">접수일시</th>
-              <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">상태</th>
-              <th style="padding:9px 11px;"></th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`}
+      ? `<div class="card" style="text-align:center;padding:2.5rem;color:#bbb;font-size:14px;">접수된 사고가 없습니다.</div>`
+      : filtered.map(([key,e])=>{
+          const lvStyle = {
+            "1":{bg:"#fff5f5",color:"#b71c1c",border:"#f5c6c6"},
+            "2":{bg:"#fff8f0",color:"#e65100",border:"#fcd8a8"},
+            "3":{bg:"#f0faf0",color:"#2e7d32",border:"#b8e0ba"}
+          };
+          const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
+          return `
+    <div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;
+      margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">
+
+      <!-- 카드 헤더 클릭 시 상세 펼치기 -->
+      <div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;"
+        onclick="toggleDetail('detail-${key}')">
+
+        <!-- 긴급도 배지 -->
+        <div style="flex-shrink:0;margin-top:1px;">
+          <span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;
+            font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};
+            white-space:nowrap;">
+            Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
+          </span>
+        </div>
+
+        <!-- 주요 정보 -->
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+            <span style="font-weight:700;font-size:13px;color:#1a1a1a;">${e.site||"-"}</span>
+            <span style="font-size:12px;color:#555;">${e.accType||"-"}</span>
+            ${e.accDetail?`<span style="font-size:11px;color:#888;background:#f0f4f8;padding:1px 6px;border-radius:5px;">${e.accDetail}</span>`:""}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            ${e.lineStop==="라인중단발생"
+              ?`<span style="font-size:10px;background:#fff0f0;color:#b71c1c;font-weight:700;padding:1px 6px;border-radius:4px;">중단발생</span>`
+              :e.lineStop==="라인중단예상"
+              ?`<span style="font-size:10px;background:#fff8f0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">중단예상</span>`
+              :e.lineStop==="미장착"
+              ?`<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">미장착</span>`
+              :`<span style="font-size:10px;background:#f0faf0;color:#2e7d32;font-weight:700;padding:1px 6px;border-radius:4px;">영향없음</span>`}
+            ${e.customerEffect==="예"
+              ?`<span style="font-size:10px;background:#fff3e0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">고객사영향</span>`:""}
+            <span style="font-size:11px;color:#aaa;">${e.reporter||""} ${e.rank||""}</span>
+            <span style="font-size:11px;color:#bbb;">${(e.createdAt||"").slice(0,16)}</span>
+          </div>
+        </div>
+
+        <!-- 우측: 상태 + 수정 -->
+        <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px;"
+          onclick="event.stopPropagation()">
+          <select class="status-sel" data-key="${key}"
+            style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:11px;
+            cursor:pointer;font-family:inherit;max-width:68px;">
+            ${["접수","처리중","완료","보류"].map(st=>`<option${e.status===st?" selected":""}>${st}</option>`).join("")}
+          </select>
+          <div style="display:flex;gap:4px;">
+            <button class="del-btn" data-key="${key}"
+              style="background:none;border:1px solid #eee;border-radius:5px;
+              cursor:pointer;color:#ccc;font-size:12px;padding:2px 6px;">✕</button>
+            <button onclick="openEditModal('${key}')"
+              style="background:#e05c00;border:none;border-radius:5px;
+              cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">
+              수정
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 상세 펼침 영역 -->
+      <div id="detail-${key}" style="display:none;border-top:1px dashed #eef2f7;
+        padding:12px 14px;background:#f9fbfd;font-size:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+          <div><span style="color:#aaa;">사고번호</span> <strong>${e.accNo||"-"}</strong></div>
+          <div><span style="color:#aaa;">발생위치</span> <strong>${e.location||"-"}</strong></div>
+          <div><span style="color:#aaa;">발생일시</span> <strong>${e.accDateTime||"-"}</strong></div>
+          <div><span style="color:#aaa;">연락처</span> <strong>${e.phone||"-"}</strong></div>
+        </div>
+        <div style="margin-bottom:6px;">
+          <div style="color:#aaa;margin-bottom:3px;">현재 상황</div>
+          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;
+            padding:8px 10px;color:#333;line-height:1.6;">${(e.situation||"-").replace(/\n/g,"<br>")}</div>
+        </div>
+        ${e.actionTaken?`<div style="margin-bottom:6px;">
+          <div style="color:#aaa;margin-bottom:3px;">즉시 조치</div>
+          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;
+            padding:8px 10px;color:#333;line-height:1.6;">${(e.actionTaken).replace(/\n/g,"<br>")}</div>
+        </div>`:""}
+        ${e.followUp?`<div style="margin-bottom:6px;">
+          <div style="color:#aaa;margin-bottom:3px;">후속조치</div>
+          <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;
+            padding:8px 10px;color:#2e7d32;line-height:1.6;">${e.followUp.replace(/\n/g,"<br>")}</div>
+        </div>`:""}
+        ${e.photos&&e.photos.length>0?`<div>
+          <div style="color:#aaa;margin-bottom:4px;">현장 사진</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${(Array.isArray(e.photos)?e.photos:JSON.parse(e.photos||"[]")).filter(Boolean).map(url=>`
+            <a href="${url}" target="_blank">
+              <img src="${url}" style="width:70px;height:70px;object-fit:cover;border-radius:7px;border:1px solid #dce8f4;"/>
+            </a>`).join("")}
+          </div>
+        </div>`:""}
+      </div>
+    </div>`;
+        }).join("")}
   </div>
-  <div id="admin-count" style="font-size:12px;color:#bbb;margin-top:7px;text-align:right;">총 ${filtered.length}건</div>
+  <div id="admin-count" style="font-size:12px;color:#bbb;margin-top:4px;text-align:right;">총 ${filtered.length}건</div>
 ` : `
   <!-- 안전개선 제안 탭 -->
   ${Object.keys(suggestions).length===0 ? `
@@ -2945,10 +3033,10 @@ window.removePerson = function(type, idx){
   render();
 };
 
-/* ── 관리자 테이블만 업데이트 (키보드 유지용) ── */
+/* ── 관리자 카드 목록 업데이트 (키보드 유지용) ── */
 function updateAdminTable(){
-  const tbody = document.querySelector("#admin-table tbody");
-  if(!tbody) return;
+  const wrap = document.getElementById("admin-table");
+  if(!wrap) return;
 
   const list = Object.entries(entries);
   let filtered = list.filter(([,e])=>{
@@ -2965,11 +3053,9 @@ function updateAdminTable(){
   });
   filtered.sort((a,b)=>(b[1].createdAt||"").localeCompare(a[1].createdAt||""));
 
-  // 건수 업데이트
   const countEl = document.getElementById("admin-count");
   if(countEl) countEl.textContent = `총 ${filtered.length}건`;
 
-  // 기존 renderAdmin의 rows 로직 재사용
   const lvStyle = {
     "1":{bg:"#fff5f5",color:"#b71c1c",border:"#f5c6c6"},
     "2":{bg:"#fff8f0",color:"#e65100",border:"#fcd8a8"},
@@ -2977,90 +3063,72 @@ function updateAdminTable(){
   };
 
   if(filtered.length===0){
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:2rem;color:#bbb;font-size:14px;">검색 결과가 없습니다.</td></tr>`;
+    wrap.innerHTML = `<div class="card" style="text-align:center;padding:2rem;color:#bbb;font-size:14px;">검색 결과가 없습니다.</div>`;
     return;
   }
 
-  tbody.innerHTML = filtered.map(([key,e])=>{
+  wrap.innerHTML = filtered.map(([key,e])=>{
     const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
-    const detailId = `detail-${key}`;
     return `
-    <tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" onclick="toggleDetail('${detailId}')">
-      <td style="padding:10px 11px;font-family:monospace;font-size:11px;color:#999;white-space:nowrap;">${e.accNo||"-"}</td>
-      <td style="padding:10px 11px;font-weight:600;white-space:nowrap;">${e.site}</td>
-      <td style="padding:10px 11px;">
-        <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};">
-          Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
-        </span>
-      </td>
-      <td style="padding:10px 11px;white-space:nowrap;">${e.accType||"-"}</td>
-      <td style="padding:10px 11px;color:#666;">${e.accDetail||"-"}</td>
-      <td style="padding:10px 11px;text-align:center;">
-        ${ e.lineStop==="라인중단발생"
-          ? `<span style="background:#fff0f0;color:#b71c1c;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">중단발생</span>`
-          : e.lineStop==="라인중단예상"
-          ? `<span style="background:#fff8f0;color:#e65100;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">중단예상</span>`
-          : e.lineStop==="미장착"
-          ? `<span style="background:#fffde7;color:#7b5e00;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">미장착</span>`
-          : `<span style="background:#f0faf0;color:#2e7d32;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">영향없음</span>`}
-      </td>
-      <td style="padding:10px 11px;text-align:center;">
-        ${e.customerEffect==="예"
-          ?`<span style="background:#fff3e0;color:#e65100;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">O</span>`
-          :`<span style="background:#f5f5f5;color:#aaa;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">X</span>`}
-      </td>
-      <td style="padding:10px 11px;font-weight:600;">${e.reporter}<br><span style="font-size:11px;color:#aaa;font-weight:400;">${e.rank||""}</span></td>
-      <td style="padding:10px 11px;color:#666;font-size:12px;">${e.phone||"-"}</td>
-      <td style="padding:10px 11px;color:#888;font-size:12px;white-space:nowrap;">${(e.createdAt||"").slice(0,16)}</td>
-      <td style="padding:10px 11px;" onclick="event.stopPropagation()">
-        <select class="status-sel" data-key="${key}"
-          style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer;font-family:inherit;">
-          ${["접수","처리중","완료","보류"].map(s=>`<option${e.status===s?" selected":""}>${s}</option>`).join("")}
-        </select>
-      </td>
-      <td style="padding:10px 11px;" onclick="event.stopPropagation()">
-        <button class="del-btn" data-key="${key}"
-          style="background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;padding:2px;">✕</button>
-      </td>
-    </tr>
-    <tr id="${detailId}" style="display:none;background:#f9fbfd;">
-      <td colspan="12" style="padding:0;">
-        <div style="padding:14px 16px;font-size:13px;line-height:2;border-top:1px dashed #dce8f4;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin-bottom:10px;">
-            <div><span style="color:#aaa;">발생위치</span> &nbsp;<strong>${e.location||"-"}</strong></div>
-            <div><span style="color:#aaa;">사고발생일시</span> &nbsp;<strong>${e.accDateTime||"-"}</strong></div>
-            <div><span style="color:#aaa;">고객사영향</span> &nbsp;<strong>${e.customerEffect||"-"}</strong></div>
-            <div><span style="color:#aaa;">추가지원</span> &nbsp;<strong>${e.supportNeeded||"없음"}</strong></div>
-          </div>
-          <div style="margin-bottom:6px;"><span style="color:#aaa;">현재 상황</span><br>
-            <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 11px;margin-top:4px;color:#333;line-height:1.7;">${(e.situation||"-").replace(/\n/g,"<br>")}</div>
-          </div>
-          <div style="margin-bottom:6px;"><span style="color:#aaa;">즉시 조치</span><br>
-            <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 11px;margin-top:4px;color:#333;line-height:1.7;">${(e.actionTaken||"없음").replace(/\n/g,"<br>")}</div>
-          </div>
-          ${e.followUp?`<div style="margin-bottom:6px;"><span style="color:#aaa;">후속조치</span><br>
-            <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;padding:8px 11px;margin-top:4px;color:#2e7d32;line-height:1.7;">${e.followUp.replace(/\n/g,"<br>")}</div>
-          </div>`:""}
-          ${e.victims?`<div style="margin-bottom:6px;"><span style="color:#aaa;">인사사고 대상자</span><br>
-            <div style="background:#fff5f5;border:1px solid #f5c6c6;border-radius:7px;padding:8px 11px;margin-top:4px;font-size:12px;color:#333;line-height:1.8;">
-              <strong>피해자:</strong> ${(()=>{try{return JSON.parse(e.victims).map(v=>v.unknown?"미확인":`${v.name}(${v.affiliation})`).join(", ");}catch{return e.victims;}})()}
-              ${e.perpetrators?`<br><strong>가해자:</strong> ${(()=>{try{return JSON.parse(e.perpetrators).map(p=>p.unknown?"미확인":`${p.name}(${p.affiliation})`).join(", ");}catch{return e.perpetrators;}})()}`:""}
-            </div>
-          </div>`:""}
-          ${e.photos&&e.photos.length>0?`<div><span style="color:#aaa;">현장 사진</span><br>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
-              ${(Array.isArray(e.photos)?e.photos:JSON.parse(e.photos||"[]")).filter(Boolean).map(url=>`
-              <a href="${url}" target="_blank">
-                <img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:7px;border:1px solid #dce8f4;cursor:pointer;"/>
-              </a>`).join("")}
-            </div>
-          </div>`:""}
+    <div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;
+      margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">
+      <div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;"
+        onclick="toggleDetail('detail-${key}')">
+        <div style="flex-shrink:0;margin-top:1px;">
+          <span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;
+            font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};white-space:nowrap;">
+            Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
+          </span>
         </div>
-      </td>
-    </tr>`;
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+            <span style="font-weight:700;font-size:13px;">${e.site||"-"}</span>
+            <span style="font-size:12px;color:#555;">${e.accType||"-"}</span>
+            ${e.accDetail?`<span style="font-size:11px;color:#888;background:#f0f4f8;padding:1px 6px;border-radius:5px;">${e.accDetail}</span>`:""}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${e.lineStop==="라인중단발생"?`<span style="font-size:10px;background:#fff0f0;color:#b71c1c;font-weight:700;padding:1px 6px;border-radius:4px;">중단발생</span>`
+            :e.lineStop==="라인중단예상"?`<span style="font-size:10px;background:#fff8f0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">중단예상</span>`
+            :e.lineStop==="미장착"?`<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">미장착</span>`
+            :`<span style="font-size:10px;background:#f0faf0;color:#2e7d32;font-weight:700;padding:1px 6px;border-radius:4px;">영향없음</span>`}
+            ${e.customerEffect==="예"?`<span style="font-size:10px;background:#fff3e0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">고객사영향</span>`:""}
+            <span style="font-size:11px;color:#aaa;">${e.reporter||""} ${e.rank||""}</span>
+            <span style="font-size:11px;color:#bbb;">${(e.createdAt||"").slice(0,16)}</span>
+          </div>
+        </div>
+        <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px;"
+          onclick="event.stopPropagation()">
+          <select class="status-sel" data-key="${key}"
+            style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:11px;cursor:pointer;font-family:inherit;max-width:68px;">
+            ${["접수","처리중","완료","보류"].map(st=>`<option${e.status===st?" selected":""}>${st}</option>`).join("")}
+          </select>
+          <div style="display:flex;gap:4px;">
+            <button class="del-btn" data-key="${key}"
+              style="background:none;border:1px solid #eee;border-radius:5px;cursor:pointer;color:#ccc;font-size:12px;padding:2px 6px;">✕</button>
+            <button onclick="openEditModal('${key}')"
+              style="background:#e05c00;border:none;border-radius:5px;cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">수정</button>
+          </div>
+        </div>
+      </div>
+      <div id="detail-${key}" style="display:none;border-top:1px dashed #eef2f7;padding:12px 14px;background:#f9fbfd;font-size:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+          <div><span style="color:#aaa;">사고번호</span> <strong>${e.accNo||"-"}</strong></div>
+          <div><span style="color:#aaa;">발생위치</span> <strong>${e.location||"-"}</strong></div>
+          <div><span style="color:#aaa;">발생일시</span> <strong>${e.accDateTime||"-"}</strong></div>
+          <div><span style="color:#aaa;">연락처</span> <strong>${e.phone||"-"}</strong></div>
+        </div>
+        <div style="margin-bottom:6px;">
+          <div style="color:#aaa;margin-bottom:3px;">현재 상황</div>
+          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">${(e.situation||"-").replace(/\n/g,"<br>")}</div>
+        </div>
+        ${e.actionTaken?`<div style="margin-bottom:6px;">
+          <div style="color:#aaa;margin-bottom:3px;">즉시 조치</div>
+          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">${e.actionTaken.replace(/\n/g,"<br>")}</div>
+        </div>`:""}
+      </div>
+    </div>`;
   }).join("");
 
-  // status-sel, del-btn 이벤트 재바인딩
   document.querySelectorAll(".status-sel").forEach(s => {
     s.onchange = () => { update(ref(db,`accidents/${s.dataset.key}`),{status:s.value}); };
   });
@@ -3071,197 +3139,6 @@ function updateAdminTable(){
     };
   });
 }
-
-/* ── 수정 모달: 사고유형/세부유형 선택 ── */
-const EDIT_DETAIL_MAP = {
-  "인사사고": ["중대재해","일반재해","경미사고","아차사고"],
-  "제품사고": ["파손·충격","오염·이물","포장불량","운송중 손상"],
-  "공급사고": ["이종·혼입","불량품 납입","결품·수량오류","서열오류","납입지연","라인투입오류"],
-  "차량사고": ["자차사고","대물사고"],
-};
-
-window.editSelectType = function(tp, keepDetail=false){
-  // 유형 버튼 스타일 업데이트
-  ["인사사고","제품사고","공급사고","차량사고"].forEach(t2 => {
-    const btn = document.getElementById(`edit-type-${t2}`);
-    if(!btn) return;
-    if(t2 === tp){
-      btn.style.background = "#1e2761";
-      btn.style.color = "#fff";
-      btn.style.borderColor = "#1e2761";
-    } else {
-      btn.style.background = "#f5f8fc";
-      btn.style.color = "#555";
-      btn.style.borderColor = "#dce8f4";
-    }
-  });
-
-  // hidden 유형 값 세팅
-  const typeInput = document.getElementById("edit-accType");
-  if(typeInput) typeInput.value = tp;
-
-  // 세부유형 영역 업데이트
-  const wrap = document.getElementById("edit-detail-wrap");
-  if(!wrap) return;
-  const details = EDIT_DETAIL_MAP[tp] || [];
-  const currentDetail = keepDetail
-    ? (document.getElementById("edit-accDetail")?.value || "")
-    : "";
-
-  wrap.innerHTML = details.map(d => `
-    <button type="button" onclick="editSelectDetail('${d}')"
-      id="edit-detail-${d.replace(/·/g,'-').replace(/\s/g,'_')}"
-      style="display:inline-block;margin:3px 4px 3px 0;padding:6px 12px;
-      border-radius:7px;border:1.5px solid ${currentDetail===d?"#1e2761":"#dce8f4"};
-      background:${currentDetail===d?"#1e2761":"#fff"};
-      color:${currentDetail===d?"#fff":"#555"};
-      font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">
-      ${d}
-    </button>`).join("");
-
-  // detail 값 유지 or 초기화
-  const detailInput = document.getElementById("edit-accDetail");
-  if(detailInput){
-    if(!keepDetail || !details.includes(detailInput.value)) detailInput.value = "";
-  }
-};
-
-window.editSelectDetail = function(d){
-  const wrap = document.getElementById("edit-detail-wrap");
-  if(!wrap) return;
-
-  // 모든 세부유형 버튼 스타일 초기화 후 선택된 것만 활성화
-  wrap.querySelectorAll("button").forEach(btn => {
-    btn.style.background = "#fff";
-    btn.style.color = "#555";
-    btn.style.borderColor = "#dce8f4";
-  });
-  const id = `edit-detail-${d.replace(/·/g,'-').replace(/\s/g,'_')}`;
-  const btn = document.getElementById(id);
-  if(btn){
-    btn.style.background = "#1e2761";
-    btn.style.color = "#fff";
-    btn.style.borderColor = "#1e2761";
-  }
-
-  const detailInput = document.getElementById("edit-accDetail");
-  if(detailInput) detailInput.value = d;
-};
-
-/* ── 관리자 탭 전환 ── */
-window.setAdminTab = function(tab){
-  adminTab = tab;
-  render();
-};
-
-/* ── 안전제안 상세 펼치기 ── */
-window.toggleSugDetail = function(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.style.display = el.style.display==="none" ? "table-row" : "none";
-};
-
-/* ── 관리자 사고 수정 모달 ── */
-let _editKey = null;
-let _editForm = null;
-
-window.openEditModal = function(key){
-  _editKey = key;
-  const e = entries[key];
-  if(!e) return;
-  _editForm = {
-    accType:    e.accType    || "",
-    accDetail:  e.accDetail  || "",
-    level:      e.level      || "",
-    lineStop:   e.lineStop   || "",
-    customerEffect: e.customerEffect || "",
-    location:   e.location   || "",
-    situation:  e.situation  || "",
-    actionTaken:e.actionTaken|| "",
-    supportNeeded: e.supportNeeded || "",
-  };
-
-  const modal = document.getElementById("edit-modal");
-  if(modal){
-    // 기본 필드 세팅
-    document.getElementById("edit-level").value      = _editForm.level;
-    document.getElementById("edit-lineStop").value   = _editForm.lineStop;
-    document.getElementById("edit-custEffect").value = _editForm.customerEffect;
-    document.getElementById("edit-location").value   = _editForm.location;
-    document.getElementById("edit-situation").value  = _editForm.situation;
-    document.getElementById("edit-action").value     = _editForm.actionTaken;
-    document.getElementById("edit-support").value    = _editForm.supportNeeded;
-
-    // hidden 값 세팅
-    document.getElementById("edit-accType").value   = _editForm.accType;
-    document.getElementById("edit-accDetail").value = _editForm.accDetail;
-
-    // 사고유형 버튼 활성화
-    editSelectType(_editForm.accType, true);
-
-    modal.style.display = "flex";
-    document.getElementById("edit-err").style.display = "none";
-  }
-};
-
-window.closeEditModal = function(){
-  const modal = document.getElementById("edit-modal");
-  if(modal) modal.style.display = "none";
-  _editKey = null; _editForm = null;
-};
-
-window.saveEditAndResend = async function(){
-  if(!_editKey || !_editForm) return;
-  const e = entries[_editKey];
-  if(!e) return;
-
-  const modal = document.getElementById("edit-modal");
-  const newData = {
-    accType:        document.getElementById("edit-accType").value.trim(),
-    accDetail:      document.getElementById("edit-accDetail").value.trim(),
-    level:          document.getElementById("edit-level").value,
-    lineStop:       document.getElementById("edit-lineStop").value,
-    customerEffect: document.getElementById("edit-custEffect").value,
-    location:       document.getElementById("edit-location").value.trim(),
-    situation:      document.getElementById("edit-situation").value.trim(),
-    actionTaken:    document.getElementById("edit-action").value.trim(),
-    supportNeeded:  document.getElementById("edit-support").value.trim(),
-    updatedAt:      new Date().toLocaleString("ko-KR"),
-    updatedBy:      currentUser ? (currentUser.displayName || currentUser.email) : "관리자",
-  };
-
-  const errEl = document.getElementById("edit-err");
-  if(!newData.accType||!newData.accDetail||!newData.level||!newData.location||!newData.situation){
-    if(errEl){ errEl.textContent="필수 항목을 모두 입력해 주세요."; errEl.style.display="block"; }
-    return;
-  }
-
-  // Firebase 업데이트
-  try {
-    await update(ref(db, `accidents/${_editKey}`), newData);
-
-    // 알림 재발송
-    const updatedEntry = { ...e, ...newData };
-    updatedEntry.accNo = e.accNo;
-    updatedEntry.reporter = e.reporter;
-    updatedEntry.rank = e.rank;
-    updatedEntry.phone = e.phone;
-    updatedEntry.site = e.site;
-    updatedEntry.accDateTime = e.accDateTime;
-    updatedEntry.createdAt = e.createdAt;
-
-    // GAS로 수정 알림 발송
-    await sendSlackAlert({ ...updatedEntry, _isUpdate: true, _updateNote: "관리자가 사고 내용을 수정하였습니다." });
-
-    closeEditModal();
-    alert("✅ 수정 완료 및 알림이 재발송되었습니다.");
-    render();
-  } catch(err) {
-    console.error("수정 저장 오류:", err);
-    if(errEl){ errEl.textContent="저장 중 오류가 발생했습니다."; errEl.style.display="block"; }
-  }
-};
-
 /* ── 상세 행 펼치기/접기 ── */
 window.toggleDetail = function(id){
   const el = document.getElementById(id);
@@ -3328,10 +3205,10 @@ async function handleSubmit(){
   }
 
   const errs={};
-  if(!form.site)          errs.site="사업소를 선택해 주세요.";
-  if(!form.reporter.trim()) errs.reporter="접수자 성명을 입력해 주세요.";
-  if(!form.rank)            errs.rank="직급을 선택해 주세요.";
-  if(!form.phone||form.phone.replace(/\D/g,"").length<10) errs.phone="연락처를 입력해 주세요.";
+  if(!form.site)          errs.site=lang==="zh"?"请选择事业所。":"${lang==='zh'?'请选择事业所':'사업소를 선택해 주세요.'}";
+  if(!form.reporter.trim()) errs.reporter=lang==="zh"?"请输入报告人姓名。":"${lang==='zh'?'请输入报告人姓名':'접수자 성명을 입력해 주세요.'}";
+  if(!form.rank)            errs.rank=lang==="zh"?"请选择职级。":"${lang==='zh'?'请选择职级':'직급을 선택해 주세요.'}";
+  if(!form.phone||form.phone.replace(/\D/g,"").length<10) errs.phone=lang==="zh"?"请输入联系电话。":"${lang==='zh'?'请输入联系电话':'연락처를 입력해 주세요.'}";
   if(!form.accYear||!form.accMonth||!form.accDay) errs.accYear="사고 발생 날짜를 선택해 주세요.";
   if(!form.accHour||!form.accMin) errs.accHour="사고 발생 시간을 선택해 주세요.";
   if(!form.location.trim()) errs.location="사고 발생 위치를 입력해 주세요.";
@@ -3339,13 +3216,13 @@ async function handleSubmit(){
     if(form.accTypes.length===0) errs.accType="사고 유형을 하나 이상 선택해 주세요.";
     if(form.accDetails.length===0) errs.accDetail="세부 유형을 하나 이상 선택해 주세요.";
   } else {
-    if(!form.accType) errs.accType="사고 유형을 선택해 주세요.";
-    if(!form.accDetail) errs.accDetail="세부 유형을 선택해 주세요.";
+    if(!form.accType) errs.accType=lang==="zh"?"请选择事故类型。":"${lang==='zh'?'请选择事故类型':'사고 유형을 선택해 주세요.'}";
+    if(!form.accDetail) errs.accDetail=lang==="zh"?"请选择细分类型。":"${lang==='zh'?'请选择细分类型':'세부 유형을 선택해 주세요.'}";
   }
-  if(!form.level)         errs.level="긴급도를 선택해 주세요.";
-  if(!form.lineStop)      errs.lineStop="라인중단 여부를 선택해 주세요.";
-  if(!form.customerEffect) errs.customerEffect="고객사 영향 여부를 선택해 주세요.";
-  if(!form.situation.trim()) errs.situation="현재 상황을 입력해 주세요.";
+  if(!form.level)         errs.level=lang==="zh"?"请选择紧急程度。":"${lang==='zh'?'请选择紧急程度':'긴급도를 선택해 주세요.'}";
+  if(!form.lineStop)      errs.lineStop=lang==="zh"?"请选择停线情况。":"${lang==='zh'?'请选择停线情况':'라인중단 여부를 선택해 주세요.'}";
+  if(!form.customerEffect) errs.customerEffect=lang==="zh"?"请选择客户影响。":"고객사 영향 여부를 선택해 주세요.";
+  if(!form.situation.trim()) errs.situation=lang==="zh"?"请填写当前状况。":"${lang==='zh'?'请输入当前状况':'현재 상황을 입력해 주세요.'}";
   if(form.checks.some(c=>!c)) errs.checks="모든 확인 사항을 체크해 주세요.";
   // 인사사고 대상자 검증
   const hasPersonalAcc = form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인사사고";
@@ -3591,10 +3468,10 @@ if('serviceWorker' in navigator){
         <div>
           <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">라인중단</div>
           <select id="edit-lineStop" class="select" style="font-size:13px;padding:8px 10px;">
-            <option value="라인중단발생">라인중단발생</option>
-            <option value="라인중단예상">라인중단예상</option>
+            <option value="라인중단발생">${lang==="zh"?"停线发生":"라인중단발생"}</option>
+            <option value="라인중단예상">${lang==="zh"?"预计停线":"라인중단예상"}</option>
             <option value="미장착">미장착</option>
-            <option value="라인영향없음">라인영향없음</option>
+            <option value="라인영향없음">${lang==="zh"?"无影响":"라인영향없음"}</option>
           </select>
         </div>
         <div>
