@@ -953,116 +953,114 @@ function renderRegister(){
 /* ── 메인 화면 ── */
 function renderMain(){
   const userName = currentUser ? (currentUser.displayName || currentUser.email.split("@")[0]) : "";
-  const userEmail = currentUser ? currentUser.email : "";
   const userPhoto = currentUser && currentUser.photoURL;
 
   return `
 <div style="height:100vh;display:flex;flex-direction:column;overflow:hidden;">
 
-  <!-- 상단 사용자 정보 바 -->
-  <div style="background:#fff;border-bottom:1px solid #eef2f7;padding:8px 1rem;
+  <!-- 상단 사용자 정보 바 (더 슬림하게) -->
+  <div style="background:#fff;border-bottom:1px solid #eef2f7;padding:5px 0.9rem;
     display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div style="display:flex;align-items:center;gap:7px;">
       ${userPhoto
-        ? `<img src="${userPhoto}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;"/>`
-        : `<div style="width:28px;height:28px;border-radius:50%;background:#1e2761;
-            display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;">
+        ? `<img src="${userPhoto}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;"/>`
+        : `<div style="width:24px;height:24px;border-radius:50%;background:#1e2761;
+            display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;">
             ${userName.charAt(0).toUpperCase()}
           </div>`}
       <div>
-        <div style="font-size:12px;font-weight:600;color:#1a1a1a;">${userName}</div>
-        <div style="font-size:10px;color:#aaa;">${isAdmin?"🛡️ 관리자":lang==="zh"?"普通用户":"일반 사용자"}</div>
+        <div style="font-size:11px;font-weight:600;color:#1a1a1a;">${userName}</div>
+        <div style="font-size:9px;color:#aaa;">${isAdmin?"🛡️ 관리자":lang==="zh"?"普通用户":"일반 사용자"}</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <button id="btn-logout"
-        style="padding:4px 10px;background:#f5f5f5;border:none;border-radius:7px;
-        font-size:11px;color:#888;cursor:pointer;font-family:inherit;">
-        ${lang==="zh"?"退出":"로그아웃"}
-      </button>
-    </div>
+    <button id="btn-logout"
+      style="padding:3px 9px;background:#f5f5f5;border:none;border-radius:6px;
+      font-size:10px;color:#888;cursor:pointer;font-family:inherit;">
+      ${lang==="zh"?"退出":"로그아웃"}
+    </button>
   </div>
 
-  <!-- 중앙 콘텐츠 - 한 화면에 표시 -->
-  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:0.4rem 1rem 0.3rem;">
+  <!-- 콘텐츠 영역: 로고+버튼 전체를 100%로 꽉 채움 -->
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;
+    padding:0.35rem 0.9rem 0.25rem;max-width:480px;margin:0 auto;width:100%;">
 
-    <!-- 로고/타이틀 - 컴팩트 -->
-    <div style="text-align:center;padding:0.3rem 0 0.2rem;">
-      <div style="width:40px;height:40px;border-radius:50%;background:#1e2761;
-        margin:0 auto 0.3rem;display:flex;align-items:center;justify-content:center;font-size:18px;">
+    <!-- 로고/타이틀 -->
+    <div style="text-align:center;padding:0.25rem 0 0.2rem;flex-shrink:0;">
+      <div style="width:36px;height:36px;border-radius:50%;background:#1e2761;
+        margin:0 auto 0.2rem;display:flex;align-items:center;justify-content:center;font-size:16px;">
         🛡️
       </div>
-      <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:1px;">${lang==="zh"?"现场安全管理系统":APP_NAME}</div>
-      <div style="font-size:10px;color:#aaa;">${lang==="zh"?"光明事业部 安全·质量·物流 综合管理":"광명사업부 안전·품질·물류 통합관리"}</div>
+      <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:1px;">${lang==="zh"?"现场安全管理系统":APP_NAME}</div>
+      <div style="font-size:9px;color:#aaa;">${lang==="zh"?"光明事业部 安全·质量·物流 综合管理":"광명사업부 안전·품질·물류 통합관리"}</div>
     </div>
 
-    <!-- 메뉴 버튼들 - flex:1로 남은 공간 채우기 -->
-    <div style="max-width:480px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;justify-content:space-evenly;gap:0;padding:0.2rem 0;">
+    <!-- 메뉴 버튼들: flex:1 + space-evenly 로 남은 높이 균등 배분 -->
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:space-evenly;">
 
       <button id="btn-main-form" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-        <div style="background:#fff;border-radius:14px;border:1.5px solid #dce8f4;
-          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
-          box-shadow:0 2px 8px rgba(0,0,0,.07);">
-          <div style="width:48px;height:48px;border-radius:12px;background:#fff0e0;
-            display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🚨</div>
+        <div style="background:#fff;border-radius:13px;border:1.5px solid #dce8f4;
+          padding:0.7rem 1rem;display:flex;align-items:center;gap:0.8rem;
+          box-shadow:0 2px 6px rgba(0,0,0,.06);">
+          <div style="width:44px;height:44px;border-radius:11px;background:#fff0e0;
+            display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🚨</div>
           <div style="flex:1;">
-            <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"现场事故报告":"현장 사고 접수"}</div>
-            <div style="font-size:12px;color:#888;">${lang==="zh"?"立即报告事故·自动通知负责人":"사고 발생 즉시 접수 · 담당자 자동 알림"}</div>
+            <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">${lang==="zh"?"现场事故报告":"현장 사고 접수"}</div>
+            <div style="font-size:11px;color:#888;">${lang==="zh"?"立即报告事故·自动通知负责人":"사고 발생 즉시 접수 · 담당자 자동 알림"}</div>
           </div>
-          <div style="color:#ccc;font-size:20px;">›</div>
+          <div style="color:#ccc;font-size:18px;">›</div>
         </div>
       </button>
 
       <button id="btn-main-manual" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-        <div style="background:#fff;border-radius:14px;border:1.5px solid #dce8f4;
-          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
-          box-shadow:0 2px 8px rgba(0,0,0,.07);">
-          <div style="width:48px;height:48px;border-radius:12px;background:#e8eef7;
-            display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">📋</div>
+        <div style="background:#fff;border-radius:13px;border:1.5px solid #dce8f4;
+          padding:0.7rem 1rem;display:flex;align-items:center;gap:0.8rem;
+          box-shadow:0 2px 6px rgba(0,0,0,.06);">
+          <div style="width:44px;height:44px;border-radius:11px;background:#e8eef7;
+            display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">📋</div>
           <div style="flex:1;">
-            <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"事故处理手册":"사고처리 매뉴얼"}</div>
-            <div style="font-size:12px;color:#888;">${lang==="zh"?"各类事故处置程序·紧急联系方式":"사고 유형별 대응 절차 · 긴급 연락처"}</div>
+            <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">${lang==="zh"?"事故处理手册":"사고처리 매뉴얼"}</div>
+            <div style="font-size:11px;color:#888;">${lang==="zh"?"各类事故处置程序·紧急联系方式":"사고 유형별 대응 절차 · 긴급 연락처"}</div>
           </div>
-          <div style="color:#ccc;font-size:20px;">›</div>
+          <div style="color:#ccc;font-size:18px;">›</div>
         </div>
       </button>
 
       <button id="btn-main-suggest" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-        <div style="background:#fff;border-radius:14px;border:1.5px solid #dce8f4;
-          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
-          box-shadow:0 2px 8px rgba(0,0,0,.07);">
-          <div style="width:48px;height:48px;border-radius:12px;background:#e8f5e9;
-            display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">💡</div>
+        <div style="background:#fff;border-radius:13px;border:1.5px solid #dce8f4;
+          padding:0.7rem 1rem;display:flex;align-items:center;gap:0.8rem;
+          box-shadow:0 2px 6px rgba(0,0,0,.06);">
+          <div style="width:44px;height:44px;border-radius:11px;background:#e8f5e9;
+            display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">💡</div>
           <div style="flex:1;">
-            <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"安全改进建议":"안전개선 제안"}</div>
-            <div style="font-size:12px;color:#888;">${lang==="zh"?"现场改进想法·危险因素报告":"현장 개선 아이디어 · 위험요소 신고"}</div>
+            <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">${lang==="zh"?"安全改进建议":"안전개선 제안"}</div>
+            <div style="font-size:11px;color:#888;">${lang==="zh"?"现场改进想法·危险因素报告":"현장 개선 아이디어 · 위험요소 신고"}</div>
           </div>
-          <div style="color:#ccc;font-size:20px;">›</div>
+          <div style="color:#ccc;font-size:18px;">›</div>
         </div>
       </button>
 
       ${isAdmin?`
       <button id="btn-main-admin" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-        <div style="background:#1e2761;border-radius:14px;
-          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
-          box-shadow:0 2px 8px rgba(0,0,0,.15);">
-          <div style="width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.15);
-            display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🛡️</div>
+        <div style="background:#1e2761;border-radius:13px;
+          padding:0.7rem 1rem;display:flex;align-items:center;gap:0.8rem;
+          box-shadow:0 2px 8px rgba(0,0,0,.18);">
+          <div style="width:44px;height:44px;border-radius:11px;background:rgba(255,255,255,.15);
+            display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🛡️</div>
           <div style="flex:1;">
-            <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:3px;">${lang==="zh"?"管理员仪表盘":"관리자 대시보드"}</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.6);">${lang==="zh"?"全部事故现况·统计·管理":"전체 사고 현황 · 통계 · 관리"}</div>
+            <div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:2px;">${lang==="zh"?"管理员仪表盘":"관리자 대시보드"}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.65);">${lang==="zh"?"全部事故现况·统计·管理":"전체 사고 현황 · 통계 · 관리"}</div>
           </div>
-          <div style="color:rgba(255,255,255,.4);font-size:20px;">›</div>
+          <div style="color:rgba(255,255,255,.4);font-size:18px;">›</div>
         </div>
       </button>`:""}
 
-      <!-- 내 접수 조회 + 언어변환 버튼 나란히 -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:0.2rem 0;">
-        <button class="admin-link" id="go-myreport-main" style="font-size:13px;color:#888;">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>
-        <span style="color:#ddd;font-size:14px;">|</span>
+      <!-- 내 접수 조회 + 언어변환 -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+        <button class="admin-link" id="go-myreport-main" style="font-size:12px;color:#999;">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>
+        <span style="color:#ddd;font-size:13px;">|</span>
         <button id="btn-main-lang-bottom"
-          style="padding:4px 12px;background:#f0f4ff;border:1.5px solid #dce8f4;border-radius:20px;
-          font-size:12px;font-weight:700;color:#1e2761;cursor:pointer;font-family:inherit;">
+          style="padding:3px 10px;background:#f0f4ff;border:1.5px solid #dce8f4;border-radius:20px;
+          font-size:11px;font-weight:700;color:#1e2761;cursor:pointer;font-family:inherit;">
           ${lang==="zh"?"🇰🇷 한국어":"🇨🇳 中文"}
         </button>
       </div>
@@ -1215,7 +1213,13 @@ function renderSuggest(){
     <div class="section-title">📍 ${lang==="zh"?"基本信息":"기본 정보"}</div>
     <div class="field">
       <div class="label">${lang==="zh"?"事业所":"사업소"} <span class="req">*</span></div>
-      <select id="sug-site" class="select">${siteOpts}</select>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${SITES.map(s=>`
+        <button type="button" class="radio-btn${sug.site===s?" on":""}" data-sug-site="${s}"
+          style="font-size:13px;padding:7px 12px;">
+          ${lang==="zh"?{"광명1범퍼사업소":"光明1保险杠","광명2범퍼사업소":"光明2保险杠","광명1서열사업소":"光明1序列","광명2서열사업소":"光明2序列","광명JIT사업소":"光明JIT","광명장비사업소":"光明设备","기타":"其他"}[s]||s:s}
+        </button>`).join("")}
+      </div>
     </div>
     <div class="field">
       <div class="label">${lang==="zh"?"建议分类":"제안 분류"} <span class="req">*</span></div>
@@ -1396,9 +1400,13 @@ function renderForm(){
 
   <div class="field">
     <div class="label">${lang==="zh"?"事业所":"사업소"} <span class="req">*</span></div>
-    <select id="f-site" class="select${e.site?" err":""}">
-      ${siteOpts}
-    </select>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;" id="site-btns-wrap">
+      ${SITES.map(s=>`
+      <button type="button" class="radio-btn${form.site===s?" on":""}" data-site-btn="${s}"
+        style="font-size:13px;padding:7px 12px;">
+        ${lang==="zh"?{"광명1범퍼사업소":"光明1保险杠","광명2범퍼사업소":"光明2保险杠","광명1서열사업소":"光明1序列","광명2서열사업소":"光明2序列","광명JIT사업소":"光明JIT","광명장비사업소":"光明设备","기타":"其他"}[s]||s:s}
+      </button>`).join("")}
+    </div>
     ${e.site?`<div class="err-msg">${e.site}</div>`:""}
   </div>
 
@@ -2541,7 +2549,9 @@ function bindEvents(){
       window._suggest = {site:"",category:"",title:"",detail:"",anonymous:false,name:"",phone:"",submitted:false};
       render();
     });
-    $("sug-site")   && ($("sug-site").onchange  = e => { window._suggest.site=e.target.value; });
+    document.querySelectorAll("[data-sug-site]").forEach(b => {
+      b.onclick = () => { window._suggest.site = b.dataset.sugSite; render(); };
+    });
     $("sug-title")  && ($("sug-title").oninput   = e => { window._suggest.title=e.target.value; });
     $("sug-detail") && ($("sug-detail").oninput  = e => { window._suggest.detail=e.target.value; });
     $("sug-name")   && ($("sug-name").oninput    = e => { window._suggest.name=e.target.value; });
@@ -2578,7 +2588,9 @@ function bindEvents(){
   }
 
   if(view==="form"){
-    $("f-site")     && ($("f-site").onchange     = e => { form.site = e.target.value; delete errors.site; });
+    document.querySelectorAll("[data-site-btn]").forEach(b => {
+      b.onclick = () => { form.site = b.dataset.siteBtn; delete errors.site; render(); };
+    });
     $("f-reporter") && ($("f-reporter").oninput   = e => { form.reporter = e.target.value; delete errors.reporter; });
     $("f-rank")     && ($("f-rank").onchange       = e => { form.rank = e.target.value; delete errors.rank; });
     $("f-phone")    && ($("f-phone").oninput      = e => { const v=fmt(e.target.value); form.phone=v; e.target.value=v; delete errors.phone; });
