@@ -13,44 +13,7 @@
 <link rel="apple-touch-icon" href="icon-192.png"/>
 <title>현장 사고 접수</title>
 <style>
- (function() {
-  const ua = navigator.userAgent.toLowerCase();
-  const isKakao = ua.includes('kakaotalk');
-  const isNaver = ua.includes('naver');
-  const isInApp = ua.includes('instagram') || ua.includes('fban') || ua.includes('fbav');
-  
-  if (isKakao || isNaver || isInApp) {
-    document.body.innerHTML = `
-      <div style="
-        display:flex; flex-direction:column; align-items:center;
-        justify-content:center; height:100vh; background:#fff;
-        font-family:sans-serif; text-align:center; padding:30px;
-      ">
-        <div style="font-size:48px;">🌐</div>
-        <h2 style="color:#e05c00; margin:16px 0 8px;">크롬 브라우저로 열어주세요</h2>
-        <p style="color:#555; line-height:1.6; margin-bottom:24px;">
-          카카오톡 내 브라우저에서는<br>
-          Google 로그인이 지원되지 않아요.<br><br>
-          아래 버튼을 눌러 크롬으로 열어주세요.
-        </p>
-        <a href="intent://chepp07.github.io/safety001#Intent;scheme=https;package=com.android.chrome;end"
-          style="
-            background:#e05c00; color:#fff; padding:14px 32px;
-            border-radius:8px; text-decoration:none; font-size:16px;
-            font-weight:bold; margin-bottom:12px;
-          ">
-          크롬으로 열기
-        </a>
-        <p style="color:#aaa; font-size:13px;">
-          또는 주소를 복사해서 크롬에 붙여넣으세요<br>
-          <strong style="color:#666;">chepp07.github.io/safety001</strong>
-        </p>
-      </div>
-    `;
-    return;
-  }
-})();
- *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { font-size: 16px; }
   body {
     font-family: 'Noto Sans KR', sans-serif;
@@ -259,6 +222,43 @@
       50% { opacity: 0.4; transform: scale(1.4); }
     }
 </style>
+<!-- ✅ WebView(카카오톡 등) 진입 즉시 감지 -->
+<script>
+(function(){
+  var ua=navigator.userAgent.toLowerCase();
+  var isKakao=ua.indexOf('kakaotalk')>-1;
+  var isNaver=ua.indexOf('naver')>-1;
+  var isLine=ua.indexOf('line/')>-1;
+  var isInApp=ua.indexOf('instagram')>-1||ua.indexOf('fban')>-1||ua.indexOf('fbav')>-1;
+  if(isKakao||isNaver||isLine||isInApp){
+    function showGuide(){
+      if(!document.body){setTimeout(showGuide,10);return;}
+      document.body.style.cssText='margin:0;padding:0;';
+      document.body.innerHTML=
+        '<div style="display:flex;flex-direction:column;align-items:center;'+
+        'justify-content:center;min-height:100vh;background:#fff;'+
+        'font-family:sans-serif;text-align:center;padding:30px;box-sizing:border-box;">'+
+        '<div style="font-size:56px;margin-bottom:16px;">🌐</div>'+
+        '<h2 style="color:#e05c00;margin:0 0 12px;font-size:20px;">크롬 브라우저로 열어주세요</h2>'+
+        '<p style="color:#555;line-height:1.7;margin-bottom:28px;font-size:14px;">'+
+        '카카오톡 내 브라우저에서는<br>Google 로그인이 지원되지 않아요.<br><br>'+
+        '아래 버튼을 눌러 크롬으로 열어주세요.</p>'+
+        '<a href="intent://chepp07.github.io/safety001'+
+        '#Intent;scheme=https;package=com.android.chrome;end"'+
+        ' style="background:#e05c00;color:#fff;padding:14px 36px;'+
+        'border-radius:10px;text-decoration:none;font-size:16px;'+
+        'font-weight:bold;margin-bottom:20px;display:inline-block;">크롬으로 열기</a>'+
+        '<div style="background:#f5f5f5;border-radius:10px;padding:14px 20px;'+
+        'margin-bottom:12px;max-width:300px;">'+
+        '<p style="color:#888;font-size:12px;margin:0 0 6px;">또는 주소를 직접 복사하세요</p>'+
+        '<p style="color:#333;font-size:13px;font-weight:bold;margin:0;">chepp07.github.io/safety001</p></div>'+
+        '<p style="color:#bbb;font-size:11px;">크롬 앱이 없으면 Play 스토어에서 설치 후 이용해 주세요.</p>'+
+        '</div>';
+    }
+    showGuide();
+  }
+})();
+</script>
 </head>
 <body>
 
@@ -282,7 +282,9 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
-  updateProfile
+  updateProfile,
+  setPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 /* ─────────────────────────────────────────────
@@ -643,7 +645,10 @@ function levelLabel(lv){
 /* ── WebView 환경 감지 ── */
 function isWebView(){
   const ua = navigator.userAgent.toLowerCase();
-  return ua.includes('wv') ||
+  return ua.includes('kakaotalk') ||
+         ua.includes('naver') ||
+         ua.includes('line/') ||
+         ua.includes('wv') ||
          ua.includes('webview') ||
          (ua.includes('android') && !ua.includes('chrome')) ||
          ua.includes('fbav') ||
@@ -970,11 +975,6 @@ function renderMain(){
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <button id="btn-main-lang"
-        style="padding:4px 10px;background:#f0f4ff;border:1.5px solid #dce8f4;border-radius:20px;
-        font-size:11px;font-weight:700;color:#1e2761;cursor:pointer;font-family:inherit;">
-        ${lang==="zh"?"🇰🇷 한국어":"🇨🇳 中文"}
-      </button>
       <button id="btn-logout"
         style="padding:4px 10px;background:#f5f5f5;border:none;border-radius:7px;
         font-size:11px;color:#888;cursor:pointer;font-family:inherit;">
@@ -983,86 +983,90 @@ function renderMain(){
     </div>
   </div>
 
-  <!-- 중앙 콘텐츠 - 스크롤 가능 영역 -->
-  <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+  <!-- 중앙 콘텐츠 - 한 화면에 표시 -->
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:0.4rem 1rem 0.3rem;">
 
     <!-- 로고/타이틀 - 컴팩트 -->
-    <div style="text-align:center;padding:1rem 1rem 0.5rem;">
-      <div style="width:44px;height:44px;border-radius:50%;background:#1e2761;
-        margin:0 auto 0.5rem;display:flex;align-items:center;justify-content:center;font-size:20px;">
+    <div style="text-align:center;padding:0.3rem 0 0.2rem;">
+      <div style="width:40px;height:40px;border-radius:50%;background:#1e2761;
+        margin:0 auto 0.3rem;display:flex;align-items:center;justify-content:center;font-size:18px;">
         🛡️
       </div>
-      <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">${lang==="zh"?"现场安全管理系统":APP_NAME}</div>
-      <div style="font-size:11px;color:#aaa;">${lang==="zh"?"光明事业部 安全·质量·物流 综合管理":"광명사업부 안전·품질·물류 통합관리"}</div>
+      <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:1px;">${lang==="zh"?"现场安全管理系统":APP_NAME}</div>
+      <div style="font-size:10px;color:#aaa;">${lang==="zh"?"光明事业部 安全·质量·物流 综合管理":"광명사업부 안전·품질·물류 통합관리"}</div>
     </div>
 
-    <!-- 메뉴 버튼들 -->
-    <div style="padding:0.5rem 1rem 0.5rem;max-width:480px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;">
+    <!-- 메뉴 버튼들 - flex:1로 남은 공간 채우기 -->
+    <div style="max-width:480px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;justify-content:space-evenly;gap:0;padding:0.2rem 0;">
 
       <button id="btn-main-form" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-        <div style="background:#fff;border-radius:13px;border:1.5px solid #dce8f4;
-          padding:0.85rem 1rem;display:flex;align-items:center;gap:0.75rem;
-          box-shadow:0 2px 6px rgba(0,0,0,.05);">
-          <div style="width:40px;height:40px;border-radius:10px;background:#fff0e0;
-            display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🚨</div>
+        <div style="background:#fff;border-radius:14px;border:1.5px solid #dce8f4;
+          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
+          box-shadow:0 2px 8px rgba(0,0,0,.07);">
+          <div style="width:48px;height:48px;border-radius:12px;background:#fff0e0;
+            display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🚨</div>
           <div style="flex:1;">
-            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:1px;">${lang==="zh"?"现场事故报告":"현장 사고 접수"}</div>
-            <div style="font-size:11px;color:#888;">${lang==="zh"?"立即报告事故·自动通知负责人":"사고 발생 즉시 접수 · 담당자 자동 알림"}</div>
+            <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"现场事故报告":"현장 사고 접수"}</div>
+            <div style="font-size:12px;color:#888;">${lang==="zh"?"立即报告事故·自动通知负责人":"사고 발생 즉시 접수 · 담당자 자동 알림"}</div>
           </div>
-          <div style="color:#ccc;font-size:18px;">›</div>
+          <div style="color:#ccc;font-size:20px;">›</div>
         </div>
       </button>
 
       <button id="btn-main-manual" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-        <div style="background:#fff;border-radius:13px;border:1.5px solid #dce8f4;
-          padding:0.85rem 1rem;display:flex;align-items:center;gap:0.75rem;
-          box-shadow:0 2px 6px rgba(0,0,0,.05);">
-          <div style="width:40px;height:40px;border-radius:10px;background:#e8eef7;
-            display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📋</div>
+        <div style="background:#fff;border-radius:14px;border:1.5px solid #dce8f4;
+          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
+          box-shadow:0 2px 8px rgba(0,0,0,.07);">
+          <div style="width:48px;height:48px;border-radius:12px;background:#e8eef7;
+            display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">📋</div>
           <div style="flex:1;">
-            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:1px;">${lang==="zh"?"事故处理手册":"사고처리 매뉴얼"}</div>
-            <div style="font-size:11px;color:#888;">${lang==="zh"?"各类事故处置程序·紧急联系方式":"사고 유형별 대응 절차 · 긴급 연락처"}</div>
+            <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"事故处理手册":"사고처리 매뉴얼"}</div>
+            <div style="font-size:12px;color:#888;">${lang==="zh"?"各类事故处置程序·紧急联系方式":"사고 유형별 대응 절차 · 긴급 연락처"}</div>
           </div>
-          <div style="color:#ccc;font-size:18px;">›</div>
+          <div style="color:#ccc;font-size:20px;">›</div>
         </div>
       </button>
 
       <button id="btn-main-suggest" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-        <div style="background:#fff;border-radius:13px;border:1.5px solid #dce8f4;
-          padding:0.85rem 1rem;display:flex;align-items:center;gap:0.75rem;
-          box-shadow:0 2px 6px rgba(0,0,0,.05);">
-          <div style="width:40px;height:40px;border-radius:10px;background:#e8f5e9;
-            display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">💡</div>
+        <div style="background:#fff;border-radius:14px;border:1.5px solid #dce8f4;
+          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
+          box-shadow:0 2px 8px rgba(0,0,0,.07);">
+          <div style="width:48px;height:48px;border-radius:12px;background:#e8f5e9;
+            display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">💡</div>
           <div style="flex:1;">
-            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:1px;">${lang==="zh"?"安全改进建议":"안전개선 제안"}</div>
-            <div style="font-size:11px;color:#888;">${lang==="zh"?"现场改进想法·危险因素报告":"현장 개선 아이디어 · 위험요소 신고"}</div>
+            <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"安全改进建议":"안전개선 제안"}</div>
+            <div style="font-size:12px;color:#888;">${lang==="zh"?"现场改进想法·危险因素报告":"현장 개선 아이디어 · 위험요소 신고"}</div>
           </div>
-          <div style="color:#ccc;font-size:18px;">›</div>
+          <div style="color:#ccc;font-size:20px;">›</div>
         </div>
       </button>
 
       ${isAdmin?`
       <button id="btn-main-admin" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
-        <div style="background:#1e2761;border-radius:13px;
-          padding:0.85rem 1rem;display:flex;align-items:center;gap:0.75rem;">
-          <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.15);
-            display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🛡️</div>
+        <div style="background:#1e2761;border-radius:14px;
+          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
+          box-shadow:0 2px 8px rgba(0,0,0,.15);">
+          <div style="width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.15);
+            display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🛡️</div>
           <div style="flex:1;">
-            <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:1px;">${lang==="zh"?"管理员仪表盘":"관리자 대시보드"}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.6);">${lang==="zh"?"全部事故现况·统计·管理":"전체 사고 현황 · 통계 · 관리"}</div>
+            <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:3px;">${lang==="zh"?"管理员仪表盘":"관리자 대시보드"}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.6);">${lang==="zh"?"全部事故现况·统计·管理":"전체 사고 현황 · 통계 · 관리"}</div>
           </div>
-          <div style="color:rgba(255,255,255,.4);font-size:18px;">›</div>
+          <div style="color:rgba(255,255,255,.4);font-size:20px;">›</div>
         </div>
       </button>`:""}
 
-      <div style="text-align:center;padding-top:2px;">
-        <button class="admin-link" id="go-myreport-main" style="font-size:12px;">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>
+      <!-- 내 접수 조회 + 언어변환 버튼 나란히 -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:0.2rem 0;">
+        <button class="admin-link" id="go-myreport-main" style="font-size:13px;color:#888;">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>
+        <span style="color:#ddd;font-size:14px;">|</span>
+        <button id="btn-main-lang-bottom"
+          style="padding:4px 12px;background:#f0f4ff;border:1.5px solid #dce8f4;border-radius:20px;
+          font-size:12px;font-weight:700;color:#1e2761;cursor:pointer;font-family:inherit;">
+          ${lang==="zh"?"🇰🇷 한국어":"🇨🇳 中文"}
+        </button>
       </div>
 
-    </div>
-
-    <div style="text-align:center;padding:0.5rem 0 0.75rem;">
-      <div style="font-size:10px;color:#ddd;">${APP_NAME}</div>
     </div>
   </div>
 </div>`;
@@ -1339,9 +1343,9 @@ function renderForm(){
     : `<div style="font-size:13px;color:#bbb;padding:4px 0;">${lang==="zh"?"请先选择事故类型。":"사고 유형을 먼저 선택해 주세요."}</div>`;
 
   const levelBtns = [
-    {lv:"1", cls:"lv1", badge:lang==="zh"?"最紧急":"최긴급", desc:lang==="zh"?"人员伤亡·停线·客户需立即响应":"${lang==='zh'?'人员伤亡·停线·需立即对客户响应':'인명피해·라인중단·고객사 즉시 대응 필요'}"},
-    {lv:"2", cls:"lv2", badge:lang==="zh"?"紧急":"긴급", desc:lang==="zh"?"可能影响生产·处理后30分钟内报告":"${lang==='zh'?'生产可能受阻·处置后30分钟内报告':'생산 차질 가능·수습 후 30분 내 보고'}"},
-    {lv:"3", cls:"lv3", badge:lang==="zh"?"一般":"일반", desc:lang==="zh"?"不影响生产·含定期报告":"${lang==='zh'?'无生产影响·含定期报告':'생산 영향 없음·정기 보고 포함'}"}
+    {lv:"1", cls:"lv1", badge:lang==="zh"?"最紧急":"최긴급", desc:lang==="zh"?"人员伤亡·停线·客户需立即响应":"인명피해·라인중단·고객사 즉시 대응 필요"},
+    {lv:"2", cls:"lv2", badge:lang==="zh"?"紧急":"긴급", desc:lang==="zh"?"可能影响生产·处理后30分钟内报告":"생산 차질 가능·수습 후 30분 내 보고"},
+    {lv:"3", cls:"lv3", badge:lang==="zh"?"一般":"일반", desc:lang==="zh"?"不影响生产·含定期报告":"생산 영향 없음·정기 보고 포함"}
   ].map(l=>`
     <button class="level-btn ${l.cls}${form.level===l.lv?" on":""}" data-lv="${l.lv}">
       <span class="lv-badge">Level ${l.lv} ${l.badge}</span>
@@ -1357,7 +1361,7 @@ function renderForm(){
     <button class="radio-btn${val===v?" on":""}" data-field="${field}" data-val="${v}">${label}</button>`).join("");
   };
 
-  const chkItems = CHECKS.map((t,i)=>`
+  const chkItems = T[lang].checks.map((t,i)=>`
     <label class="chk-item">
       <input type="checkbox" data-chk="${i}" ${form.checks[i]?"checked":""}/>
       <span>${t}</span>
@@ -1499,16 +1503,16 @@ function renderForm(){
 
 <!-- ── 긴급도 ── -->
 <div class="card">
-  <div class="section-title">⚡ 긴급도 판단</div>
+  <div class="section-title">${lang==="zh"?"⚡ 紧急程度判断":"⚡ 긴급도 판단"}</div>
 
   <div class="field">
-    <div class="label">긴급도 선택 <span class="req">*</span></div>
+    <div class="label">${lang==="zh"?"紧急程度":"긴급도 선택"} <span class="req">*</span></div>
     <div class="level-row">${levelBtns}</div>
     ${e.level?`<div class="err-msg">${e.level}</div>`:""}
   </div>
 
   <div class="field">
-    <div class="label">라인중단 여부 <span class="req">*</span></div>
+    <div class="label">${lang==="zh"?"停线情况":"라인중단 여부"} <span class="req">*</span></div>
     <div style="display:flex;flex-direction:column;gap:8px;">
       ${T[lang].lineStops.map(o=>`
       <button data-field="lineStop" data-val="${o.val}"
@@ -1664,7 +1668,7 @@ ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인
 
 <!-- ── 사진 첨부 ── -->
 <div class="card">
-  <div class="section-title">📷 현장 사진 첨부</div>
+  <div class="section-title">${lang==="zh"?"📷 现场照片":"📷 현장 사진 첨부"}</div>
   <div style="font-size:12px;color:#aaa;margin-bottom:12px;">${lang==="zh"?"最多可附3张 · 支持JPG, PNG, GIF":"최대 3장까지 첨부 가능 · JPG, PNG, GIF 지원"}</div>
 
   <!-- 사진 미리보기 -->
@@ -1705,7 +1709,7 @@ ${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인
 
 <!-- ── 확인사항 ── -->
 <div class="card">
-  <div class="section-title" style="margin-bottom:12px;">✅ 확인 사항</div>
+  <div class="section-title" style="margin-bottom:12px;">${lang==="zh"?"✅ 确认事项":"✅ 확인 사항"}</div>
   <div class="chk-list">${chkItems}</div>
   ${e.checks?`<div class="err-msg" style="margin-top:8px;">${e.checks}</div>`:""}
 </div>
@@ -2503,6 +2507,11 @@ function bindEvents(){
       view="login"; render();
     });
     $("btn-main-lang") && ($("btn-main-lang").onclick = () => {
+      lang = lang==="ko" ? "zh" : "ko";
+      localStorage.setItem("accLang", lang);
+      render();
+    });
+    $("btn-main-lang-bottom") && ($("btn-main-lang-bottom").onclick = () => {
       lang = lang==="ko" ? "zh" : "ko";
       localStorage.setItem("accLang", lang);
       render();
@@ -3347,6 +3356,8 @@ if(CONFIGURED){
   const app = initializeApp(firebaseConfig);
   db = getDatabase(app);
   auth = getAuth(app);
+  // ✅ 로그인 상태 로컬 영구 저장 (재접속 시 로딩 문제 해결)
+  setPersistence(auth, browserLocalPersistence).catch(e => console.warn("persistence:", e));
   entriesRef = ref(db,"accidents");
 
   // 페이지 로드 시 URL 파라미터 미리 저장 (로그인 전에도 보존)
@@ -3359,6 +3370,11 @@ if(CONFIGURED){
     if(user){
       currentUser = user;
       isAdmin = ADMIN_EMAILS.includes(user.email);
+      // ✅ 로그인 상태 복원 즉시 메인으로 이동 (로딩 화면 방지)
+      if(view==="login" || view==="register"){
+        view = "main";
+        render();
+      }
       onValue(entriesRef, snapshot => {
         entries = snapshot.val() || {};
         onValue(ref(db,"suggestions"), snap => {
