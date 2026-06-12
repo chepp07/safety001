@@ -2082,7 +2082,6 @@ function renderAdmin(){
     if(filter.search && !e.reporter.includes(filter.search) && !e.site.includes(filter.search) && !(e.accDetail||"").includes(filter.search)) return false;
     return true;
   });
-  // 최신순 정렬
   filtered.sort((a,b)=>(b[1].createdAt||"").localeCompare(a[1].createdAt||""));
 
   const lvStyle = {
@@ -2091,94 +2090,138 @@ function renderAdmin(){
     "3":{bg:"#f0faf0",color:"#2e7d32",border:"#b8e0ba"}
   };
 
-  const rows = filtered.map(([key,e])=>{
-    const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
-    const detailId = `detail-${key}`;
-    return `
-    <tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" onclick="toggleDetail('${detailId}')">
-      <td style="padding:10px 11px;font-family:monospace;font-size:11px;color:#999;white-space:nowrap;">${e.accNo||"-"}</td>
-      <td style="padding:10px 11px;font-weight:600;white-space:nowrap;">${e.site}</td>
-      <td style="padding:10px 11px;">
-        <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};">
+  // ✅ 카드 목록 HTML 미리 생성
+  const accCards = filtered.length === 0
+    ? `<div class="card" style="text-align:center;padding:2.5rem;color:#bbb;font-size:14px;">접수된 사고가 없습니다.</div>`
+    : filtered.map(([key,e])=>{
+        const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
+        return `
+  <div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;
+    margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">
+    <div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;"
+      onclick="toggleDetail('detail-${key}')">
+      <div style="flex-shrink:0;margin-top:1px;">
+        <span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;
+          font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};white-space:nowrap;">
           Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
         </span>
-      </td>
-      <td style="padding:10px 11px;white-space:nowrap;">${e.accType||"-"}</td>
-      <td style="padding:10px 11px;color:#666;">${e.accDetail||"-"}</td>
-      <td style="padding:10px 11px;text-align:center;">
-        ${ e.lineStop==="라인중단발생"
-          ? `<span style="background:#fff0f0;color:#b71c1c;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">중단발생</span>`
-          : e.lineStop==="라인중단예상"
-          ? `<span style="background:#fff8f0;color:#e65100;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">중단예상</span>`
-          : e.lineStop==="미장착"
-          ? `<span style="background:#fffde7;color:#7b5e00;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">${lang==="zh"?"未装配":"미장착"}</span>`
-          : `<span style="background:#f0faf0;color:#2e7d32;font-weight:700;padding:2px 7px;border-radius:5px;font-size:11px;white-space:nowrap;">영향없음</span>`}
-      </td>
-      <td style="padding:10px 11px;text-align:center;">
-        ${e.customerEffect==="예"
-          ?`<span style="background:#fff3e0;color:#e65100;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">O</span>`
-          :`<span style="background:#f5f5f5;color:#aaa;font-weight:700;padding:2px 8px;border-radius:5px;font-size:12px;">X</span>`}
-      </td>
-      <td style="padding:10px 11px;font-weight:600;">${e.reporter}<br><span style="font-size:11px;color:#aaa;font-weight:400;">${e.rank||""}</span></td>
-      <td style="padding:10px 11px;color:#666;font-size:12px;">${e.phone||"-"}</td>
-      <td style="padding:10px 11px;color:#888;font-size:12px;white-space:nowrap;">${(e.createdAt||"").slice(0,16)}</td>
-      <td style="padding:10px 11px;" onclick="event.stopPropagation()">
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+          <span style="font-weight:700;font-size:13px;color:#1a1a1a;">${e.site||"-"}</span>
+          <span style="font-size:12px;color:#555;">${e.accType||"-"}</span>
+          ${e.accDetail?`<span style="font-size:11px;color:#888;background:#f0f4f8;padding:1px 6px;border-radius:5px;">${e.accDetail}</span>`:""}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          ${e.lineStop==="라인중단발생"
+            ?`<span style="font-size:10px;background:#fff0f0;color:#b71c1c;font-weight:700;padding:1px 6px;border-radius:4px;">중단발생</span>`
+            :e.lineStop==="라인중단예상"
+            ?`<span style="font-size:10px;background:#fff8f0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">중단예상</span>`
+            :e.lineStop==="미장착"
+            ?`<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">미장착</span>`
+            :`<span style="font-size:10px;background:#f0faf0;color:#2e7d32;font-weight:700;padding:1px 6px;border-radius:4px;">영향없음</span>`}
+          ${e.customerEffect==="예"?`<span style="font-size:10px;background:#fff3e0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">고객사영향</span>`:""}
+          <span style="font-size:11px;color:#aaa;">${e.reporter||""} ${e.rank||""}</span>
+          <span style="font-size:11px;color:#bbb;">${(e.createdAt||"").slice(0,16)}</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px;"
+        onclick="event.stopPropagation()">
         <select class="status-sel" data-key="${key}"
+          style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:11px;
+          cursor:pointer;font-family:inherit;max-width:68px;">
+          ${["접수","처리중","완료","보류"].map(st=>`<option${e.status===st?" selected":""}>${st}</option>`).join("")}
+        </select>
+        <div style="display:flex;gap:4px;">
+          <button class="del-btn" data-key="${key}"
+            style="background:none;border:1px solid #eee;border-radius:5px;
+            cursor:pointer;color:#ccc;font-size:12px;padding:2px 6px;">✕</button>
+          <button onclick="openEditModal('${key}')"
+            style="background:#e05c00;border:none;border-radius:5px;
+            cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">
+            수정
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="detail-${key}" style="display:none;border-top:1px dashed #eef2f7;
+      padding:12px 14px;background:#f9fbfd;font-size:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div><span style="color:#aaa;">사고번호</span> <strong>${e.accNo||"-"}</strong></div>
+        <div><span style="color:#aaa;">발생위치</span> <strong>${e.location||"-"}</strong></div>
+        <div><span style="color:#aaa;">발생일시</span> <strong>${e.accDateTime||"-"}</strong></div>
+        <div><span style="color:#aaa;">연락처</span> <strong>${e.phone||"-"}</strong></div>
+      </div>
+      <div style="margin-bottom:6px;">
+        <div style="color:#aaa;margin-bottom:3px;">현재 상황</div>
+        <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;
+          padding:8px 10px;color:#333;line-height:1.6;">${(e.situation||"-").replace(/\n/g,"<br>")}</div>
+      </div>
+      ${e.actionTaken?`<div style="margin-bottom:6px;">
+        <div style="color:#aaa;margin-bottom:3px;">즉시 조치</div>
+        <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;
+          padding:8px 10px;color:#333;line-height:1.6;">${e.actionTaken.replace(/\n/g,"<br>")}</div>
+      </div>`:""}
+      ${e.followUp?`<div style="margin-bottom:6px;">
+        <div style="color:#aaa;margin-bottom:3px;">후속조치</div>
+        <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;
+          padding:8px 10px;color:#2e7d32;line-height:1.6;">${e.followUp.replace(/\n/g,"<br>")}</div>
+      </div>`:""}
+      ${e.photos&&e.photos.length>0?`<div>
+        <div style="color:#aaa;margin-bottom:4px;">현장 사진</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${(Array.isArray(e.photos)?e.photos:JSON.parse(e.photos||"[]")).filter(Boolean).map(url=>`
+          <a href="${url}" target="_blank">
+            <img src="${url}" style="width:70px;height:70px;object-fit:cover;border-radius:7px;border:1px solid #dce8f4;"/>
+          </a>`).join("")}
+        </div>
+      </div>`:""}
+      <div style="margin-top:8px;">
+        <button onclick="openEditModal('${key}')"
+          style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;
+          font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 내용 수정 + 재발송</button>
+      </div>
+    </div>
+  </div>`;
+      }).join("");
+
+  // ✅ 안전개선 제안 HTML 미리 생성
+  const sugRows = Object.entries(suggestions)
+    .sort((a,b)=>(b[1].createdAt||"").localeCompare(a[1].createdAt||""))
+    .map(([key,s])=>`
+    <tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" onclick="toggleSugDetail('sug-${key}')">
+      <td style="padding:10px 11px;font-size:12px;color:#888;white-space:nowrap;">${(s.createdAt||"").slice(0,16)}</td>
+      <td style="padding:10px 11px;font-weight:600;">${s.site||"-"}</td>
+      <td style="padding:10px 11px;">
+        <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">${s.category||"-"}</span>
+      </td>
+      <td style="padding:10px 11px;color:#333;">${s.title||"-"}</td>
+      <td style="padding:10px 11px;font-size:13px;">${s.anonymous?`<span style="color:#aaa;">익명</span>`:s.name||"-"}</td>
+      <td style="padding:10px 11px;font-size:12px;background:#fff8f0;">
+        <div style="color:#e05c00;font-weight:600;">${s.realEmail||"<span style='color:#ccc;font-size:11px;'>이전 데이터</span>"}</div>
+        <div style="color:#aaa;font-size:11px;">${s.realName||""}</div>
+      </td>
+      <td style="padding:10px 11px;" onclick="event.stopPropagation()">
+        <select class="sug-status-sel" data-key="${key}"
           style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer;font-family:inherit;">
-          ${["접수","처리중","완료","보류"].map(s=>`<option${e.status===s?" selected":""}>${s}</option>`).join("")}
+          ${["접수","검토중","완료","보류"].map(st=>`<option${s.status===st?" selected":""}>${st}</option>`).join("")}
         </select>
       </td>
-      <td style="padding:10px 11px;" onclick="event.stopPropagation()">
-        <button class="del-btn" data-key="${key}"
-          style="background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;padding:2px;">✕</button>
-      </td>
     </tr>
-    <tr id="${detailId}" style="display:none;background:#f9fbfd;">
-      <td colspan="12" style="padding:0;">
-        <div style="padding:14px 16px;font-size:13px;line-height:2;border-top:1px dashed #dce8f4;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <div style="font-size:12px;font-weight:700;color:#1e2761;">📋 상세 내용</div>
-            <button onclick="openEditModal('${key}')"
-              style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;
-              font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
-              ✏️ 내용 수정 + 재발송
-            </button>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin-bottom:10px;">
-            <div><span style="color:#aaa;">발생위치</span> &nbsp;<strong>${e.location||"-"}</strong></div>
-            <div><span style="color:#aaa;">사고발생일시</span> &nbsp;<strong>${e.accDateTime||"-"}</strong></div>
-            <div><span style="color:#aaa;">고객사영향</span> &nbsp;<strong>${e.customerEffect||"-"}</strong></div>
-            <div><span style="color:#aaa;">라인중단</span> &nbsp;<strong>${e.lineStop||"-"}</strong></div>
-            <div><span style="color:#aaa;">추가지원</span> &nbsp;<strong>${e.supportNeeded||"없음"}</strong></div>
-          </div>
-          <div style="margin-bottom:6px;"><span style="color:#aaa;">현재 상황</span><br>
-            <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 11px;margin-top:4px;color:#333;line-height:1.7;">${(e.situation||"-").replace(/\n/g,"<br>")}</div>
-          </div>
-          <div style="margin-bottom:6px;"><span style="color:#aaa;">즉시 조치</span><br>
-            <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 11px;margin-top:4px;color:#333;line-height:1.7;">${(e.actionTaken||"없음").replace(/\n/g,"<br>")}</div>
-          </div>
-          ${e.followUp?`<div style="margin-bottom:6px;"><span style="color:#aaa;">후속조치</span><br>
-            <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;padding:8px 11px;margin-top:4px;color:#2e7d32;line-height:1.7;">${e.followUp.replace(/\n/g,"<br>")}</div>
-          </div>`:""}
-          ${e.victims?`<div style="margin-bottom:6px;"><span style="color:#aaa;">인사사고 대상자 (${e.accidentType||""})</span><br>
-            <div style="background:#fff5f5;border:1px solid #f5c6c6;border-radius:7px;padding:8px 11px;margin-top:4px;font-size:12px;color:#333;line-height:1.8;">
-              <strong>피해자:</strong> ${(()=>{try{return JSON.parse(e.victims).map(v=>v.unknown?"미확인":`${v.name} (${v.affiliation})`).join(", ");}catch{return e.victims;}})()}<br>
-              ${e.perpetrators?`<strong>가해자:</strong> ${(()=>{try{return JSON.parse(e.perpetrators).map(p=>p.unknown?"미확인":`${p.name} (${p.affiliation})`).join(", ");}catch{return e.perpetrators;}})()}`:""}
-            </div>
-          </div>`:""}
-          ${e.photos&&e.photos.length>0?`
-          <div><span style="color:#aaa;">현장 사진</span><br>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
-              ${(Array.isArray(e.photos)?e.photos:JSON.parse(e.photos||"[]")).filter(Boolean).map(url=>`
-              <a href="${url}" target="_blank">
-                <img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:7px;border:1px solid #dce8f4;cursor:pointer;"/>
-              </a>`).join("")}
-            </div>
-          </div>`:""}
+    <tr id="sug-${key}" style="display:none;background:#f9fbfd;">
+      <td colspan="7" style="padding:14px 16px;font-size:13px;line-height:1.7;border-top:1px dashed #dce8f4;">
+        <div style="font-weight:700;color:#2e7d32;margin-bottom:8px;">💡 상세 내용</div>
+        <div style="background:#fff;border:1px solid #dce8f4;border-radius:8px;padding:10px 12px;color:#333;">
+          ${(s.detail||"-").replace(/\n/g,"<br>")}
         </div>
+        ${s.anonymous&&s.realEmail?`
+        <div style="margin-top:10px;background:#fff8f0;border:1px solid #fcd8a8;border-radius:8px;padding:10px 12px;">
+          <div style="font-size:11px;font-weight:700;color:#e05c00;margin-bottom:4px;">🔑 관리자 전용 — 실제 계정 정보</div>
+          <div style="font-size:13px;color:#333;">이름: <strong>${s.realName||"미입력"}</strong></div>
+          <div style="font-size:13px;color:#333;">이메일: <strong>${s.realEmail}</strong></div>
+        </div>`:""}
       </td>
-    </tr>`;
-  }).join("");
+    </tr>`).join("");
 
   return `
 <div style="padding-bottom:2rem;">
@@ -2191,7 +2234,7 @@ function renderAdmin(){
       <button onclick="location.reload()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">새로고침</button>
       <button id="btn-excel" style="padding:7px 12px;border:1px solid #1d6f42;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;color:#1d6f42;font-weight:500;">⬇ 엑셀 다운로드</button>
       <button id="go-form" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">접수 폼 보기</button>
-      <button id="go-logout" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer;color:#999;font-family:inherit;">${lang==="zh"?"退出登录":"로그아웃"}</button>
+      <button id="go-logout" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer;color:#999;font-family:inherit;">로그아웃</button>
     </div>
   </div>
 
@@ -2214,6 +2257,7 @@ function renderAdmin(){
   </div>
 
   ${adminTab==='accidents' ? `
+  <!-- 통계 카드 -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:1.25rem;">
     <div style="background:#e8eef7;border-radius:9px;padding:10px 13px;">
       <div style="font-size:12px;color:#3a5a8a;margin-bottom:3px;">총 접수</div>
@@ -2242,7 +2286,7 @@ function renderAdmin(){
     <input id="a-search" value="${filter.search}" placeholder="사업소 / 접수자 / 세부유형"
       style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;min-width:160px;font-family:inherit;flex:1;"/>
     <select id="a-acctype" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;">
-      ${["전체","인사사고","제품사고","공급사고"].map(s=>`<option${filter.accType===s?" selected":""}>${s}</option>`).join("")}
+      ${["전체","인사사고","제품사고","공급사고","차량사고"].map(s=>`<option${filter.accType===s?" selected":""}>${s}</option>`).join("")}
     </select>
     <select id="a-level" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;">
       <option value="전체">전체 긴급도</option>
@@ -2252,114 +2296,8 @@ function renderAdmin(){
     </select>
   </div>
 
-  <!-- 카드 목록 -->
-  <div id="admin-table">
-    ${filtered.length===0
-      ? `<div class="card" style="text-align:center;padding:2.5rem;color:#bbb;font-size:14px;">접수된 사고가 없습니다.</div>`
-      : filtered.map(([key,e])=>{
-          const lvStyle = {
-            "1":{bg:"#fff5f5",color:"#b71c1c",border:"#f5c6c6"},
-            "2":{bg:"#fff8f0",color:"#e65100",border:"#fcd8a8"},
-            "3":{bg:"#f0faf0",color:"#2e7d32",border:"#b8e0ba"}
-          };
-          const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
-          return `
-    <div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;
-      margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">
-
-      <!-- 카드 헤더 클릭 시 상세 펼치기 -->
-      <div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;"
-        onclick="toggleDetail('detail-${key}')">
-
-        <!-- 긴급도 배지 -->
-        <div style="flex-shrink:0;margin-top:1px;">
-          <span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;
-            font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};
-            white-space:nowrap;">
-            Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
-          </span>
-        </div>
-
-        <!-- 주요 정보 -->
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-            <span style="font-weight:700;font-size:13px;color:#1a1a1a;">${e.site||"-"}</span>
-            <span style="font-size:12px;color:#555;">${e.accType||"-"}</span>
-            ${e.accDetail?`<span style="font-size:11px;color:#888;background:#f0f4f8;padding:1px 6px;border-radius:5px;">${e.accDetail}</span>`:""}
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            ${e.lineStop==="라인중단발생"
-              ?`<span style="font-size:10px;background:#fff0f0;color:#b71c1c;font-weight:700;padding:1px 6px;border-radius:4px;">중단발생</span>`
-              :e.lineStop==="라인중단예상"
-              ?`<span style="font-size:10px;background:#fff8f0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">중단예상</span>`
-              :e.lineStop==="미장착"
-              ?`<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">${lang==="zh"?"未装配":"미장착"}</span>`
-              :`<span style="font-size:10px;background:#f0faf0;color:#2e7d32;font-weight:700;padding:1px 6px;border-radius:4px;">영향없음</span>`}
-            ${e.customerEffect==="예"
-              ?`<span style="font-size:10px;background:#fff3e0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">고객사영향</span>`:""}
-            <span style="font-size:11px;color:#aaa;">${e.reporter||""} ${e.rank||""}</span>
-            <span style="font-size:11px;color:#bbb;">${(e.createdAt||"").slice(0,16)}</span>
-          </div>
-        </div>
-
-        <!-- 우측: 상태 + 수정 -->
-        <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px;"
-          onclick="event.stopPropagation()">
-          <select class="status-sel" data-key="${key}"
-            style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:11px;
-            cursor:pointer;font-family:inherit;max-width:68px;">
-            ${["접수","처리중","완료","보류"].map(st=>`<option${e.status===st?" selected":""}>${st}</option>`).join("")}
-          </select>
-          <div style="display:flex;gap:4px;">
-            <button class="del-btn" data-key="${key}"
-              style="background:none;border:1px solid #eee;border-radius:5px;
-              cursor:pointer;color:#ccc;font-size:12px;padding:2px 6px;">✕</button>
-            <button onclick="openEditModal('${key}')"
-              style="background:#e05c00;border:none;border-radius:5px;
-              cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">
-              수정
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 상세 펼침 영역 -->
-      <div id="detail-${key}" style="display:none;border-top:1px dashed #eef2f7;
-        padding:12px 14px;background:#f9fbfd;font-size:12px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-          <div><span style="color:#aaa;">사고번호</span> <strong>${e.accNo||"-"}</strong></div>
-          <div><span style="color:#aaa;">발생위치</span> <strong>${e.location||"-"}</strong></div>
-          <div><span style="color:#aaa;">발생일시</span> <strong>${e.accDateTime||"-"}</strong></div>
-          <div><span style="color:#aaa;">연락처</span> <strong>${e.phone||"-"}</strong></div>
-        </div>
-        <div style="margin-bottom:6px;">
-          <div style="color:#aaa;margin-bottom:3px;">현재 상황</div>
-          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;
-            padding:8px 10px;color:#333;line-height:1.6;">${(e.situation||"-").replace(/\n/g,"<br>")}</div>
-        </div>
-        ${e.actionTaken?`<div style="margin-bottom:6px;">
-          <div style="color:#aaa;margin-bottom:3px;">즉시 조치</div>
-          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;
-            padding:8px 10px;color:#333;line-height:1.6;">${(e.actionTaken).replace(/\n/g,"<br>")}</div>
-        </div>`:""}
-        ${e.followUp?`<div style="margin-bottom:6px;">
-          <div style="color:#aaa;margin-bottom:3px;">후속조치</div>
-          <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;
-            padding:8px 10px;color:#2e7d32;line-height:1.6;">${e.followUp.replace(/\n/g,"<br>")}</div>
-        </div>`:""}
-        ${e.photos&&e.photos.length>0?`<div>
-          <div style="color:#aaa;margin-bottom:4px;">현장 사진</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            ${(Array.isArray(e.photos)?e.photos:JSON.parse(e.photos||"[]")).filter(Boolean).map(url=>`
-            <a href="${url}" target="_blank">
-              <img src="${url}" style="width:70px;height:70px;object-fit:cover;border-radius:7px;border:1px solid #dce8f4;"/>
-            </a>`).join("")}
-          </div>
-        </div>`:""}
-      </div>
-    </div>`;
-        }).join("")}
-  </div>
+  <!-- ✅ accCards 변수 사용 -->
+  <div id="admin-table">${accCards}</div>
   <div id="admin-count" style="font-size:12px;color:#bbb;margin-top:4px;text-align:right;">총 ${filtered.length}건</div>
 ` : `
   <!-- 안전개선 제안 탭 -->
@@ -2377,56 +2315,11 @@ function renderAdmin(){
             <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">분류</th>
             <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">제목</th>
             <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">제안자</th>
-            <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;color:#e05c00;">🔑 실제 계정</th>
+            <th style="padding:9px 11px;text-align:left;font-weight:600;color:#e05c00;">🔑 실제 계정</th>
             <th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">상태</th>
           </tr>
         </thead>
-        <tbody>
-          ${Object.entries(suggestions)
-            .sort((a,b)=>(b[1].createdAt||"").localeCompare(a[1].createdAt||""))
-            .map(([key,s])=>`
-            <tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" onclick="toggleSugDetail('sug-${key}')">
-              <td style="padding:10px 11px;font-size:12px;color:#888;white-space:nowrap;">${(s.createdAt||"").slice(0,16)}</td>
-              <td style="padding:10px 11px;font-weight:600;">${s.site||"-"}</td>
-              <td style="padding:10px 11px;">
-                <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">${s.category||"-"}</span>
-              </td>
-              <td style="padding:10px 11px;color:#333;">${s.title||"-"}</td>
-              <td style="padding:10px 11px;font-size:13px;">
-                ${s.anonymous
-                  ? `<span style="color:#aaa;">익명</span>`
-                  : `${s.name||"-"}`}
-              </td>
-              <td style="padding:10px 11px;font-size:12px;background:#fff8f0;">
-                <div style="color:#e05c00;font-weight:600;">${s.realEmail||"<span style='color:#ccc;font-size:11px;'>이전 데이터 (미수집)</span>"}</div>
-                <div style="color:#aaa;font-size:11px;">${s.realName||""}</div>
-              </td>
-              <td style="padding:10px 11px;" onclick="event.stopPropagation()">
-                <select class="sug-status-sel" data-key="${key}"
-                  style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer;font-family:inherit;">
-                  ${["접수","검토중","완료","보류"].map(st=>`<option${s.status===st?" selected":""}>${st}</option>`).join("")}
-                </select>
-              </td>
-            </tr>
-            <tr id="sug-${key}" style="display:none;background:#f9fbfd;">
-              <td colspan="7" style="padding:14px 16px;font-size:13px;line-height:1.7;border-top:1px dashed #dce8f4;">
-                <div style="font-weight:700;color:#2e7d32;margin-bottom:8px;">💡 상세 내용</div>
-                <div style="background:#fff;border:1px solid #dce8f4;border-radius:8px;padding:10px 12px;color:#333;">
-                  ${(s.detail||"-").replace(/\n/g,"<br>")}
-                </div>
-                ${s.anonymous?`
-                <div style="margin-top:10px;background:#fff8f0;border:1px solid #fcd8a8;border-radius:8px;padding:10px 12px;">
-                  <div style="font-size:11px;font-weight:700;color:#e05c00;margin-bottom:4px;">🔑 관리자 전용 — 실제 계정 정보</div>
-                  ${s.realEmail ? `
-                  <div style="font-size:13px;color:#333;">이름: <strong>${s.realName||"미입력"}</strong></div>
-                  <div style="font-size:13px;color:#333;">이메일: <strong>${s.realEmail}</strong></div>
-                  ` : `
-                  <div style="font-size:12px;color:#aaa;">이 제안은 계정 추적 기능 추가 이전에 저장된 데이터입니다.</div>
-                  `}
-                </div>`:""}
-              </td>
-            </tr>`).join("")}
-        </tbody>
+        <tbody>${sugRows}</tbody>
       </table>
     </div>
   </div>
@@ -2447,6 +2340,7 @@ function renderAdmin(){
   </div>
 </div>`;
 }
+
 
 /* ── 이벤트 바인딩 ── */
 function bindEvents(){
