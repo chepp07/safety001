@@ -20,7 +20,9 @@
 (function(){
   var ua = navigator.userAgent || "";
   var isWebView = /KAKAOTALK|NAVER|Line\/|Instagram|FB_IAB|FBAN|FBAV|Twitter|MicroMessenger/i.test(ua);
-  if(isWebView){
+  // 사고 알림 링크(?a=... / ?acc=...)는 로그인이 필요 없으므로 인앱 브라우저에서도 바로 열람 허용
+  var isDetailLink = /[?&](acc|a)=/.test(location.search);
+  if(isWebView && !isDetailLink){
     document.addEventListener("DOMContentLoaded", function(){
       var d = document.getElementById("app");
       if(!d) return;
