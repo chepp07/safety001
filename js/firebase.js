@@ -9,10 +9,12 @@ import {
 
 let _unsubEntries = null;
 let _unsubSuggestions = null;
+let _unsubRisk = null;
 
 function _stopListeners() {
   if(_unsubEntries){ _unsubEntries(); _unsubEntries = null; }
   if(_unsubSuggestions){ _unsubSuggestions(); _unsubSuggestions = null; }
+  if(_unsubRisk){ _unsubRisk(); _unsubRisk = null; }
 }
 
 function _startListeners() {
@@ -61,6 +63,15 @@ function _startListeners() {
     state.loadError = err.message;
     _suggestionsReady = true;
     _tryRender();
+  });
+
+  // 수시 위험성평가 — 초기 렌더 게이팅과 무관한 독립 리스너
+  _unsubRisk = onValue(ref(state.db, "riskAssessments"), snap => {
+    state.riskAssessments = snap.val() || {};
+    if(state.view === "risk") render();
+  }, err => {
+    console.error("riskAssessments 읽기 실패:", err.message);
+    state.riskAssessments = {};
   });
 }
 

@@ -8,6 +8,7 @@ import { renderForm } from "./views/form.js";
 import { renderSuccess } from "./views/success.js";
 import { renderMyReport, renderAccDetail } from "./views/myreport.js";
 import { renderAdmin } from "./views/admin.js";
+import { renderRisk } from "./views/risk.js";
 
 const VIEW_ROOT = new Set(["login", "register", "main"]);
 const VIEW_BACK = new Map([
@@ -17,6 +18,7 @@ const VIEW_BACK = new Map([
   ["myreport",  "form"],
   ["success",   "form"],
   ["admin",     "main"],
+  ["risk",      "main"],
   ["accdetail", "login"],
 ]);
 
@@ -56,6 +58,7 @@ export function render() {
     case "myreport":  html = renderMyReport(); break;
     case "accdetail": html = renderAccDetail(); break;
     case "admin":     html = renderAdmin();    break;
+    case "risk":      html = renderRisk();     break;
     default:          html = renderLogin();
   }
 

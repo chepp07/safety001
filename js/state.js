@@ -9,10 +9,14 @@ export const state = {
   // DB 데이터
   entries: {},
   suggestions: {},
+  riskAssessments: {},
 
   // UI 상태
   adminTab: "accidents",   // "accidents" | "suggestions"
   view: "login",
+
+  // 수시 위험성평가
+  risk: { mode: "list", draft: null, current: null },   // mode: "list" | "editor" | "report"
 
   // 폼 상태
   saving: false,

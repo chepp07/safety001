@@ -99,6 +99,20 @@ export function renderMain() {
           </div>
           <div style="color:rgba(255,255,255,.4);font-size:20px;">›</div>
         </div>
+      </button>
+
+      <button id="btn-main-risk" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+        <div style="background:#fff;border-radius:14px;border:1.5px solid #c9d9ef;
+          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
+          box-shadow:0 2px 8px rgba(0,0,0,.07);">
+          <div style="width:50px;height:50px;border-radius:12px;background:#eaf0fb;
+            display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">📑</div>
+          <div style="flex:1;">
+            <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"临时风险评估":"수시 위험성평가"}</div>
+            <div style="font-size:12px;color:#888;">${lang==="zh"?"事故后法定风险评估·完成报告生成":"사고 후 법정 위험성평가 · 완료보고서 생성"}</div>
+          </div>
+          <div style="color:#ccc;font-size:20px;">›</div>
+        </div>
       </button>`:""}
 
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:2px 0;">

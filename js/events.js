@@ -8,6 +8,9 @@ import {
   updateAdminTable, downloadExcel, showLoginModal,
   setAdminTab, toggleDetail, toggleSugDetail, openEditModal, editSelectType
 } from "./features/admin.js";
+import {
+  makeEmptyRA, makeEmptyHazard, loadFromAccident, saveRA, deleteRA, loadDraftFromSaved
+} from "./features/risk.js";
 import { signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { ref, update, remove, push }
@@ -85,6 +88,10 @@ export function bindEvents() {
       state.view="suggest"; render();
     });
     $("btn-main-admin")?.addEventListener("click",   () => { state.view="admin"; render(); });
+    $("btn-main-risk")?.addEventListener("click",    () => {
+      state.risk = { mode:"list", draft:null, current:null };
+      state.view="risk"; render();
+    });
     $("go-myreport-main")?.addEventListener("click", () => {
       if(state.currentUser) state.myReportPhone = state.currentUser.phoneNumber || "";
       state.view="myreport"; render();
@@ -95,6 +102,116 @@ export function bindEvents() {
   if(view==="manual"){
     $("btn-manual-back")?.addEventListener("click",  () => { state.view="main"; render(); });
     $("btn-manual-back2")?.addEventListener("click", () => { state.view="main"; render(); });
+  }
+
+  // ── 수시 위험성평가 ──
+  if(view==="risk"){
+    const risk = state.risk;
+    $("btn-risk-back")?.addEventListener("click", () => { state.view="main"; render(); });
+
+    if(risk.mode==="list"){
+      $("btn-risk-new")?.addEventListener("click", () => {
+        state.risk.draft = makeEmptyRA();
+        state.risk.mode = "editor"; render();
+      });
+      document.querySelectorAll(".ra-edit-btn").forEach(b => {
+        b.addEventListener("click", () => { loadDraftFromSaved(b.dataset.key); state.risk.mode="editor"; render(); });
+      });
+      document.querySelectorAll(".ra-report-btn").forEach(b => {
+        b.addEventListener("click", () => {
+          state.risk.current = state.riskAssessments[b.dataset.key];
+          state.risk.mode="report"; render();
+        });
+      });
+      document.querySelectorAll(".ra-del-btn").forEach(b => {
+        b.addEventListener("click", async () => {
+          if(!confirm("이 수시 위험성평가를 삭제하시겠습니까?")) return;
+          await deleteRA(b.dataset.key);   // 리스너가 목록을 다시 그림
+        });
+      });
+    }
+
+    if(risk.mode==="editor"){
+      const d = risk.draft;
+      $("ra-acc")?.addEventListener("change", e => {
+        if(e.target.value) loadFromAccident(e.target.value);
+        else { d.accNo=""; d.accSnapshot=null; }
+        render();
+      });
+      $("ra-site")?.addEventListener("change",        e => { d.site=e.target.value; });
+      $("ra-date")?.addEventListener("change",        e => { d.assessDate=e.target.value; });
+      $("ra-assessor")?.addEventListener("input",     e => { d.assessor=e.target.value; });
+      $("ra-participants")?.addEventListener("input", e => { d.participants=e.target.value; });
+      $("ra-reason")?.addEventListener("change",      e => { d.reason=e.target.value; });
+      $("ra-target")?.addEventListener("input",       e => { d.targetWork=e.target.value; });
+      $("ra-conclusion")?.addEventListener("input",   e => { d.conclusion=e.target.value; });
+
+      document.querySelectorAll(".hz-f").forEach(el => {
+        el.addEventListener("input", () => { d.hazards[+el.dataset.hz][el.dataset.hf] = el.value; });
+      });
+      document.querySelectorAll(".hz-sel").forEach(el => {
+        el.addEventListener("change", () => { d.hazards[+el.dataset.hz][el.dataset.hsel] = +el.value; render(); });
+      });
+      document.querySelectorAll(".hz-chk").forEach(el => {
+        el.addEventListener("change", () => { d.hazards[+el.dataset.hz].done = el.checked; });
+      });
+      document.querySelectorAll(".hz-remove").forEach(el => {
+        el.addEventListener("click", () => {
+          d.hazards.splice(+el.dataset.hz, 1);
+          if(d.hazards.length===0) d.hazards.push(makeEmptyHazard());
+          render();
+        });
+      });
+      $("btn-hz-add")?.addEventListener("click", () => { d.hazards.push(makeEmptyHazard()); render(); });
+
+      const rpi = $("ra-photo-input");
+      if(rpi){
+        rpi.addEventListener("change", async e => {
+          const files = Array.from(e.target.files);
+          const remaining = 3 - d.photos.filter(p=>p).length;
+          for(const file of files.slice(0, remaining)){
+            d.photosPreviews.push(URL.createObjectURL(file));
+            d.photos.push("uploading");
+            render();
+            const url = await uploadPhotoDirectly(file);
+            const idx = d.photos.indexOf("uploading");
+            if(idx!==-1){ d.photos[idx] = url||""; if(url) d.photosPreviews[idx]=url; }
+            render();
+          }
+        });
+      }
+      document.querySelectorAll(".ra-photo-del").forEach(b => {
+        b.addEventListener("click", () => {
+          const idx=+b.dataset.idx;
+          d.photos.splice(idx,1); d.photosPreviews.splice(idx,1); render();
+        });
+      });
+
+      $("btn-ra-save")?.addEventListener("click", async () => {
+        const res = await saveRA(false);
+        const errEl = $("ra-err");
+        if(res.ok){ state.risk.mode="list"; render(); }
+        else if(errEl){ errEl.textContent=res.msg; errEl.style.display="block"; window.scrollTo(0,0); }
+      });
+      $("btn-ra-complete")?.addEventListener("click", async () => {
+        const res = await saveRA(true);
+        const errEl = $("ra-err");
+        if(res.ok){ state.risk.current = res.data; state.risk.mode="report"; render(); }
+        else if(errEl){ errEl.textContent=res.msg; errEl.style.display="block"; window.scrollTo(0,0); }
+      });
+    }
+
+    if(risk.mode==="report"){
+      $("btn-ra-report-back")?.addEventListener("click", () => {
+        state.risk.mode="list"; state.risk.current=null; render();
+      });
+      $("btn-ra-report-edit")?.addEventListener("click", () => {
+        const cur = state.risk.current;
+        const key = Object.keys(state.riskAssessments).find(k => state.riskAssessments[k].raNo === cur.raNo);
+        if(key) loadDraftFromSaved(key);
+        state.risk.mode="editor"; render();
+      });
+    }
   }
 
   // ── 안전개선 제안 ──

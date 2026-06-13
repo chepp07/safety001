@@ -21,10 +21,12 @@ const ASSETS = [
   './js/views/success.js',
   './js/views/myreport.js',
   './js/views/admin.js',
+  './js/views/risk.js',
   './js/features/voice.js',
   './js/features/photo.js',
   './js/features/submit.js',
   './js/features/admin.js',
+  './js/features/risk.js',
 ];
 
 // 설치 시 캐시 저장
