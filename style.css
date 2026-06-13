@@ -1,0 +1,209 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: #f0f4f8;
+  color: #1a1a1a;
+  min-height: 100vh;
+}
+
+.page { max-width: 580px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+/* ── 관리자 모드 PC 전체 너비 ── */
+body.admin-mode { background: #f0f4f8; }
+body.admin-mode .page {
+  max-width: 100%;
+  padding: 1.5rem 2rem 3rem;
+}
+@media (min-width: 1024px) {
+  body.admin-mode .page {
+    padding: 1.5rem 3rem 3rem;
+  }
+}
+
+/* ── 헤더 ── */
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid #d9e4ef;
+}
+.icon-wrap {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #fff0f0; margin: 0 auto 1rem;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+}
+.form-title { font-size: 20px; font-weight: 700; line-height: 1.45; margin-bottom: 10px; color: #1a1a1a; }
+.form-desc { font-size: 13.5px; color: #666; line-height: 1.75; margin-bottom: 14px; }
+.notice-box {
+  background: #fff8f0; border-left: 3px solid #e05c00;
+  border-radius: 0 8px 8px 0; padding: .8rem 1rem;
+  text-align: left; font-size: 13px; color: #555; line-height: 1.95;
+}
+.notice-box b { color: #e05c00; }
+
+/* ── 섹션 타이틀 ── */
+.section-title {
+  font-size: 13px; font-weight: 700; color: #e05c00;
+  text-transform: uppercase; letter-spacing: .05em;
+  margin-bottom: 1rem; margin-top: .25rem;
+  display: flex; align-items: center; gap: 6px;
+}
+.section-title::after {
+  content:''; flex:1; height:1px; background:#ffe0cc;
+}
+
+/* ── 카드 ── */
+.card {
+  background: #fff; border-radius: 14px;
+  border: 1px solid #dce8f4; padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── 필드 ── */
+.field { margin-bottom: 1.15rem; }
+.field:last-child { margin-bottom: 0; }
+.label {
+  font-size: 14px; font-weight: 600; color: #333;
+  margin-bottom: 7px; display: flex; align-items: center; gap: 4px;
+}
+.req { color: #e05c00; font-size: 13px; }
+.input, .select, .textarea {
+  width: 100%; padding: 10px 13px;
+  border: 1.5px solid #ddd; border-radius: 9px;
+  font-size: 15px; color: #1a1a1a; background: #fff;
+  outline: none; font-family: inherit; transition: border-color .15s;
+}
+.input:focus, .select:focus, .textarea:focus {
+  border-color: #e05c00; box-shadow: 0 0 0 3px rgba(224,92,0,.1);
+}
+.input.err, .select.err, .textarea.err { border-color: #e74c3c; }
+.err-msg { font-size: 12px; color: #e05c00; margin-top: 5px; }
+.textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+.select { cursor: pointer; -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px;
+}
+
+/* ── 긴급도 버튼 ── */
+.level-row { display: flex; flex-direction: column; gap: 8px; }
+.level-btn {
+  width: 100%; padding: 12px 14px; border-radius: 9px; font-size: 14px;
+  border: 1.5px solid #ddd; background: #fff; color: #666;
+  cursor: pointer; transition: all .15s; font-family: inherit; font-weight: 500;
+  text-align: left; display: flex; align-items: center; gap: 10px;
+}
+.level-btn .lv-badge {
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.level-btn.lv1 .lv-badge { background: #ffe0e0; color: #b71c1c; }
+.level-btn.lv2 .lv-badge { background: #fff3e0; color: #e65100; }
+.level-btn.lv3 .lv-badge { background: #e8f5e9; color: #2e7d32; }
+.level-btn.on.lv1 { border-color: #b71c1c; background: #fff5f5; }
+.level-btn.on.lv2 { border-color: #e65100; background: #fff8f0; }
+.level-btn.on.lv3 { border-color: #2e7d32; background: #f0faf0; }
+.level-btn .lv-desc { font-size: 12px; color: #999; margin-top: 2px; font-weight: 400; }
+.level-btn-inner { display: flex; flex-direction: column; }
+
+/* ── 라디오 버튼 스타일 ── */
+.radio-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.radio-btn {
+  padding: 8px 16px; border-radius: 20px; font-size: 13.5px;
+  border: 1.5px solid #ddd; background: #fff; color: #888;
+  cursor: pointer; transition: all .15s; font-family: inherit; font-weight: 500;
+}
+.radio-btn.on { border-color: #e05c00; background: #fff3eb; color: #e05c00; }
+
+/* ── 체크박스 ── */
+.chk-list { display: flex; flex-direction: column; gap: 11px; }
+.chk-item { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.chk-item input[type=checkbox] {
+  width: 17px; height: 17px; accent-color: #e05c00;
+  cursor: pointer; flex-shrink: 0; margin-top: 2px;
+}
+.chk-item span { font-size: 14px; color: #555; line-height: 1.55; user-select: none; }
+
+/* ── 제출 버튼 ── */
+.submit-btn {
+  width: 100%; padding: 14px; background: #e05c00; color: #fff;
+  border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: background .15s; font-family: inherit;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.submit-btn:hover { background: #c44f00; }
+.submit-btn:disabled { background: #f0b48a; cursor: not-allowed; }
+
+/* ── 완료 화면 ── */
+.success-wrap {
+  text-align: center; padding: 2.5rem 1.5rem;
+  background: #fff; border-radius: 14px; border: 1px solid #dce8f4;
+}
+.success-icon {
+  width: 60px; height: 60px; border-radius: 50%; background: #fff0e0;
+  margin: 0 auto 1.25rem;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+}
+.success-title { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+.success-desc { font-size: 14px; color: #666; line-height: 1.7; margin-bottom: 1.25rem; }
+.receipt {
+  background: #f5f8fc; border-radius: 10px; padding: 1rem 1.25rem;
+  text-align: left; font-size: 13.5px; color: #555;
+  line-height: 2.1; margin-bottom: 1.5rem;
+}
+.receipt strong { color: #1a1a1a; }
+.receipt .lv1-text { color: #b71c1c; font-weight: 700; }
+.receipt .lv2-text { color: #e65100; font-weight: 700; }
+.receipt .lv3-text { color: #2e7d32; font-weight: 700; }
+.reset-btn {
+  padding: 11px 28px; background: #e05c00; color: #fff;
+  border: none; border-radius: 9px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
+.reset-btn:hover { background: #c44f00; }
+
+/* ── 로딩 ── */
+.loading-bar { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
+
+/* ── 에러 배너 ── */
+.err-banner {
+  background: #fff0ee; border: 1px solid #f5b7b1; border-radius: 9px;
+  padding: 10px 14px; font-size: 13px; color: #c0392b; margin-bottom: 12px;
+}
+
+/* ── 관리자 링크 ── */
+.admin-link-wrap { text-align: center; margin-top: 1.75rem; }
+.admin-link {
+  font-size: 12px; color: #ccc; background: none; border: none;
+  cursor: pointer; text-decoration: underline; font-family: inherit;
+}
+
+/* ── Firebase 설정 안내 ── */
+.setup-banner {
+  background: #fffbe6; border: 1px solid #f9c74f; border-radius: 10px;
+  padding: 1rem 1.25rem; font-size: 13px; color: #7a6000;
+  line-height: 1.8; margin-bottom: 1.25rem;
+}
+.setup-banner strong { color: #5a4400; }
+.setup-banner code {
+  background: #fff3c4; padding: 1px 5px; border-radius: 4px;
+  font-family: monospace; font-size: 12px;
+}
+
+/* ── 사고번호 배지 ── */
+.acc-no-badge {
+  display: inline-block; background: #e05c00; color: #fff;
+  font-size: 13px; font-weight: 700; padding: 3px 12px; border-radius: 20px;
+  margin-bottom: 12px; letter-spacing: .04em;
+}
+
+@media (max-width: 420px) {
+  .radio-row { gap: 6px; }
+  .radio-btn { padding: 7px 12px; font-size: 13px; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.4); }
+}

@@ -1,10 +1,30 @@
-const CACHE_NAME = 'safety001-v3';
+const CACHE_NAME = 'safety001-v5';
 const ASSETS = [
-  '/safety001/',
-  '/safety001/index.html',
-  '/safety001/manifest.json',
-  '/safety001/icon-192.png',
-  '/safety001/icon-512.png'
+  './',
+  './index.html',
+  './style.css',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './js/main.js',
+  './js/config.js',
+  './js/state.js',
+  './js/utils.js',
+  './js/router.js',
+  './js/firebase.js',
+  './js/events.js',
+  './js/views/login.js',
+  './js/views/main.js',
+  './js/views/manual.js',
+  './js/views/suggest.js',
+  './js/views/form.js',
+  './js/views/success.js',
+  './js/views/myreport.js',
+  './js/views/admin.js',
+  './js/features/voice.js',
+  './js/features/photo.js',
+  './js/features/submit.js',
+  './js/features/admin.js',
 ];
 
 // 설치 시 캐시 저장

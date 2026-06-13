@@ -1,0 +1,3427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#e05c00"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="사고접수"/>
+<meta name="description" content="현장 사고 즉시 접수 시스템"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>현장 사고 접수</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #f0f4f8;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+
+  .page { max-width: 580px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+  /* ── 관리자 모드 PC 전체 너비 ── */
+  body.admin-mode { background: #f0f4f8; }
+  body.admin-mode .page {
+    max-width: 100%;
+    padding: 1.5rem 2rem 3rem;
+  }
+  @media (min-width: 1024px) {
+    body.admin-mode .page {
+      padding: 1.5rem 3rem 3rem;
+    }
+  }
+
+  /* ── 헤더 ── */
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid #d9e4ef;
+  }
+  .icon-wrap {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #fff0f0; margin: 0 auto 1rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+  }
+  .form-title { font-size: 20px; font-weight: 700; line-height: 1.45; margin-bottom: 10px; color: #1a1a1a; }
+  .form-desc { font-size: 13.5px; color: #666; line-height: 1.75; margin-bottom: 14px; }
+  .notice-box {
+    background: #fff8f0; border-left: 3px solid #e05c00;
+    border-radius: 0 8px 8px 0; padding: .8rem 1rem;
+    text-align: left; font-size: 13px; color: #555; line-height: 1.95;
+  }
+  .notice-box b { color: #e05c00; }
+
+  /* ── 섹션 타이틀 ── */
+  .section-title {
+    font-size: 13px; font-weight: 700; color: #e05c00;
+    text-transform: uppercase; letter-spacing: .05em;
+    margin-bottom: 1rem; margin-top: .25rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .section-title::after {
+    content:''; flex:1; height:1px; background:#ffe0cc;
+  }
+
+  /* ── 카드 ── */
+  .card {
+    background: #fff; border-radius: 14px;
+    border: 1px solid #dce8f4; padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* ── 필드 ── */
+  .field { margin-bottom: 1.15rem; }
+  .field:last-child { margin-bottom: 0; }
+  .label {
+    font-size: 14px; font-weight: 600; color: #333;
+    margin-bottom: 7px; display: flex; align-items: center; gap: 4px;
+  }
+  .req { color: #e05c00; font-size: 13px; }
+  .input, .select, .textarea {
+    width: 100%; padding: 10px 13px;
+    border: 1.5px solid #ddd; border-radius: 9px;
+    font-size: 15px; color: #1a1a1a; background: #fff;
+    outline: none; font-family: inherit; transition: border-color .15s;
+  }
+  .input:focus, .select:focus, .textarea:focus {
+    border-color: #e05c00; box-shadow: 0 0 0 3px rgba(224,92,0,.1);
+  }
+  .input.err, .select.err, .textarea.err { border-color: #e74c3c; }
+  .err-msg { font-size: 12px; color: #e05c00; margin-top: 5px; }
+  .textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+  .select { cursor: pointer; -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px;
+  }
+
+  /* ── 긴급도 버튼 ── */
+  .level-row { display: flex; flex-direction: column; gap: 8px; }
+  .level-btn {
+    width: 100%; padding: 12px 14px; border-radius: 9px; font-size: 14px;
+    border: 1.5px solid #ddd; background: #fff; color: #666;
+    cursor: pointer; transition: all .15s; font-family: inherit; font-weight: 500;
+    text-align: left; display: flex; align-items: center; gap: 10px;
+  }
+  .level-btn .lv-badge {
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .level-btn.lv1 .lv-badge { background: #ffe0e0; color: #b71c1c; }
+  .level-btn.lv2 .lv-badge { background: #fff3e0; color: #e65100; }
+  .level-btn.lv3 .lv-badge { background: #e8f5e9; color: #2e7d32; }
+  .level-btn.on.lv1 { border-color: #b71c1c; background: #fff5f5; }
+  .level-btn.on.lv2 { border-color: #e65100; background: #fff8f0; }
+  .level-btn.on.lv3 { border-color: #2e7d32; background: #f0faf0; }
+  .level-btn .lv-desc { font-size: 12px; color: #999; margin-top: 2px; font-weight: 400; }
+  .level-btn-inner { display: flex; flex-direction: column; }
+
+  /* ── 라디오 버튼 스타일 ── */
+  .radio-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-btn {
+    padding: 8px 16px; border-radius: 20px; font-size: 13.5px;
+    border: 1.5px solid #ddd; background: #fff; color: #888;
+    cursor: pointer; transition: all .15s; font-family: inherit; font-weight: 500;
+  }
+  .radio-btn.on { border-color: #e05c00; background: #fff3eb; color: #e05c00; }
+
+  /* ── 체크박스 ── */
+  .chk-list { display: flex; flex-direction: column; gap: 11px; }
+  .chk-item { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+  .chk-item input[type=checkbox] {
+    width: 17px; height: 17px; accent-color: #e05c00;
+    cursor: pointer; flex-shrink: 0; margin-top: 2px;
+  }
+  .chk-item span { font-size: 14px; color: #555; line-height: 1.55; user-select: none; }
+
+  /* ── 제출 버튼 ── */
+  .submit-btn {
+    width: 100%; padding: 14px; background: #e05c00; color: #fff;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: background .15s; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .submit-btn:hover { background: #c44f00; }
+  .submit-btn:disabled { background: #f0b48a; cursor: not-allowed; }
+
+  /* ── 완료 화면 ── */
+  .success-wrap {
+    text-align: center; padding: 2.5rem 1.5rem;
+    background: #fff; border-radius: 14px; border: 1px solid #dce8f4;
+  }
+  .success-icon {
+    width: 60px; height: 60px; border-radius: 50%; background: #fff0e0;
+    margin: 0 auto 1.25rem;
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
+  }
+  .success-title { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+  .success-desc { font-size: 14px; color: #666; line-height: 1.7; margin-bottom: 1.25rem; }
+  .receipt {
+    background: #f5f8fc; border-radius: 10px; padding: 1rem 1.25rem;
+    text-align: left; font-size: 13.5px; color: #555;
+    line-height: 2.1; margin-bottom: 1.5rem;
+  }
+  .receipt strong { color: #1a1a1a; }
+  .receipt .lv1-text { color: #b71c1c; font-weight: 700; }
+  .receipt .lv2-text { color: #e65100; font-weight: 700; }
+  .receipt .lv3-text { color: #2e7d32; font-weight: 700; }
+  .reset-btn {
+    padding: 11px 28px; background: #e05c00; color: #fff;
+    border: none; border-radius: 9px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .reset-btn:hover { background: #c44f00; }
+
+  /* ── 로딩 ── */
+  .loading-bar { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
+
+  /* ── 에러 배너 ── */
+  .err-banner {
+    background: #fff0ee; border: 1px solid #f5b7b1; border-radius: 9px;
+    padding: 10px 14px; font-size: 13px; color: #c0392b; margin-bottom: 12px;
+  }
+
+  /* ── 관리자 링크 ── */
+  .admin-link-wrap { text-align: center; margin-top: 1.75rem; }
+  .admin-link {
+    font-size: 12px; color: #ccc; background: none; border: none;
+    cursor: pointer; text-decoration: underline; font-family: inherit;
+  }
+
+  /* ── Firebase 설정 안내 ── */
+  .setup-banner {
+    background: #fffbe6; border: 1px solid #f9c74f; border-radius: 10px;
+    padding: 1rem 1.25rem; font-size: 13px; color: #7a6000;
+    line-height: 1.8; margin-bottom: 1.25rem;
+  }
+  .setup-banner strong { color: #5a4400; }
+  .setup-banner code {
+    background: #fff3c4; padding: 1px 5px; border-radius: 4px;
+    font-family: monospace; font-size: 12px;
+  }
+
+  /* ── 사고번호 배지 ── */
+  .acc-no-badge {
+    display: inline-block; background: #e05c00; color: #fff;
+    font-size: 13px; font-weight: 700; padding: 3px 12px; border-radius: 20px;
+    margin-bottom: 12px; letter-spacing: .04em;
+  }
+
+  @media (max-width: 420px) {
+    .radio-row { gap: 6px; }
+    .radio-btn { padding: 7px 12px; font-size: 13px; }
+  }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.4); }
+    }
+</style>
+<!-- ✅ WebView(카카오톡 등) 진입 즉시 감지 -->
+<script>
+(function(){
+  var ua=navigator.userAgent.toLowerCase();
+  var isKakao=ua.indexOf('kakaotalk')>-1;
+  var isNaver=ua.indexOf('naver')>-1;
+  var isLine=ua.indexOf('line/')>-1;
+  var isInApp=ua.indexOf('instagram')>-1||ua.indexOf('fban')>-1||ua.indexOf('fbav')>-1;
+  if(isKakao||isNaver||isLine||isInApp){
+    function showGuide(){
+      if(!document.body){setTimeout(showGuide,10);return;}
+      document.body.style.cssText='margin:0;padding:0;';
+      document.body.innerHTML=
+        '<div style="display:flex;flex-direction:column;align-items:center;'+
+        'justify-content:center;min-height:100vh;background:#fff;'+
+        'font-family:sans-serif;text-align:center;padding:30px;box-sizing:border-box;">'+
+        '<div style="font-size:56px;margin-bottom:16px;">🌐</div>'+
+        '<h2 style="color:#e05c00;margin:0 0 12px;font-size:20px;">크롬 브라우저로 열어주세요</h2>'+
+        '<p style="color:#555;line-height:1.7;margin-bottom:28px;font-size:14px;">'+
+        '카카오톡 내 브라우저에서는<br>Google 로그인이 지원되지 않아요.<br><br>'+
+        '아래 버튼을 눌러 크롬으로 열어주세요.</p>'+
+        '<a href="intent://chepp07.github.io/safety001'+
+        '#Intent;scheme=https;package=com.android.chrome;end"'+
+        ' style="background:#e05c00;color:#fff;padding:14px 36px;'+
+        'border-radius:10px;text-decoration:none;font-size:16px;'+
+        'font-weight:bold;margin-bottom:20px;display:inline-block;">크롬으로 열기</a>'+
+        '<div style="background:#f5f5f5;border-radius:10px;padding:14px 20px;'+
+        'margin-bottom:12px;max-width:300px;">'+
+        '<p style="color:#888;font-size:12px;margin:0 0 6px;">또는 주소를 직접 복사하세요</p>'+
+        '<p style="color:#333;font-size:13px;font-weight:bold;margin:0;">chepp07.github.io/safety001</p></div>'+
+        '<p style="color:#bbb;font-size:11px;">크롬 앱이 없으면 Play 스토어에서 설치 후 이용해 주세요.</p>'+
+        '</div>';
+    }
+    showGuide();
+  }
+})();
+</script>
+</head>
+<body>
+
+<div class="page">
+  <div id="app"><div class="loading-bar">불러오는 중...</div></div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ★  FIREBASE 설정  ★
+     아래 firebaseConfig 값을 본인 프로젝트 값으로 교체하세요.
+════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, onValue, update, remove, off }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  updateProfile,
+  setPersistence,
+  browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+/* ─────────────────────────────────────────────
+   Firebase 프로젝트 설정을 여기에 붙여넣으세요
+───────────────────────────────────────────── */
+const firebaseConfig = {
+  apiKey: "AIzaSyCQHrtgTZr5sZVElyfy2TBcENC0cwzmkhg",
+  authDomain: "safety001-5091e.firebaseapp.com",
+  databaseURL: "https://safety001-5091e-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "safety001-5091e",
+  storageBucket: "safety001-5091e.firebasestorage.app",
+  messagingSenderId: "753126039012",
+  appId: "1:753126039012:web:68ec71700a164db531fbf1",
+  measurementId: "G-DXS3VQE8R3"
+};
+
+/* ───────────────────────────────────────────── */
+
+const CONFIGURED = !firebaseConfig.apiKey.startsWith("YOUR");
+const ADMIN_PW = "safety2025";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyS-dsOL7tjKLcrDrXV-iDZurGxAhzgpT0GOWF4QWEYpWyFygqMZjIsKcpQL0zuESMn/exec";
+const APP_NAME = "광명사업부 안전관리 시스템";
+
+/* ── 언어 설정 ── */
+let lang = localStorage.getItem("accLang") || "ko"; // ko | zh
+
+const T = {
+  ko: {
+    langBtn:        "🇨🇳 中文",
+    formTitle:      "현장 사고 접수",
+    formDesc:       "사고 발생 즉시 접수해 주세요.\nLevel 1·2는 전화 보고를 병행해 주세요.",
+    secSite:        "📍 사업소",
+    site:           "사업소",
+    secReporter:    "👤 접수자 정보",
+    reporter:       "접수자 성명",
+    rank:           "직급",
+    phone:          "연락처",
+    secDateTime:    "🕐 사고 발생 일시",
+    dateTimeAuto:   "현재 시각 자동 입력 — 필요 시 수정",
+    location:       "사고 발생 위치",
+    secClass:       "🗂️ 사고 분류",
+    complex:        "복합사고",
+    complexDesc:    "2가지 이상의 사고 유형이 동시에 발생한 경우 체크",
+    accType:        "사고 유형",
+    complexHint:    "복합사고 — 중복선택 가능",
+    accDetail:      "세부 유형",
+    secUrgency:     "🚨 긴급도",
+    secLineStop:    "⚡ 라인중단 여부",
+    secCustEffect:  "🏭 고객사 영향",
+    yesNo:          ["예","아니오"],
+    secPerson:      "🧑‍⚕️ 인사사고 대상자",
+    alone:          "단독사고",
+    both:           "쌍방사고",
+    victim:         "피해자",
+    perp:           "가해자",
+    addPerson:      "+ 추가",
+    unknown:        "미확인",
+    affiliation:    "소속",
+    secAction:      "📝 현황 및 조치",
+    voiceBtn:       "🎤 음성으로 빠른 입력",
+    voiceOn:        "음성 입력 중... (탭하여 중지)",
+    voiceGuideTitle:"🎤 지금 말씀해 주세요!",
+    voiceGuideItems:[
+      {label:"발생 위치",    ex:"1공장 도킹존"},
+      {label:"무슨 일이 있었는지", ex:"부품 낙하로 작업자 손 부상"},
+      {label:"현재 상태",    ex:"라인 중단, 119 신고 완료"},
+      {label:"추가 필요사항",ex:"안전팀 출동 요청"},
+    ],
+    voiceExample:   "전체 예시",
+    voiceExText:    "\"1공장 도킹존, 부품 낙하로 작업자 손 부상, 라인 중단, 119 신고 완료\"",
+    situation:      "현재 상황",
+    situationPh:    "사고 발생 경위 및 현재 상황을 간략히 기술해 주세요.",
+    action:         "즉시 조치 내용",
+    actionPh:       "취한 즉시 조치를 입력해 주세요. (없으면 '없음' 입력)",
+    support:        "추가 지원 필요 여부",
+    supportPh:      "예: 안전팀 현장 출동 요청 (없으면 '없음' 입력)",
+    secPhoto:       "📷 현장 사진 첨부",
+    photoDesc:      "최대 3장까지 첨부 가능 · JPG, PNG, GIF 지원",
+    photoSelect:    "사진 선택",
+    photoMax:       "최대 3장 첨부 완료",
+    photoUploading: "업로드중...",
+    secCheck:       "✅ 확인 사항",
+    checks: [
+      "현장을 통제하거나 2차 사고를 예방하기 위한 즉시 조치를 취했습니다.",
+      "사진 촬영 등 현장 기록을 완료하였습니다.",
+      "허위 보고 시 규정에 따라 처리될 수 있음을 확인했습니다."
+    ],
+    submitBtn:      "사고 접수하기",
+    submitting:     "접수 중...",
+    goMain:         "← 메인",
+    goLogin:        "← 로그인",
+    myReport:       "📋 내 접수 조회",
+    adminPage:      "관리자 페이지",
+    successTitle:   "사고 접수가 완료되었습니다.",
+    successDesc:    "담당자에게 즉시 통보됩니다.\nLevel 1·2 사고는 전화로 추가 보고를 병행해 주세요.",
+    newAccident:    "새 사고 접수",
+    voiceLang:      "ko-KR",
+    ranks: ["사원","조장","반장","주임","대리","과장","차장","부장","부소장","소장","상무","기타"],
+    lineStops: [
+      {val:"라인중단발생", color:"#b71c1c", bg:"#fff5f5", border:"#f5c6c6", desc:"현재 라인이 중단된 상태"},
+      {val:"라인중단예상", color:"#e65100", bg:"#fff8f0", border:"#fcd8a8", desc:"중단 가능성이 높은 상태"},
+      {val:"미장착",       color:"#7b5e00", bg:"#fffde7", border:"#ffe082", desc:"부품 미장착으로 생산 차질"},
+      {val:"라인영향없음", color:"#2e7d32", bg:"#f0faf0", border:"#b8e0ba", desc:"라인 정상 운영 중"},
+    ],
+    levels: [
+      {val:"1", label:"Level 1", sub:"최긴급", bg:"#fff5f5", color:"#b71c1c", border:"#f5c6c6"},
+      {val:"2", label:"Level 2", sub:"긴급",   bg:"#fff8f0", color:"#e65100", border:"#fcd8a8"},
+      {val:"3", label:"Level 3", sub:"일반",   bg:"#f0faf0", color:"#2e7d32", border:"#b8e0ba"},
+    ],
+    accTypes: ["인사사고","제품사고","공급사고","차량사고"],
+    accDetailMap: {
+      "인사사고": [
+        {val:"중대재해",   desc:"사망·3일 이상 휴업이 필요한 부상 또는 질병"},
+        {val:"일반재해",   desc:"병원 치료가 필요한 부상 (1~2일 휴업 포함)"},
+        {val:"경미사고",   desc:"응급처치 수준의 가벼운 부상 (휴업 없음)"},
+        {val:"아차사고",   desc:"다칠 뻔했으나 실제 부상은 없었던 위험 상황"},
+      ],
+      "제품사고": [
+        {val:"파손·충격",  desc:"낙하·충돌·압력 등으로 인한 제품 파손 또는 변형"},
+        {val:"오염·이물",  desc:"이물질 혼입, 먼지·유분 등 오염으로 품질 불량"},
+        {val:"포장불량",   desc:"포장재 파손, 라벨 오류, 포장 규격 미준수"},
+        {val:"운송중 손상",desc:"운반·상하차·보관 중 발생한 제품 손상"},
+      ],
+      "공급사고": [
+        {val:"이종·혼입",  desc:"다른 품번·사양의 부품이 섞여 납입된 경우"},
+        {val:"불량품 납입",desc:"품질 기준 미달 부품이 공급된 경우"},
+        {val:"결품·수량오류",desc:"납입 수량 부족, 누락, 수량 불일치"},
+        {val:"서열오류",   desc:"서열·순서가 생산 계획과 다르게 납입된 경우"},
+        {val:"납입지연",   desc:"약정 시간보다 늦게 납입되어 라인에 영향"},
+        {val:"라인투입오류",desc:"잘못된 라인·공정에 부품이 투입된 경우"},
+      ],
+      "차량사고": [
+        {val:"자차사고",   desc:"당사 차량 단독 사고 (접촉·전복·충돌 등)"},
+        {val:"대물사고",   desc:"타인 차량·시설물·재산에 피해를 입힌 사고"},
+      ],
+    },
+  },
+  zh: {
+    langBtn:        "🇰🇷 한국어",
+    formTitle:      "现场事故报告",
+    formDesc:       "发生事故后请立即填写。\nLevel 1·2 请同时进行电话报告。",
+    secSite:        "📍 事业所",
+    site:           "事业所",
+    secReporter:    "👤 报告人信息",
+    reporter:       "报告人姓名",
+    rank:           "职级",
+    phone:          "联系电话",
+    secDateTime:    "🕐 事故发生时间",
+    dateTimeAuto:   "自动填入当前时间 — 如需修改请编辑",
+    location:       "事故发生地点",
+    secClass:       "🗂️ 事故分类",
+    complex:        "复合事故",
+    complexDesc:    "同时发生两种以上事故类型时勾选",
+    accType:        "事故类型",
+    complexHint:    "复合事故 — 可多选",
+    accDetail:      "细分类型",
+    secUrgency:     "🚨 紧急程度",
+    secLineStop:    "⚡ 停线情况",
+    secCustEffect:  "🏭 客户影响",
+    yesNo:          ["是","否"],
+    secPerson:      "🧑‍⚕️ 人员事故对象",
+    alone:          "单方事故",
+    both:           "双方事故",
+    victim:         "受害者",
+    perp:           "肇事者",
+    addPerson:      "+ 添加",
+    unknown:        "不明",
+    affiliation:    "所属",
+    secAction:      "📝 现状及处置",
+    voiceBtn:       "🎤 语音快速输入",
+    voiceOn:        "语音输入中... (点击停止)",
+    voiceGuideTitle:"🎤 请您说话！",
+    voiceGuideItems:[
+      {label:"发生地点",  ex:"1工厂对接区"},
+      {label:"发生了什么",ex:"零件跌落导致工人手部受伤"},
+      {label:"当前状态",  ex:"停线，已呼叫119"},
+      {label:"需要协助",  ex:"请求安全团队到场"},
+    ],
+    voiceExample:   "示例",
+    voiceExText:    "\"1工厂对接区，零件跌落导致工人手部受伤，停线，已呼叫119\"",
+    situation:      "当前状况",
+    situationPh:    "请简要描述事故经过和当前状况。",
+    action:         "即时处置内容",
+    actionPh:       "请填写已采取的即时措施。(无则填写'无')",
+    support:        "是否需要额外支援",
+    supportPh:      "例：请求安全团队到场 (无则填写'无')",
+    secPhoto:       "📷 现场照片",
+    photoDesc:      "最多可附3张 · 支持JPG, PNG, GIF",
+    photoSelect:    "选择照片",
+    photoMax:       "已附3张（最大）",
+    photoUploading: "上传中...",
+    secCheck:       "✅ 确认事项",
+    checks: [
+      "已采取措施控制现场或防止二次事故。",
+      "已完成拍照等现场记录工作。",
+      "确认虚假报告将依规处理。"
+    ],
+    submitBtn:      "提交事故报告",
+    submitting:     "提交中...",
+    goMain:         "← 主页",
+    goLogin:        "← 登录",
+    myReport:       "📋 我的报告查询",
+    adminPage:      "管理员页面",
+    successTitle:   "事故报告已提交完成。",
+    successDesc:    "负责人将立即收到通知。\nLevel 1·2 请同时进行电话报告。",
+    newAccident:    "新增事故报告",
+    voiceLang:      "zh-CN",
+    ranks: ["员工","组长","班长","主任","代理","科长","次长","部长","副所长","所长","常务","其他"],
+    lineStops: [
+      {val:"라인중단발생", color:"#b71c1c", bg:"#fff5f5", border:"#f5c6c6", desc:"当前生产线已停止"},
+      {val:"라인중단예상", color:"#e65100", bg:"#fff8f0", border:"#fcd8a8", desc:"停线可能性较高"},
+      {val:"미장착",       color:"#7b5e00", bg:"#fffde7", border:"#ffe082", desc:"零件未装配导致生产受阻"},
+      {val:"라인영향없음", color:"#2e7d32", bg:"#f0faf0", border:"#b8e0ba", desc:"生产线正常运行"},
+    ],
+    levels: [
+      {val:"1", label:"Level 1", sub:"最紧急", bg:"#fff5f5", color:"#b71c1c", border:"#f5c6c6"},
+      {val:"2", label:"Level 2", sub:"紧急",   bg:"#fff8f0", color:"#e65100", border:"#fcd8a8"},
+      {val:"3", label:"Level 3", sub:"一般",   bg:"#f0faf0", color:"#2e7d32", border:"#b8e0ba"},
+    ],
+    accTypes: ["人员事故","产品事故","供应事故","车辆事故"],
+    accDetailMap: {
+      "人员事故": [
+        {val:"重大灾害",   desc:"死亡或需休假3天以上的伤害或疾病"},
+        {val:"一般灾害",   desc:"需就医的伤害（含1~2天休假）"},
+        {val:"轻微事故",   desc:"仅需急救处理的轻伤（无需休假）"},
+        {val:"险情事故",   desc:"险些受伤但实际未造成伤害的危险情况"},
+      ],
+      "产品事故": [
+        {val:"破损·冲击",  desc:"因跌落·碰撞·压力等造成的产品破损或变形"},
+        {val:"污染·异物",  desc:"异物混入、灰尘油污等污染导致品质不良"},
+        {val:"包装不良",   desc:"包装材料破损、标签错误、包装规格不符"},
+        {val:"运输中损坏",  desc:"搬运·装卸·保管过程中产生的产品损坏"},
+      ],
+      "供应事故": [
+        {val:"异种·混入",  desc:"不同品番·规格的零件混入供应"},
+        {val:"不良品供应",  desc:"不符合品质标准的零件被供应"},
+        {val:"缺件·数量错误",desc:"供应数量不足、漏发、数量不一致"},
+        {val:"序列错误",   desc:"零件序列·顺序与生产计划不符"},
+        {val:"供应延迟",   desc:"晚于约定时间供应，影响生产线"},
+        {val:"投入错误",   desc:"零件投入了错误的生产线·工序"},
+      ],
+      "车辆事故": [
+        {val:"自车事故",   desc:"本公司车辆单方事故（接触·翻覆·碰撞等）"},
+        {val:"对物事故",   desc:"对他人车辆·设施·财产造成损害的事故"},
+      ],
+    },
+    // 한국어 필드값 → 중국어 매핑 (Firebase 저장은 한국어 유지)
+    accTypeMap: {"人员事故":"인사사고","产品事故":"제품사고","供应事故":"공급사고","车辆事故":"차량사고"},
+    accDetailKo: {
+      "重大灾害":"중대재해","一般灾害":"일반재해","轻微事故":"경미사고","险情事故":"아차사고",
+      "破损·冲击":"파손·충격","污染·异物":"오염·이물","包装不良":"포장불량","运输中损坏":"운송중 손상",
+      "异种·混入":"이종·혼입","不良品供应":"불량품 납입","缺件·数量错误":"결품·수량오류",
+      "序列错误":"서열오류","供应延迟":"납입지연","投入错误":"라인투입오류",
+      "自车事故":"자차사고","对物事故":"대물사고",
+    },
+  },
+};
+
+function t(key){ return T[lang][key] || T.ko[key] || key; }
+
+/* ── 관리자 이메일 목록 ── */
+const ADMIN_EMAILS = [
+  "dlacksgus@gmail.com",
+  "rlarufo123456@gmail.com",
+  "look830724@gmail.com",
+  "ab734741@gmail.com",
+  "chepp07@gmail.com"
+];
+
+/* ── 사업소 목록 ── */
+const SITES = ["광명1범퍼사업소","광명2범퍼사업소","광명1서열사업소","광명2서열사업소","광명JIT사업소","광명장비사업소","기타"];
+
+/* ── 체크리스트 ── */
+const CHECKS = T[lang].checks;
+
+let db, auth, entriesRef;
+let entries = {};
+let suggestions = {};  // 안전개선 제안 데이터
+let adminTab = "accidents"; // 관리자 탭: accidents | suggestions
+let view = "login"; // login | register | main | form | success | admin | myreport | accdetail | manual | suggest
+let saving = false;
+let submitted = null;
+let accSeq = 1;
+let myReportPhone = "";
+let myReportSelected = null;
+let currentUser = null;  // 현재 로그인한 사용자
+let isAdmin = false;     // 관리자 여부
+let isGuest = false;     // 비회원 여부
+
+/* ── 현재 날짜/시간 기본값 생성 ── */
+function getNowDefaults(){
+  const now = new Date();
+  const h24 = now.getHours();
+  const ampm = h24 < 12 ? "오전" : "오후";
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const min = Math.floor(now.getMinutes() / 5) * 5; // 5분 단위 반올림
+  return {
+    accYear:  String(now.getFullYear()),
+    accMonth: String(now.getMonth()+1).padStart(2,"0"),
+    accDay:   String(now.getDate()).padStart(2,"0"),
+    accAmPm:  ampm,
+    accHour:  String(h12).padStart(2,"0"),
+    accMin:   String(min).padStart(2,"0"),
+  };
+}
+
+function makeEmptyForm(){
+  const dt = getNowDefaults();
+  return {
+    site: "", accType: "", accDetail: "",
+    isComplex: false,
+    accTypes: [], accDetails: [],
+    level: "", lineStop: "", customerEffect: "",
+    reporter: "", rank: "", phone: "",
+    ...dt,
+    location: "", situation: "",
+    actionTaken: "", supportNeeded: "",
+    accidentType: "",
+    victims: [{name:"", affiliation:"", unknown:false}],
+    perpetrators: [{name:"", affiliation:"", unknown:false}],
+    photos: [],        // 업로드된 이미지 URL 배열
+    photosPreviews: [], // 미리보기용 base64 배열
+    _voiceOn: false,        // 음성 입력 활성화 여부
+    _voiceProcessing: false, // AI 정제 중 여부
+    _voiceStatus: "",        // 상태 메시지
+    checks: [false, false, false]
+  };
+}
+
+let form = makeEmptyForm();
+let errors = {};
+let filter = { accType: "전체", level: "전체", search: "" };
+
+/* ── 전화번호 포매팅 ── */
+function fmt(v){
+  v = v.replace(/\D/g, "");
+  if(v.length<=3) return v;
+  if(v.length<=7) return v.slice(0,3)+"-"+v.slice(3);
+  return v.slice(0,3)+"-"+v.slice(3,7)+"-"+v.slice(7,11);
+}
+
+/* ── 사고번호 생성 ── */
+function genAccNo(){
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  const cnt = Object.values(entries).filter(e => e.accNo && e.accNo.startsWith("ACC-"+ymd)).length;
+  return `ACC-${ymd}-${String(cnt+1).padStart(3,"0")}`;
+}
+
+/* ── 긴급도 라벨 ── */
+function levelLabel(lv){
+  if(lv==="1") return {text:"Level 1 최긴급", cls:"lv1-text"};
+  if(lv==="2") return {text:"Level 2 긴급",   cls:"lv2-text"};
+  if(lv==="3") return {text:"Level 3 일반",   cls:"lv3-text"};
+  return {text:"-", cls:""};
+}
+
+/* ── WebView 환경 감지 ── */
+function isWebView(){
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes('kakaotalk') ||
+         ua.includes('naver') ||
+         ua.includes('line/') ||
+         ua.includes('wv') ||
+         ua.includes('webview') ||
+         (ua.includes('android') && !ua.includes('chrome')) ||
+         ua.includes('fbav') ||
+         ua.includes('instagram');
+}
+
+/* ── Google 로그인 처리 ── */
+async function handleGoogleLogin(errElId){
+  const errEl = document.getElementById(errElId);
+
+  // WebView 환경이면 크롬으로 안내
+  if(isWebView()){
+    if(errEl){
+      errEl.textContent = "카카오톡·앱 내 브라우저에서는 Google 로그인이 지원되지 않습니다. 크롬 브라우저로 접속해 주세요.";
+      errEl.style.display = "block";
+    }
+    setTimeout(() => {
+      location.href = 'intent://' + location.host + location.pathname +
+        '#Intent;scheme=https;package=com.android.chrome;end';
+    }, 2000);
+    return;
+  }
+
+  // 일반 브라우저 → Popup 방식
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const result = await signInWithPopup(auth, provider);
+    if(result && result.user){
+      currentUser = result.user;
+      isAdmin = ADMIN_EMAILS.includes(result.user.email);
+      view = "main";
+      render();
+    }
+  } catch(err) {
+    console.error("Google 로그인 오류:", err.code, err.message);
+    const msg = err.code === 'auth/popup-blocked'
+      ? "팝업이 차단되었습니다. 브라우저에서 팝업을 허용해 주세요."
+      : err.code === 'auth/popup-closed-by-user'
+      ? "로그인 창이 닫혔습니다. 다시 시도해 주세요."
+      : "Google 로그인에 실패했습니다. (" + err.code + ")";
+    if(errEl){ errEl.textContent=msg; errEl.style.display="block"; }
+  }
+}
+const VIEW_BACK = {
+  "register"  : "login",
+  "form"      : "main",
+  "success"   : "main",
+  "admin"     : "main",
+  "myreport"  : "main",
+  "accdetail" : "main",
+  "manual"    : "main",
+  "suggest"   : "main",
+};
+// 뒤로가기 불가 화면 (앱 종료 대신 유지)
+const VIEW_ROOT = ["login", "main"];
+
+/* ── 렌더 ── */
+function render(){
+  const app = document.getElementById("app");
+  if(!CONFIGURED){ app.innerHTML = renderSetupGuide(); return; }
+  if(view==="login")     { document.body.classList.remove("admin-mode"); app.innerHTML = renderLogin(); }
+  if(view==="register")  { document.body.classList.remove("admin-mode"); app.innerHTML = renderRegister(); }
+  if(view==="main")      { document.body.classList.remove("admin-mode"); app.innerHTML = renderMain(); }
+  if(view==="form")      { document.body.classList.remove("admin-mode"); app.innerHTML = renderForm(); }
+  if(view==="success")   { document.body.classList.remove("admin-mode"); app.innerHTML = renderSuccess(); }
+  if(view==="admin")     { document.body.classList.add("admin-mode");    app.innerHTML = renderAdmin(); }
+  if(view==="myreport")  { document.body.classList.remove("admin-mode"); app.innerHTML = renderMyReport(); }
+  if(view==="accdetail") { document.body.classList.remove("admin-mode"); app.innerHTML = renderAccDetail(); }
+  if(view==="manual")    { document.body.classList.remove("admin-mode"); app.innerHTML = renderManual(); }
+  if(view==="suggest")   { document.body.classList.remove("admin-mode"); app.innerHTML = renderSuggest(); }
+  bindEvents();
+
+  // 히스토리에 현재 뷰 상태 저장 (루트 화면 제외)
+  if(!VIEW_ROOT.includes(view)){
+    history.pushState({ view }, "", location.pathname + location.search);
+  }
+}
+
+/* ── 휴대폰 뒤로가기 버튼 처리 ── */
+window.addEventListener("popstate", (e) => {
+  const prevView = e.state && e.state.view;
+
+  // 루트 화면(login/main)으로 이미 돌아온 경우 → 한 번 더 누르면 종료 허용
+  if(VIEW_ROOT.includes(view)){
+    return; // 브라우저 기본 동작 허용 (앱 종료)
+  }
+
+  // 뒤로가기 대상 화면 결정
+  const backView = VIEW_BACK[view] || "main";
+
+  // 비회원이 form에서 뒤로가면 로그인으로
+  if(view === "form" && isGuest){
+    isGuest = false;
+    view = "login";
+  } else {
+    view = backView;
+  }
+
+  // accdetail에서 뒤로가면 키 초기화
+  if(view !== "accdetail"){
+    window._accDetailKey = null;
+  }
+
+  render();
+
+  // 히스토리 중복 방지
+  history.replaceState({ view }, "", location.pathname + location.search);
+});
+
+/* ── 로그인 화면 ── */
+function renderLogin(){
+  return `
+<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding:2rem 1rem;max-width:420px;margin:0 auto;">
+
+  <!-- 로고 -->
+  <div style="text-align:center;margin-bottom:2.5rem;">
+    <div style="width:72px;height:72px;border-radius:50%;background:#1e2761;
+      margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:32px;">
+      🛡️
+    </div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${lang==="zh"?"现场安全管理系统":APP_NAME}</div>
+    <div style="font-size:13px;color:#888;">${lang==="zh"?"登录后可以使用。":"로그인 후 이용하실 수 있습니다."}</div>
+  </div>
+
+  ${window._pendingAccNo ? `
+  <div style="background:#fff0e0;border:1.5px solid #fcd8a8;border-radius:10px;
+    padding:12px 16px;margin-bottom:16px;font-size:13px;color:#e65100;line-height:1.7;">
+    <div style="font-weight:700;margin-bottom:3px;">🚨 사고 알림으로 접속하셨습니다.</div>
+    로그인 후 사고 상세 내용을 바로 확인할 수 있습니다.<br>
+    <span style="font-size:11px;color:#aaa;">${window._pendingAccNo}</span>
+  </div>` : ""}
+
+  <!-- 구글 로그인 -->
+  ${isWebView() ? `
+  <div style="background:#fff8f0;border:1.5px solid #fcd8a8;border-radius:10px;
+    padding:14px 16px;margin-bottom:16px;font-size:13px;color:#e65100;line-height:1.7;text-align:left;">
+    <div style="font-weight:700;margin-bottom:4px;">📱 앱 환경 안내</div>
+    Google 계정 로그인은 <strong>크롬 브라우저</strong>에서만 지원됩니다.<br>
+    아래 이메일 로그인을 이용하시거나,<br>
+    크롬 브라우저에서 접속해 주세요.<br>
+    <a href="https://chepp07.github.io/safety001"
+      style="color:#1e2761;font-weight:700;display:inline-block;margin-top:6px;">
+      🌐 크롬으로 열기
+    </a>
+  </div>` : `
+  <button id="btn-google-login"
+    style="width:100%;padding:13px;border:1.5px solid #ddd;border-radius:10px;
+    background:#fff;font-size:15px;font-weight:600;color:#333;cursor:pointer;
+    font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;
+    margin-bottom:8px;transition:border-color .15s;">
+    <svg width="20" height="20" viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    ${lang==="zh"?"使用Google账号登录":"Google 계정으로 로그인"}
+  </button>
+  <div style="font-size:11px;color:#bbb;text-align:center;margin-bottom:12px;">
+    ※ 카카오톡·앱 내 브라우저에서는 크롬으로 열어 사용해 주세요
+  </div>`}
+
+  <!-- 구분선 -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <div style="flex:1;height:1px;background:#eee;"></div>
+    <span style="font-size:12px;color:#bbb;">${lang==="zh"?"或使用邮箱登录":"또는 이메일로 로그인"}</span>
+    <div style="flex:1;height:1px;background:#eee;"></div>
+  </div>
+
+  <!-- 이메일 로그인 폼 -->
+  <div class="card" style="margin-bottom:0;">
+    <div class="field">
+      <div class="label">${lang==="zh"?"邮箱":"이메일"}</div>
+      <input id="login-email" class="input" type="email" placeholder="${lang==='zh'?'邮箱地址':'이메일 주소 입력'}"/>
+    </div>
+    <div class="field">
+      <div class="label">${lang==="zh"?"密码":"비밀번호"}</div>
+      <input id="login-pw" class="input" type="password" placeholder="${lang==='zh'?'请输入密码':'비밀번호 입력'}"/>
+    </div>
+    <div id="login-err" style="display:none;font-size:13px;color:#e05c00;margin-bottom:10px;"></div>
+    <button id="btn-email-login" class="submit-btn">${lang==="zh"?"登录":"로그인"}</button>
+  </div>
+
+  <!-- 회원가입 링크 -->
+  <div style="text-align:center;margin-top:1.25rem;">
+    <span style="font-size:13px;color:#888;">${lang==="zh"?"没有账号？":"계정이 없으신가요?"}</span>
+    <button id="go-register" style="background:none;border:none;color:#1e2761;font-size:13px;
+      font-weight:700;cursor:pointer;font-family:inherit;margin-left:6px;">${lang==="zh"?"注册账号":"회원가입"}</button>
+  </div>
+
+  <!-- 비회원 접수 버튼 -->
+  <div style="margin-top:1.5rem;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div style="flex:1;height:1px;background:#eee;"></div>
+      <span style="font-size:12px;color:#bbb;">${lang==="zh"?"紧急情况？":"긴급 상황이신가요?"}</span>
+      <div style="flex:1;height:1px;background:#eee;"></div>
+    </div>
+    <button id="btn-guest-form"
+      style="width:100%;padding:13px;border:1.5px solid #e05c00;border-radius:10px;
+      background:#fff8f3;font-size:15px;font-weight:700;color:#e05c00;cursor:pointer;
+      font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
+      ${lang==="zh"?"🚨 无需登录立即报告事故":"🚨 비회원으로 즉시 사고 접수"}
+    </button>
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:#bbb;">
+      ${lang==="zh"?"无需登录，仅可提交事故报告":"로그인 없이 사고 접수만 가능합니다"}
+    </div>
+  </div>
+
+  <!-- 언어 전환 -->
+  <div style="text-align:center;margin-top:1.5rem;">
+    <button id="btn-login-lang"
+      style="padding:6px 18px;background:none;border:1.5px solid #eee;border-radius:20px;
+      font-size:13px;color:#aaa;cursor:pointer;font-family:inherit;">
+      ${lang==="zh"?"🇰🇷 한국어로 전환":"🇨🇳 切换中文"}
+    </button>
+  </div>
+</div>`;
+}
+
+/* ── 회원가입 화면 ── */
+function renderRegister(){
+  return `
+<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding:2rem 1rem;max-width:420px;margin:0 auto;">
+
+  <!-- 헤더 -->
+  <div style="text-align:center;margin-bottom:2rem;">
+    <div style="width:72px;height:72px;border-radius:50%;background:#1e2761;
+      margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-size:32px;">
+      🛡️
+    </div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${lang==="zh"?"注册账号":"회원가입"}</div>
+    <div style="font-size:13px;color:#888;">${APP_NAME}</div>
+  </div>
+
+  <!-- 구글 가입 -->
+  ${isWebView() ? `
+  <div style="background:#fff8f0;border:1.5px solid #fcd8a8;border-radius:10px;
+    padding:14px 16px;margin-bottom:16px;font-size:13px;color:#e65100;line-height:1.7;text-align:left;">
+    <div style="font-weight:700;margin-bottom:4px;">📱 앱 환경 안내</div>
+    Google 계정 가입은 <strong>크롬 브라우저</strong>에서만 지원됩니다.<br>
+    아래 이메일로 가입하시거나 크롬에서 접속해 주세요.<br>
+    <a href="https://chepp07.github.io/safety001"
+      style="color:#1e2761;font-weight:700;display:inline-block;margin-top:6px;">
+      🌐 크롬으로 열기
+    </a>
+  </div>` : `
+  <button id="btn-google-register"
+    style="width:100%;padding:13px;border:1.5px solid #ddd;border-radius:10px;
+    background:#fff;font-size:15px;font-weight:600;color:#333;cursor:pointer;
+    font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;
+    margin-bottom:16px;">
+    <svg width="20" height="20" viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    Google 계정으로 가입
+  </button>`}
+
+  <!-- 구분선 -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <div style="flex:1;height:1px;background:#eee;"></div>
+    <span style="font-size:12px;color:#bbb;">또는 이메일로 가입</span>
+    <div style="flex:1;height:1px;background:#eee;"></div>
+  </div>
+
+  <!-- 이메일 회원가입 폼 -->
+  <div class="card" style="margin-bottom:0;">
+    <div class="field">
+      <div class="label">${lang==="zh"?"姓名":"이름"} <span class="req">*</span></div>
+      <input id="reg-name" class="input" type="text" placeholder="${lang==="zh"?"请输入姓名":"성함을 입력해 주세요"}" maxlength="20"/>
+    </div>
+    <div class="field">
+      <div class="label">${lang==="zh"?"邮箱":"이메일"} <span class="req">*</span></div>
+      <input id="reg-email" class="input" type="email" placeholder="이메일 주소 입력"/>
+    </div>
+    <div class="field">
+      <div class="label">${lang==="zh"?"密码":"비밀번호"} <span class="req">*</span></div>
+      <input id="reg-pw" class="input" type="password" placeholder="6자리 이상 입력"/>
+    </div>
+    <div class="field">
+      <div class="label">${lang==="zh"?"确认密码":"비밀번호 확인"} <span class="req">*</span></div>
+      <input id="reg-pw2" class="input" type="password" placeholder="비밀번호 재입력"/>
+    </div>
+    <div id="reg-err" style="display:none;font-size:13px;color:#e05c00;margin-bottom:10px;"></div>
+    <button id="btn-email-register" class="submit-btn">${lang==="zh"?"注册":"회원가입"}</button>
+  </div>
+
+  <!-- 로그인 링크 -->
+  <div style="text-align:center;margin-top:1.25rem;">
+    <span style="font-size:13px;color:#888;">${lang==="zh"?"已有账号？":"이미 계정이 있으신가요?"}</span>
+    <button id="go-login" style="background:none;border:none;color:#1e2761;font-size:13px;
+      font-weight:700;cursor:pointer;font-family:inherit;margin-left:6px;">${lang==="zh"?"登录":"로그인"}</button>
+  </div>
+</div>`;
+}
+
+/* ── 메인 화면 ── */
+function renderMain(){
+  const userName = currentUser ? (currentUser.displayName || currentUser.email.split("@")[0]) : "";
+  const userPhoto = currentUser && currentUser.photoURL;
+
+  return `
+<div style="height:100vh;display:flex;flex-direction:column;overflow:hidden;">
+
+  <!-- 상단 사용자 정보 바 -->
+  <div style="background:#fff;border-bottom:1px solid #eef2f7;padding:6px 1rem;
+    display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      ${userPhoto
+        ? `<img src="${userPhoto}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;"/>`
+        : `<div style="width:26px;height:26px;border-radius:50%;background:#1e2761;
+            display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;">
+            ${userName.charAt(0).toUpperCase()}
+          </div>`}
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#1a1a1a;">${userName}</div>
+        <div style="font-size:10px;color:#aaa;">${isAdmin?"🛡️ 관리자":lang==="zh"?"普通用户":"일반 사용자"}</div>
+      </div>
+    </div>
+    <button id="btn-logout"
+      style="padding:4px 10px;background:#f5f5f5;border:none;border-radius:6px;
+      font-size:11px;color:#888;cursor:pointer;font-family:inherit;">
+      ${lang==="zh"?"退出":"로그아웃"}
+    </button>
+  </div>
+
+  <!-- 콘텐츠 전체 -->
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;
+    padding:0.5rem 1rem 0.3rem;max-width:500px;margin:0 auto;width:100%;">
+
+    <!-- 로고/타이틀 -->
+    <div style="text-align:center;margin-bottom:0.4rem;flex-shrink:0;">
+      <div style="width:40px;height:40px;border-radius:50%;background:#1e2761;
+        margin:0 auto 0.25rem;display:flex;align-items:center;justify-content:center;font-size:20px;">
+        🛡️
+      </div>
+      <div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:2px;">${lang==="zh"?"现场安全管理系统":APP_NAME}</div>
+      <div style="font-size:11px;color:#aaa;">${lang==="zh"?"光明事业部 安全·质量·物流 综合管理":"광명사업부 안전·품질·물류 통합관리"}</div>
+    </div>
+
+    <!-- 메뉴 버튼들: gap 고정값으로 버튼 간격만 줄이고 버튼 자체는 크게 유지 -->
+    <div style="flex:1;display:flex;flex-direction:column;gap:7px;justify-content:center;">
+
+      <button id="btn-main-form" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+        <div style="background:#fff;border-radius:14px;border:1.5px solid #dce8f4;
+          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
+          box-shadow:0 2px 8px rgba(0,0,0,.07);">
+          <div style="width:50px;height:50px;border-radius:12px;background:#fff0e0;
+            display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🚨</div>
+          <div style="flex:1;">
+            <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"现场事故报告":"현장 사고 접수"}</div>
+            <div style="font-size:12px;color:#888;">${lang==="zh"?"立即报告事故·自动通知负责人":"사고 발생 즉시 접수 · 담당자 자동 알림"}</div>
+          </div>
+          <div style="color:#ccc;font-size:20px;">›</div>
+        </div>
+      </button>
+
+      <button id="btn-main-manual" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+        <div style="background:#fff;border-radius:14px;border:1.5px solid #dce8f4;
+          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
+          box-shadow:0 2px 8px rgba(0,0,0,.07);">
+          <div style="width:50px;height:50px;border-radius:12px;background:#e8eef7;
+            display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">📋</div>
+          <div style="flex:1;">
+            <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"事故处理手册":"사고처리 매뉴얼"}</div>
+            <div style="font-size:12px;color:#888;">${lang==="zh"?"各类事故处置程序·紧急联系方式":"사고 유형별 대응 절차 · 긴급 연락처"}</div>
+          </div>
+          <div style="color:#ccc;font-size:20px;">›</div>
+        </div>
+      </button>
+
+      <button id="btn-main-suggest" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+        <div style="background:#fff;border-radius:14px;border:1.5px solid #dce8f4;
+          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
+          box-shadow:0 2px 8px rgba(0,0,0,.07);">
+          <div style="width:50px;height:50px;border-radius:12px;background:#e8f5e9;
+            display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">💡</div>
+          <div style="flex:1;">
+            <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">${lang==="zh"?"安全改进建议":"안전개선 제안"}</div>
+            <div style="font-size:12px;color:#888;">${lang==="zh"?"现场改进想法·危险因素报告":"현장 개선 아이디어 · 위험요소 신고"}</div>
+          </div>
+          <div style="color:#ccc;font-size:20px;">›</div>
+        </div>
+      </button>
+
+      ${isAdmin?`
+      <button id="btn-main-admin" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">
+        <div style="background:#1e2761;border-radius:14px;
+          padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;
+          box-shadow:0 3px 10px rgba(0,0,0,.2);">
+          <div style="width:50px;height:50px;border-radius:12px;background:rgba(255,255,255,.15);
+            display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🛡️</div>
+          <div style="flex:1;">
+            <div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:3px;">${lang==="zh"?"管理员仪表盘":"관리자 대시보드"}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.65);">${lang==="zh"?"全部事故现况·统计·管理":"전체 사고 현황 · 통계 · 관리"}</div>
+          </div>
+          <div style="color:rgba(255,255,255,.4);font-size:20px;">›</div>
+        </div>
+      </button>`:""}
+
+      <!-- 내 접수 조회 + 언어변환 -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:2px 0;">
+        <button class="admin-link" id="go-myreport-main" style="font-size:13px;color:#999;">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>
+        <span style="color:#ddd;font-size:14px;">|</span>
+        <button id="btn-main-lang-bottom"
+          style="padding:4px 12px;background:#f0f4ff;border:1.5px solid #dce8f4;border-radius:20px;
+          font-size:12px;font-weight:700;color:#1e2761;cursor:pointer;font-family:inherit;">
+          ${lang==="zh"?"🇰🇷 한국어":"🇨🇳 中文"}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>`;
+}
+
+/* ── 사고처리 매뉴얼 화면 ── */
+function renderManual(){
+  const sections = [
+    { icon:"🧑‍⚕️", title:"인사사고 대응절차", color:"#b71c1c", bg:"#fff5f5", steps:[
+      "부상자 안전 확인 및 119 신고 (중상 시)",
+      "현장 통제 및 2차 사고 예방 조치",
+      "사고 현장 사진 촬영 (현장 보존)",
+      "즉시 사고 접수 (앱 사용)",
+      "TF장 및 사업소장 직접 보고",
+      "작업중지 여부 판단 및 조치",
+      "재발방지 대책 수립 및 보고"
+    ]},
+    { icon:"📦", title:"제품사고 대응절차", color:"#e65100", bg:"#fff8f0", steps:[
+      "피해 제품 현장 격리 및 추가 손상 방지",
+      "피해 수량 및 품번 확인",
+      "현장 사진 촬영 (손상 상태 기록)",
+      "즉시 사고 접수 (앱 사용)",
+      "대체품 확보 가능 여부 확인",
+      "고객사 납입 일정 영향 검토",
+      "원인 분석 및 재발방지 대책 수립"
+    ]},
+    { icon:"🚚", title:"공급사고 대응절차", color:"#1e2761", bg:"#f0f4ff", steps:[
+      "불량·이종·결품 수량 즉시 확인",
+      "라인중단 여부 및 예상 시간 파악",
+      "즉시 사고 접수 (앱 사용)",
+      "고객사 생산관리 담당자 직접 연락",
+      "긴급 대체품 수배 및 운송 조치",
+      "1차 협력사 원인 조사 요청",
+      "수정 납입 계획 수립 및 보고"
+    ]},
+    { icon:"🚗", title:"차량사고 대응절차", color:"#7b5e00", bg:"#fffde7", steps:[
+      "부상자 확인 및 119 신고 (부상 시)",
+      "2차 사고 방지 (삼각대 설치 등)",
+      "현장 사진 촬영 (차량 손상 기록)",
+      "즉시 사고 접수 (앱 사용)",
+      "경찰 신고 (대물사고 시)",
+      "보험사 접수 및 담당자 보고",
+      "사고 경위서 작성 및 제출"
+    ]}
+  ];
+
+  return `
+<div class="page" style="max-width:600px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+    <button id="btn-manual-back" style="background:none;border:none;cursor:pointer;font-size:22px;color:#888;padding:4px;">‹</button>
+    <div>
+      <div style="font-size:18px;font-weight:700;">사고처리 매뉴얼</div>
+      <div style="font-size:12px;color:#aaa;">사고 유형별 대응 절차</div>
+    </div>
+  </div>
+
+  ${sections.map(s=>`
+  <div class="card" style="margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div style="width:42px;height:42px;border-radius:10px;background:${s.bg};
+        display:flex;align-items:center;justify-content:center;font-size:22px;">${s.icon}</div>
+      <div style="font-size:15px;font-weight:700;color:${s.color};">${s.title}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${s.steps.map((step,i)=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#333;line-height:1.6;">
+        <span style="background:${s.color};color:#fff;font-size:10px;font-weight:700;
+          min-width:18px;height:18px;border-radius:50%;display:flex;align-items:center;
+          justify-content:center;flex-shrink:0;margin-top:2px;">${i+1}</span>
+        <span>${step}</span>
+      </div>`).join("")}
+    </div>
+  </div>`).join("")}
+
+  <div class="card" style="background:#1e2761;border-color:#1e2761;margin-bottom:14px;">
+    <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:12px;">📞 긴급 연락처</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      ${[
+        {label:"119 (소방/구급)", num:"119"},
+        {label:"112 (경찰)", num:"112"},
+        {label:"한국가스안전공사", num:"1544-4500"},
+        {label:"고용노동부 신고", num:"1350"},
+      ].map(c=>`
+      <a href="tel:${c.num}" style="background:rgba(255,255,255,.1);border-radius:9px;
+        padding:10px 12px;text-decoration:none;display:block;">
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:3px;">${c.label}</div>
+        <div style="font-size:16px;font-weight:700;color:#fff;">${c.num}</div>
+      </a>`).join("")}
+    </div>
+  </div>
+
+  <div style="text-align:center;">
+    <button id="btn-manual-back2" style="padding:11px 28px;background:#f5f5f5;border:none;
+      border-radius:9px;font-size:14px;color:#666;cursor:pointer;font-family:inherit;">
+      ← 메인으로
+    </button>
+  </div>
+</div>`;
+}
+
+/* ── 안전개선 제안 화면 ── */
+function renderSuggest(){
+  const sug = window._suggest || {
+    site:"", category:"", title:"", detail:"",
+    anonymous:false, name:"", phone:"", submitted:false
+  };
+
+  if(sug.submitted) return `
+<div class="page" style="max-width:580px;">
+  <div class="success-wrap">
+    <div class="success-icon">💡</div>
+    <div class="success-title">${lang==="zh"?"建议已提交！":"제안이 접수되었습니다!"}</div>
+    <div class="success-desc">${lang==="zh"?"感谢您的宝贵意见。<br>审核后将反映到改进活动中。":"소중한 의견 감사합니다.<br>검토 후 개선 활동에 반영하겠습니다."}</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+      <button id="btn-suggest-another" style="padding:11px 24px;background:#2e7d32;color:#fff;
+        border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+        ${lang==="zh"?"再次提交":"추가 제안하기"}
+      </button>
+      <button id="btn-suggest-back" style="padding:11px 24px;background:#f5f5f5;border:none;
+        border-radius:9px;font-size:14px;color:#666;cursor:pointer;font-family:inherit;">
+        ${lang==="zh"?"返回主页":"메인으로"}
+      </button>
+    </div>
+  </div>
+</div>`;
+
+  const siteOpts = `<option value="">${lang==="zh"?"请选择事业所":"사업소 선택"}</option>` +
+    SITES.map(s=>`<option value="${s}"${sug.site===s?" selected":""}>${s}</option>`).join("");
+
+  const categories = lang==="zh"
+    ? ["安全设施改善","作业环境改善","危险因素报告","业务流程改善","其他"]
+    : ["안전설비 개선","작업환경 개선","위험요소 신고","업무프로세스 개선","기타"];
+  const categoriesKo = ["안전설비 개선","작업환경 개선","위험요소 신고","업무프로세스 개선","기타"];
+
+  return `
+<div class="page" style="max-width:580px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+    <button id="btn-suggest-back-top" style="background:none;border:none;cursor:pointer;font-size:22px;color:#888;padding:4px;">‹</button>
+    <div>
+      <div style="font-size:18px;font-weight:700;">${lang==="zh"?"安全改进建议":"안전개선 제안"}</div>
+      <div style="font-size:12px;color:#aaa;">${lang==="zh"?"现场改进想法·危险因素报告":"현장 개선 아이디어 · 위험요소 신고"}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📍 ${lang==="zh"?"基本信息":"기본 정보"}</div>
+    <div class="field">
+      <div class="label">${lang==="zh"?"事业所":"사업소"} <span class="req">*</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${SITES.map(s=>`
+        <button type="button" class="radio-btn${sug.site===s?" on":""}" data-sug-site="${s}"
+          style="font-size:13px;padding:7px 12px;">
+          ${lang==="zh"?{"광명1범퍼사업소":"光明1保险杠","광명2범퍼사업소":"光明2保险杠","광명1서열사업소":"光明1序列","광명2서열사업소":"光明2序列","광명JIT사업소":"光明JIT","광명장비사업소":"光明设备","기타":"其他"}[s]||s:s}
+        </button>`).join("")}
+      </div>
+    </div>
+    <div class="field">
+      <div class="label">${lang==="zh"?"建议分类":"제안 분류"} <span class="req">*</span></div>
+      <div class="radio-row" style="flex-wrap:wrap;">
+        ${categories.map((c,idx)=>`
+        <button class="radio-btn${sug.category===categoriesKo[idx]||sug.category===c?" on":""}"
+          data-sug-cat="${categoriesKo[idx]}">${c}</button>`).join("")}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">💡 ${lang==="zh"?"建议内容":"제안 내용"}</div>
+    <div class="field">
+      <div class="label">${lang==="zh"?"建议标题":"제안 제목"} <span class="req">*</span></div>
+      <input id="sug-title" class="input" value="${sug.title}"
+        placeholder="${lang==="zh"?"请用一句话概括建议内容":"제안 내용을 한 줄로 요약해 주세요."}" maxlength="60"/>
+    </div>
+    <div class="field">
+      <div class="label">${lang==="zh"?"详细内容":"상세 내용"} <span class="req">*</span></div>
+      <textarea id="sug-detail" class="textarea" style="min-height:120px;"
+        placeholder="${lang==="zh"?"请具体描述当前问题和改进方向。":"현재 문제점과 개선 방향을 구체적으로 작성해 주세요."}">${sug.detail}</textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">👤 ${lang==="zh"?"建议人信息":"제안자 정보"}</div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;
+        padding:10px 12px;background:${sug.anonymous?"#f0faf0":"#f5f8fc"};
+        border:1.5px solid ${sug.anonymous?"#2e7d32":"#ddd"};border-radius:9px;">
+        <input type="checkbox" id="sug-anon" ${sug.anonymous?"checked":""}
+          style="width:17px;height:17px;accent-color:#2e7d32;cursor:pointer;"/>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:${sug.anonymous?"#2e7d32":"#555"};">
+            ${lang==="zh"?"匿名建议":"익명 제안"}
+          </div>
+          <div style="font-size:12px;color:#999;">
+            ${lang==="zh"?"不公开姓名和联系方式。":"이름과 연락처를 공개하지 않습니다."}
+          </div>
+        </div>
+      </label>
+    </div>
+    ${!sug.anonymous?`
+    <div class="field">
+      <div class="label">${lang==="zh"?"姓名":"성명"}</div>
+      <input id="sug-name" class="input" value="${sug.name}"
+        placeholder="${lang==="zh"?"姓名 (可选)":"성함 (선택)"}" maxlength="20"/>
+    </div>
+    <div class="field">
+      <div class="label">${lang==="zh"?"联系方式":"연락처"}</div>
+      <input id="sug-phone" class="input" value="${sug.phone}"
+        placeholder="${lang==="zh"?"手机号码 (可选)":"010-0000-0000 (선택)"}" type="tel"/>
+    </div>`:""}
+  </div>
+
+  <div id="sug-err" style="display:none;" class="err-banner"></div>
+
+  <button id="btn-suggest-submit" class="submit-btn" style="background:#2e7d32;">
+    <span style="font-size:18px;">💡</span> ${lang==="zh"?"提交建议":"제안 접수하기"}
+  </button>
+</div>`;
+}
+
+/* ── Firebase 설정 안내 ── */
+function renderSetupGuide(){
+  return `
+<div class="setup-banner">
+  <strong>⚙️ Firebase 연결 설정이 필요합니다</strong><br><br>
+  이 파일을 실제로 사용하려면 Firebase 프로젝트를 연결해야 합니다.<br>
+  <strong>1단계</strong> — <a href="https://console.firebase.google.com" target="_blank" style="color:#7a6000;">console.firebase.google.com</a> 접속 → 새 프로젝트 생성<br>
+  <strong>2단계</strong> — Realtime Database 활성화 (테스트 모드로 시작)<br>
+  <strong>3단계</strong> — 프로젝트 설정 → 앱 추가(웹) → SDK 설정 복사<br>
+  <strong>4단계</strong> — 이 파일의 <code>firebaseConfig</code> 부분에 붙여넣기
+</div>
+<div class="card" style="text-align:center;color:#aaa;font-size:14px;padding:2rem;">
+  Firebase 설정 후 이 화면이 사고접수 폼으로 바뀝니다.
+</div>`;
+}
+
+/* ── 사고접수 폼 ── */
+function renderForm(){
+  const e = errors;
+  const siteOpts = `<option value="">${lang==="zh"?"请选择事业所":"사업소 선택"}</option>` + SITES.map(s=>`<option value="${s}"${form.site===s?" selected":""}>${s}</option>`).join("");
+
+  // ── 번역 사전에서 사고유형/세부유형 로드 ──
+  const accDetailMap = T[lang].accDetailMap;
+  const accTypes = T[lang].accTypes;
+
+  const accTypeOpts = accTypes.map(tp=>`
+    <button class="radio-btn${form.isComplex ? (form.accTypes.includes(tp)?" on":"") : (form.accType===tp?" on":"")}"
+      data-type-btn="${tp}">${tp}</button>`).join("");
+
+  const getDetailDesc = (type, detailVal) => {
+    const list = accDetailMap[type] || [];
+    const found = list.find(d => d.val === detailVal);
+    return found ? found.desc : "";
+  };
+
+  let selectedDetailDesc = "";
+  if(!form.isComplex && form.accDetail){
+    selectedDetailDesc = getDetailDesc(form.accType, form.accDetail);
+  } else if(form.isComplex && form.accDetails.length > 0){
+    const lastDetail = form.accDetails[form.accDetails.length - 1];
+    for(const tp of form.accTypes){
+      const desc = getDetailDesc(tp, lastDetail);
+      if(desc){ selectedDetailDesc = desc; break; }
+    }
+  }
+
+  const activeTypes = form.isComplex ? form.accTypes : (form.accType ? [form.accType] : []);
+  const detailBtns = activeTypes.length > 0
+    ? activeTypes.map(tp => {
+        const details = accDetailMap[tp] || [];
+        return `<div style="margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;padding:2px 8px;background:#f0f4f8;border-radius:5px;display:inline-block;">${tp}</div>
+          <div class="radio-row" style="flex-wrap:wrap;">
+            ${details.map(d => {
+              const isOn = form.isComplex ? form.accDetails.includes(d.val) : form.accDetail===d.val;
+              return `<button class="radio-btn${isOn?" on":""}" data-detail-btn="${d.val}" data-detail-type="${tp}">${d.val}</button>`;
+            }).join("")}
+          </div>
+        </div>`;
+      }).join("")
+    : `<div style="font-size:13px;color:#bbb;padding:4px 0;">${lang==="zh"?"请先选择事故类型。":"사고 유형을 먼저 선택해 주세요."}</div>`;
+
+  const levelBtns = [
+    {lv:"1", cls:"lv1", badge:lang==="zh"?"最紧急":"최긴급", desc:lang==="zh"?"人员伤亡·停线·客户需立即响应":"인명피해·라인중단·고객사 즉시 대응 필요"},
+    {lv:"2", cls:"lv2", badge:lang==="zh"?"紧急":"긴급", desc:lang==="zh"?"可能影响生产·处理后30分钟内报告":"생산 차질 가능·수습 후 30분 내 보고"},
+    {lv:"3", cls:"lv3", badge:lang==="zh"?"一般":"일반", desc:lang==="zh"?"不影响生产·含定期报告":"생산 영향 없음·정기 보고 포함"}
+  ].map(l=>`
+    <button class="level-btn ${l.cls}${form.level===l.lv?" on":""}" data-lv="${l.lv}">
+      <span class="lv-badge">Level ${l.lv} ${l.badge}</span>
+      <div class="level-btn-inner">
+        <span style="font-size:14px;font-weight:600;color:#333;">Level ${l.lv} — ${l.badge}</span>
+        <span class="lv-desc">${l.desc}</span>
+      </div>
+    </button>`).join("");
+
+  const yesNoBtns = (field, val) => {
+    const pairs = lang==="zh" ? [["예","是"],["아니오","否"]] : [["예","예"],["아니오","아니오"]];
+    return pairs.map(([v, label])=>`
+    <button class="radio-btn${val===v?" on":""}" data-field="${field}" data-val="${v}">${label}</button>`).join("");
+  };
+
+  const chkItems = T[lang].checks.map((t,i)=>`
+    <label class="chk-item">
+      <input type="checkbox" data-chk="${i}" ${form.checks[i]?"checked":""}/>
+      <span>${t}</span>
+    </label>`).join("");
+
+  return `
+<div class="header">
+  <!-- 언어 선택 버튼 -->
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+    <button id="btn-lang-toggle"
+      style="padding:6px 16px;border:1.5px solid #dce8f4;border-radius:20px;
+      background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+      color:#1e2761;display:flex;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      ${t("langBtn")}
+    </button>
+  </div>
+  <div class="icon-wrap">🚨</div>
+  <div class="form-title">${t("formTitle")}</div>
+  <div class="form-desc">${lang==="zh"
+    ? "发生事故后请立即填写。<br>Level 1·2 请同时进行电话报告。"
+    : "사고 발생 즉시 아래 항목을 입력해 주세요.<br>접수 즉시 담당자에게 자동으로 통보됩니다."}</div>
+  <div class="notice-box">
+    ${lang==="zh"
+      ? "<b>※</b> 发生人员伤亡·停线时立即报告并控制现场<br><b>※</b> 照片必须保持现场原状拍摄后另行发送<br><b>※</b> 虚假·迟报对事故应对有致命影响"
+      : "<b>※</b> 인명피해·라인중단 발생 시 즉시 보고 후 현장 통제<br><b>※</b> 사진은 반드시 현장 상태 그대로 촬영 후 별도 공유<br><b>※</b> 허위·지연 보고는 사고 대응에 치명적 영향을 줍니다"}
+  </div>
+</div>
+
+<!-- ── 기본정보 ── -->
+<div class="card">
+  <div class="section-title">${t("secReporter")}</div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"事业所":"사업소"} <span class="req">*</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;" id="site-btns-wrap">
+      ${SITES.map(s=>`
+      <button type="button" class="radio-btn${form.site===s?" on":""}" data-site-btn="${s}"
+        style="font-size:13px;padding:7px 12px;">
+        ${lang==="zh"?{"광명1범퍼사업소":"光明1保险杠","광명2범퍼사업소":"光明2保险杠","광명1서열사업소":"光明1序列","광명2서열사업소":"光明2序列","광명JIT사업소":"光明JIT","광명장비사업소":"光明设备","기타":"其他"}[s]||s:s}
+      </button>`).join("")}
+    </div>
+    ${e.site?`<div class="err-msg">${e.site}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"报告人姓名":"접수자 성명"} <span class="req">*</span></div>
+    <input id="f-reporter" class="input${e.reporter?" err":""}" value="${form.reporter}" placeholder="${lang==='zh'?'请输入姓名':'성함을 입력해 주세요'}" maxlength="20"/>
+    ${e.reporter?`<div class="err-msg">${e.reporter}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"职级":"직급"} <span class="req">*</span></div>
+    <select id="f-rank" class="select${e.rank?" err":""}">
+      <option value="">${lang==="zh"?"请选择职级":"직급 선택"}</option>
+      ${T[lang].ranks.map(r=>`<option value="${r}"${form.rank===r?" selected":""}>${r}</option>`).join("")}
+    </select>
+    ${e.rank?`<div class="err-msg">${e.rank}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"联系电话":"접수자 연락처"} <span class="req">*</span></div>
+    <input id="f-phone" class="input${e.phone?" err":""}" value="${form.phone}" placeholder="${lang==='zh'?'手机号码':'010-0000-0000'}" type="tel"/>
+    ${e.phone?`<div class="err-msg">${e.phone}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"事故发生时间":"사고 발생 일시"} <span class="req">*</span>
+      <span style="font-size:11px;color:#aaa;font-weight:400;margin-left:4px;">${lang==="zh"?"自动填入当前时间，如需修改请编辑":"현재 시각 자동 입력 — 필요 시 수정"}</span>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+      <select id="f-acc-year" class="select${e.accYear?" err":""}" style="flex:1;min-width:80px;">
+        <option value="">${lang==="zh"?"年":"년도"}</option>
+        ${[2024,2025,2026,2027].map(y=>`<option value="${y}"${form.accYear===String(y)?" selected":""}>${lang==="zh"?y+"年":y+"년"}</option>`).join("")}
+      </select>
+      <select id="f-acc-month" class="select${e.accMonth?" err":""}" style="flex:1;min-width:60px;">
+        <option value="">${lang==="zh"?"月":"월"}</option>
+        ${Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${String(m).padStart(2,'0')}"${form.accMonth===String(m).padStart(2,'0')?" selected":""}>${lang==="zh"?m+"月":m+"월"}</option>`).join("")}
+      </select>
+      <select id="f-acc-day" class="select${e.accDay?" err":""}" style="flex:1;min-width:60px;">
+        <option value="">${lang==="zh"?"日":"일"}</option>
+        ${Array.from({length:31},(_,i)=>i+1).map(d=>`<option value="${String(d).padStart(2,'0')}"${form.accDay===String(d).padStart(2,'0')?" selected":""}>${lang==="zh"?d+"日":d+"일"}</option>`).join("")}
+      </select>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;">
+      <select id="f-acc-ampm" class="select" style="flex:1;min-width:70px;">
+        ${(lang==="zh"?[["오전","上午"],["오후","下午"]]:[["오전","오전"],["오후","오후"]]).map(([v,label])=>`<option value="${v}"${form.accAmPm===v?" selected":""}>${label}</option>`).join("")}
+      </select>
+      <select id="f-acc-hour" class="select${e.accHour?" err":""}" style="flex:1;min-width:60px;">
+        <option value="">${lang==="zh"?"时":"시"}</option>
+        ${Array.from({length:12},(_,i)=>i+1).map(h=>`<option value="${String(h).padStart(2,'0')}"${form.accHour===String(h).padStart(2,'0')?" selected":""}>${lang==="zh"?h+"时":h+"시"}</option>`).join("")}
+      </select>
+      <select id="f-acc-min" class="select${e.accMin?" err":""}" style="flex:1;min-width:60px;">
+        <option value="">${lang==="zh"?"分":"분"}</option>
+        ${Array.from({length:12},(_,i)=>i*5).map(m=>`<option value="${String(m).padStart(2,'0')}"${form.accMin===String(m).padStart(2,'0')?" selected":""}>${String(m).padStart(2,'0')}${lang==="zh"?"分":"분"}</option>`).join("")}
+      </select>
+    </div>
+    ${e.accYear||e.accHour?`<div class="err-msg">${lang==="zh"?"请输入事故发生时间":"사고 발생 일시를 입력해 주세요."}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"事故发生地点":"사고 발생 위치"} <span class="req">*</span></div>
+    <input id="f-location" class="input${e.location?" err":""}" value="${form.location}" placeholder="${lang==="zh"?"例: 1工厂对接区3号线":"예: 1공장 도킹존 3번 라인"}" maxlength="60"/>
+    ${e.location?`<div class="err-msg">${e.location}</div>`:""}
+  </div>
+</div>
+
+<!-- ── 사고분류 ── -->
+<div class="card">
+  <div class="section-title">${t("secClass")}</div>
+
+  <!-- 복합사고 토글 -->
+  <div class="field" style="margin-bottom:14px;">
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:${form.isComplex?"#fff3eb":"#f5f8fc"};border:1.5px solid ${form.isComplex?"#e05c00":"#ddd"};border-radius:9px;">
+      <input type="checkbox" id="chk-complex" ${form.isComplex?"checked":""} style="width:17px;height:17px;accent-color:#e05c00;cursor:pointer;flex-shrink:0;"/>
+      <div>
+        <div style="font-size:14px;font-weight:600;color:${form.isComplex?"#e05c00":"#555"};">${lang==="zh"?"复合事故":"복합사고"}</div>
+        <div style="font-size:12px;color:#999;margin-top:1px;">${lang==="zh"?"同时发生两种以上事故类型时勾选":"2가지 이상의 사고 유형이 동시에 발생한 경우 체크"}</div>
+      </div>
+    </label>
+  </div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"事故类型":"사고 유형"} <span class="req">*</span>
+      ${form.isComplex?`<span style="font-size:11px;color:#e05c00;font-weight:400;margin-left:4px;">${lang==="zh"?"复合事故 — 可多选":"복합사고 — 중복선택 가능"}</span>`:""}
+    </div>
+    <div class="radio-row">${accTypeOpts}</div>
+    ${e.accType?`<div class="err-msg">${e.accType}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"细分类型":"세부 유형"} <span class="req">*</span>
+      ${form.isComplex?`<span style="font-size:11px;color:#e05c00;font-weight:400;margin-left:4px;">${lang==="zh"?"复合事故 — 可多选":"복합사고 — 중복선택 가능"}</span>`:""}
+    </div>
+    <div id="detail-btns-wrap">${detailBtns}</div>
+    ${selectedDetailDesc ? `
+    <div style="margin-top:8px;background:#f0f4ff;border-left:3px solid #1e2761;border-radius:0 8px 8px 0;
+      padding:8px 12px;font-size:12px;color:#1e2761;line-height:1.6;">
+      <span style="font-weight:700;">ℹ️ </span>${selectedDetailDesc}
+    </div>` : ""}
+    ${e.accDetail?`<div class="err-msg">${e.accDetail}</div>`:""}
+  </div>
+</div>
+
+<!-- ── 긴급도 ── -->
+<div class="card">
+  <div class="section-title">${lang==="zh"?"⚡ 紧急程度判断":"⚡ 긴급도 판단"}</div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"紧急程度":"긴급도 선택"} <span class="req">*</span></div>
+    <div class="level-row">${levelBtns}</div>
+    ${e.level?`<div class="err-msg">${e.level}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"停线情况":"라인중단 여부"} <span class="req">*</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${T[lang].lineStops.map(o=>`
+      <button data-field="lineStop" data-val="${o.val}"
+        style="width:100%;padding:10px 14px;border-radius:9px;border:1.5px solid ${form.lineStop===o.val?o.color:o.border};
+               background:${form.lineStop===o.val?o.bg:"#fff"};
+               cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:10px;transition:all .15s;">
+        <span style="width:10px;height:10px;border-radius:50%;background:${o.color};flex-shrink:0;"></span>
+        <span style="font-size:13px;font-weight:${form.lineStop===o.val?"700":"500"};color:${form.lineStop===o.val?o.color:"#444"};">${lang==="zh"?{"라인중단발생":"停线发生","라인중단예상":"停线预期","미장착":"未装配","라인영향없음":"无停线影响"}[o.val]||o.val:o.val}</span>
+        <span style="font-size:11px;color:#aaa;margin-left:4px;">${o.desc}</span>
+      </button>`).join("")}
+    </div>
+    ${e.lineStop?`<div class="err-msg">${e.lineStop}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"客户影响":"고객사 영향 여부"} <span class="req">*</span></div>
+    <div class="radio-row">${yesNoBtns("customerEffect", form.customerEffect)}</div>
+    ${e.customerEffect?`<div class="err-msg">${e.customerEffect}</div>`:""}
+  </div>
+</div>
+
+<!-- ── 인사사고 대상자 (인사사고 선택 시만 표시) ── -->
+${(form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인사사고")?`
+<div class="card">
+  <div class="section-title">🧑‍⚕️ ${lang==="zh"?"事故人员":"사고 대상자"}</div>
+
+  <div class="field">
+    <div class="label">${lang==="zh"?"事故类型":"사고 유형 구분"} <span class="req">*</span></div>
+    <div class="radio-row">
+      ${(lang==="zh"?[["단독사고","单方事故"],["쌍방사고","双方事故"]]:[["단독사고","단독사고"],["쌍방사고","쌍방사고"]]).map(([t,label])=>`
+        <button class="radio-btn${form.accidentType===t?" on":""}" data-field="accidentType" data-val="${t}">${label}</button>`).join("")}
+    </div>
+    ${errors.accidentType?`<div class="err-msg">${errors.accidentType}</div>`:""}
+  </div>
+
+  <!-- 피해자 -->
+  <div class="field">
+    <div class="label">${lang==="zh"?"受害者":"피해자"} <span class="req">*</span></div>
+    <div id="victims-wrap">
+      ${form.victims.map((v,i)=>`
+      <div style="background:#fff8f8;border:1px solid #f5c6c6;border-radius:9px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+          <input class="input victim-name" data-vi="${i}" value="${v.name}" placeholder="${lang==='zh'?'姓名':'성명'}" style="flex:1;" ${v.unknown?"disabled":""}/>
+          <input class="input victim-aff" data-vi="${i}" value="${v.affiliation}" placeholder="${lang==='zh'?'所属':'소속'}" style="flex:1;" ${v.unknown?"disabled":""}/>
+          ${i>0?`<button onclick="removePerson('victims',${i})" style="background:none;border:none;color:#ccc;font-size:18px;cursor:pointer;flex-shrink:0;">✕</button>`:""}
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
+          <input type="checkbox" class="victim-unknown" data-vi="${i}" ${v.unknown?"checked":""} style="accent-color:#e05c00;width:15px;height:15px;"/>
+          인적사항 미확인
+        </label>
+      </div>`).join("")}
+    </div>
+    <button onclick="addPerson('victims')" style="width:100%;padding:9px;border:1.5px dashed #ddd;border-radius:9px;background:none;font-size:13px;color:#888;cursor:pointer;margin-top:4px;">${lang==="zh"?"+ 添加受害者":"+ 피해자 추가"}</button>
+    ${errors.victims?`<div class="err-msg">${errors.victims}</div>`:""}
+  </div>
+
+  <!-- 가해자 (쌍방사고 시) -->
+  ${form.accidentType==="쌍방사고"?`
+  <div class="field">
+    <div class="label">${lang==="zh"?"肇事者":"가해자"} <span class="req">*</span></div>
+    <div id="perps-wrap">
+      ${form.perpetrators.map((p,i)=>`
+      <div style="background:#f8f8ff;border:1px solid #c6c6f5;border-radius:9px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+          <input class="input perp-name" data-pi="${i}" value="${p.name}" placeholder="성명" style="flex:1;" ${p.unknown?"disabled":""}/>
+          <input class="input perp-aff" data-pi="${i}" value="${p.affiliation}" placeholder="소속" style="flex:1;" ${p.unknown?"disabled":""}/>
+          ${i>0?`<button onclick="removePerson('perpetrators',${i})" style="background:none;border:none;color:#ccc;font-size:18px;cursor:pointer;flex-shrink:0;">✕</button>`:""}
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
+          <input type="checkbox" class="perp-unknown" data-pi="${i}" ${p.unknown?"checked":""} style="accent-color:#e05c00;width:15px;height:15px;"/>
+          인적사항 미확인
+        </label>
+      </div>`).join("")}
+    </div>
+    <button onclick="addPerson('perpetrators')" style="width:100%;padding:9px;border:1.5px dashed #ddd;border-radius:9px;background:none;font-size:13px;color:#888;cursor:pointer;margin-top:4px;">${lang==="zh"?"+ 添加肇事者":"+ 가해자 추가"}</button>
+    ${errors.perpetrators?`<div class="err-msg">${errors.perpetrators}</div>`:""}
+  </div>`:""}
+</div>`:""}
+
+<!-- ── 상황 및 조치 ── -->
+<div class="card">
+  <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>${t("secAction")}</span>
+    <button id="btn-voice-start" ${form._voiceProcessing?"disabled":""}
+      style="display:flex;align-items:center;gap:6px;padding:7px 14px;
+      background:${form._voiceOn?"#e05c00":form._voiceProcessing?"#2e7d32":"#1e2761"};
+      color:#fff;border:none;border-radius:20px;
+      font-size:12px;font-weight:700;cursor:${form._voiceProcessing?"default":"pointer"};font-family:inherit;">
+      ${form._voiceProcessing
+        ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;animation:pulse 0.6s infinite;"></span>
+           ${lang==="zh"?"AI整理中...":"AI 정리 중..."}`
+        : form._voiceOn
+        ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;animation:pulse 1s infinite;"></span>
+           ${lang==="zh"?"识别中... (点击停止)":"인식 중... (탭하여 중지)"}`
+        : `🎤 ${lang==="zh"?"语音快速输入":"음성으로 빠른 입력"}`}
+    </button>
+  </div>
+
+  ${form._voiceProcessing ? `
+  <div style="background:#f0faf0;border:1.5px solid #2e7d32;border-radius:9px;
+    padding:12px 14px;margin-bottom:12px;line-height:1.6;">
+    <div style="font-weight:700;color:#2e7d32;margin-bottom:4px;font-size:13px;">
+      🤖 ${lang==="zh"?"AI正在整理语音内容，请稍候...":"AI가 음성 내용을 보고서 형식으로 정리 중..."}
+    </div>
+    <div style="font-size:11px;color:#888;">
+      ${lang==="zh"?"识别的内容将自动整理为事故报告格式。":"인식된 내용을 사고 보고서 형식에 맞게 자동 정리합니다."}
+    </div>
+  </div>` : ""}
+
+  ${form._voiceOn ? `
+  <div style="background:#fff3eb;border:1.5px solid #e05c00;border-radius:9px;
+    padding:12px 14px;margin-bottom:12px;font-size:13px;color:#e05c00;line-height:1.6;">
+    <div style="font-weight:700;margin-bottom:8px;font-size:14px;">
+      🎤 ${lang==="zh"?"请您说话！":"지금 말씀해 주세요!"}
+    </div>
+    <div style="background:#fff;border-radius:7px;padding:10px 12px;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">
+        💬 ${lang==="zh"?"请按以下顺序说明：":"아래 순서대로 말하면 됩니다"}
+      </div>
+      ${T[lang].voiceGuideItems.map((g,i)=>`
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;">
+        <span style="background:#e05c00;color:#fff;font-size:10px;font-weight:700;
+          min-width:18px;height:18px;border-radius:50%;display:flex;align-items:center;
+          justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</span>
+        <div style="font-size:12px;">
+          <span style="font-weight:700;color:#333;">${g.label}</span>
+          <span style="color:#aaa;"> — ${lang==="zh"?"例":"예"}) ${g.ex}</span>
+        </div>
+      </div>`).join("")}
+    </div>
+    <div style="font-size:11px;color:#aaa;text-align:center;">
+      ${lang==="zh"?"🤖 说完后 AI 将自动整理为报告格式":"🤖 말씀 후 AI가 자동으로 보고서 형식으로 정리해 드립니다"}
+    </div>
+  </div>` : ""}
+
+  <div class="field">
+    <div class="label">${t("situation")} <span class="req">*</span></div>
+    <textarea id="f-situation" class="textarea${e.situation?" err":""}"
+      placeholder="${lang==="zh"?"请简要描述事故经过和当前状况。":"사고 발생 경위 및 현재 상황을 간략히 기술해 주세요."}">${form.situation}</textarea>
+    ${e.situation?`<div class="err-msg">${e.situation}</div>`:""}
+  </div>
+
+  <div class="field">
+    <div class="label">${t("action")}</div>
+    <textarea id="f-action" class="textarea" placeholder="${lang==="zh"?"请填写已采取的即时措施。(无则填写'无')":"취한 즉시 조치를 입력해 주세요. (없으면 '없음' 입력)"}">${form.actionTaken}</textarea>
+  </div>
+
+  <div class="field">
+    <div class="label">${t("support")}</div>
+    <textarea id="f-support" class="textarea" placeholder="${lang==="zh"?"例：请求安全团队到场 (无则填写'无')":"예: 안전팀 현장 출동 요청, 대체품 긴급 수배 등 (없으면 '없음' 입력)"}">${form.supportNeeded}</textarea>
+  </div>
+</div>
+
+<!-- ── 사진 첨부 ── -->
+<div class="card">
+  <div class="section-title">${lang==="zh"?"📷 现场照片":"📷 현장 사진 첨부"}</div>
+  <div style="font-size:12px;color:#aaa;margin-bottom:12px;">${lang==="zh"?"最多可附3张 · 支持JPG, PNG, GIF":"최대 3장까지 첨부 가능 · JPG, PNG, GIF 지원"}</div>
+
+  <!-- 사진 미리보기 -->
+  ${form.photosPreviews.length>0?`
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    ${form.photosPreviews.map((src,i)=>`
+    <div style="position:relative;width:90px;height:90px;">
+      <img src="${src}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #dce8f4;"/>
+      <button onclick="removePhoto(${i})"
+        style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;
+        background:#e05c00;color:#fff;border:none;border-radius:50%;
+        font-size:12px;cursor:pointer;line-height:20px;text-align:center;padding:0;">✕</button>
+      ${form.photos[i]==="uploading"?`
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45);border-radius:8px;
+        display:flex;align-items:center;justify-content:center;">
+        <div style="color:#fff;font-size:10px;font-weight:700;">업로드중...</div>
+      </div>`:""}
+    </div>`).join("")}
+  </div>`:""}
+
+  <!-- 업로드 버튼 -->
+  ${form.photosPreviews.length<3?`
+  <label style="display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:12px;border:1.5px dashed #ddd;border-radius:9px;
+    background:#fafafa;cursor:pointer;font-size:14px;color:#888;
+    transition:border-color .15s;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    ${lang==="zh"?"选择照片("+form.photosPreviews.length+"/3)":"사진 선택 ("+form.photosPreviews.length+"/3)"}
+    <input type="file" id="photo-input" accept="image/*" multiple style="display:none;"/>
+  </label>`:`
+  <div style="text-align:center;font-size:13px;color:#aaa;padding:8px;">
+    최대 3장 첨부 완료
+  </div>`}
+</div>
+
+<!-- ── 확인사항 ── -->
+<div class="card">
+  <div class="section-title" style="margin-bottom:12px;">${lang==="zh"?"✅ 确认事项":"✅ 확인 사항"}</div>
+  <div class="chk-list">${chkItems}</div>
+  ${e.checks?`<div class="err-msg" style="margin-top:8px;">${e.checks}</div>`:""}
+</div>
+
+${e.submit?`<div class="err-banner">${e.submit}</div>`:""}
+
+<button class="submit-btn" id="btn-submit" ${saving?"disabled":""}>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+  ${saving?t("submitting"):t("submitBtn")}
+</button>
+
+<div class="admin-link-wrap" style="display:flex;justify-content:center;gap:16px;">
+  <button class="admin-link" id="go-main-from-form">${lang==="zh"?(isGuest?"← 登录":"← 主页"):(isGuest?"← 로그인":"← 메인")}</button>
+  ${!isGuest?`<button class="admin-link" id="go-myreport">${lang==="zh"?"📋 我的报告查询":"📋 내 접수 조회"}</button>`:""}
+  ${!isGuest&&isAdmin?`<button class="admin-link" id="go-admin">${lang==="zh"?"管理员页面":"관리자 페이지"}</button>`:""}
+</div>`;
+}
+
+/* ── 완료 화면 ── */
+function renderSuccess(){
+  const e = submitted;
+  const lv = e ? levelLabel(e.level) : {text:"-",cls:""};
+  return `
+<div class="success-wrap">
+  <div class="success-icon">✅</div>
+  <div class="success-title">${t("successTitle")}</div>
+  <div class="success-desc">${lang==="zh"?"负责人将立即收到通知。<br>Level 1·2 请同时进行电话报告。":"담당자에게 즉시 통보됩니다.<br>Level 1·2 사고는 전화로 추가 보고를 병행해 주세요."}</div>
+
+  ${isGuest?`
+  <div style="background:#fff8f0;border:1.5px solid #fcd8a8;border-radius:10px;
+    padding:12px 16px;margin-bottom:1rem;font-size:13px;color:#e65100;line-height:1.7;">
+    💡 <strong>회원 가입 후 더 많은 기능을 이용할 수 있어요!</strong><br>
+    내 접수 조회 · 후속조치 입력 · 사고처리 매뉴얼 · 안전개선 제안
+  </div>`:""}
+  ${e?`
+  <div class="acc-no-badge">${e.accNo}</div>
+  <div class="receipt">
+    <strong>사업소</strong>: ${e.site}<br>
+    <strong>접수자</strong>: ${e.reporter} ${e.rank} (${e.phone})<br>
+    <strong>사고발생일시</strong>: ${e.accDateTime||"-"}<br>
+    <strong>사고유형</strong>: ${e.accType} > ${e.accDetail}<br>
+    <strong>긴급도</strong>: <span class="${lv.cls}">${lv.text}</span><br>
+    <strong>라인중단</strong>: ${e.lineStop} &nbsp;|&nbsp; <strong>고객사 영향</strong>: ${e.customerEffect}<br>
+    <strong>접수일시</strong>: ${e.createdAt}
+  </div>
+  <!-- 후속조치 추가 입력 -->
+  <div style="background:#f5f8fc;border-radius:10px;padding:1rem;margin-bottom:1rem;text-align:left;">
+    <div style="font-size:13px;font-weight:700;color:#e05c00;margin-bottom:10px;">📋 후속조치 추가 입력</div>
+    <div style="font-size:12px;color:#888;margin-bottom:8px;">초기 접수 후 추가 조치사항이 있으면 입력해 주세요.</div>
+    <textarea id="follow-up-text" class="textarea" placeholder="후속조치 내용을 입력해 주세요." style="min-height:80px;font-size:14px;"></textarea>
+    <button id="btn-followup" style="width:100%;margin-top:8px;padding:10px;background:#1e2761;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">후속조치 저장</button>
+    <div id="followup-msg" style="font-size:12px;color:#2e7d32;margin-top:6px;display:none;">✅ 후속조치가 저장되었습니다.</div>
+  </div>`:""}
+  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+    <button class="reset-btn" id="btn-reset">${lang==="zh"?"新增事故报告":"새 사고 접수"}</button>
+    ${isGuest?`
+    <button id="btn-guest-to-login"
+      style="padding:11px 28px;background:#1e2761;color:#fff;border:none;border-radius:9px;
+      font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+      🔐 로그인 / 회원가입
+    </button>`:`
+    <button id="btn-go-myreport"
+      style="padding:11px 28px;background:#1e2761;color:#fff;border:none;border-radius:9px;
+      font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+      📋 내 접수 조회
+    </button>`}
+  </div>
+</div>`;
+}
+
+/* ── 사고 상세 조회 화면 (SMS 링크로 접속 시) ── */
+function renderAccDetail(){
+  const key = window._accDetailKey;
+  const e = key ? entries[key] : null;
+
+  if(!e) return `
+<div class="card" style="text-align:center;padding:2.5rem;">
+  <div style="font-size:40px;margin-bottom:1rem;">🔍</div>
+  <div style="font-size:16px;font-weight:700;margin-bottom:8px;">사고 정보를 찾을 수 없습니다.</div>
+  <div style="font-size:13px;color:#888;margin-bottom:1.5rem;">링크가 만료되었거나 잘못된 접근입니다.</div>
+  <button onclick="location.href=location.pathname"
+    style="padding:10px 24px;background:#1e2761;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+    메인으로
+  </button>
+</div>`;
+
+  const lvStyle = {
+    "1":{bg:"#fff5f5",color:"#b71c1c",border:"#f5c6c6",text:"Level 1 최긴급"},
+    "2":{bg:"#fff8f0",color:"#e65100",border:"#fcd8a8",text:"Level 2 긴급"},
+    "3":{bg:"#f0faf0",color:"#2e7d32",border:"#b8e0ba",text:"Level 3 일반"}
+  };
+  const ls = lvStyle[e.level] || {bg:"#f5f5f5",color:"#999",border:"#ddd",text:"-"};
+
+  const lineStopColor = {
+    "라인중단발생":"#b71c1c","라인중단예상":"#e65100",
+    "미장착":"#7b5e00","라인영향없음":"#2e7d32"
+  }[e.lineStop] || "#888";
+
+  return `
+<div class="header" style="margin-bottom:1.25rem;">
+  <div class="icon-wrap" style="background:#fff0e0;">🚨</div>
+  <div class="form-title">사고 상세 조회</div>
+  <div class="acc-no-badge">${e.accNo}</div>
+</div>
+
+<!-- 긴급도 배지 -->
+<div style="background:${ls.bg};border:1.5px solid ${ls.border};border-radius:10px;
+  padding:12px 16px;margin-bottom:1rem;text-align:center;">
+  <div style="font-size:18px;font-weight:700;color:${ls.color};">${ls.text}</div>
+  <div style="font-size:12px;color:#aaa;margin-top:3px;">접수일시: ${e.createdAt||"-"}</div>
+</div>
+
+<!-- 기본 정보 -->
+<div class="card">
+  <div class="section-title">📋 기본 정보</div>
+  <div style="font-size:14px;line-height:2.2;color:#333;">
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:0 12px;">
+      <span style="color:#aaa;white-space:nowrap;">사업소</span>
+      <span style="font-weight:600;">${e.site||"-"}</span>
+      <span style="color:#aaa;white-space:nowrap;">사고유형</span>
+      <span style="font-weight:600;">${e.accType||"-"} &gt; ${e.accDetail||"-"}</span>
+      <span style="color:#aaa;white-space:nowrap;">발생일시</span>
+      <span>${e.accDateTime||"-"}</span>
+      <span style="color:#aaa;white-space:nowrap;">발생위치</span>
+      <span>${e.location||"-"}</span>
+      <span style="color:#aaa;white-space:nowrap;">접수자</span>
+      <span>${e.reporter||"-"} ${e.rank||""} (${e.phone||"-"})</span>
+    </div>
+  </div>
+</div>
+
+<!-- 라인/고객사 -->
+<div class="card">
+  <div class="section-title">⚡ 상황 요약</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <div style="flex:1;min-width:120px;background:#f5f8fc;border-radius:9px;padding:10px 12px;text-align:center;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">라인중단</div>
+      <div style="font-size:14px;font-weight:700;color:${lineStopColor};">${e.lineStop||"-"}</div>
+    </div>
+    <div style="flex:1;min-width:120px;background:#f5f8fc;border-radius:9px;padding:10px 12px;text-align:center;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">고객사 영향</div>
+      <div style="font-size:14px;font-weight:700;color:${e.customerEffect==="예"?"#e65100":"#2e7d32"};">${e.customerEffect||"-"}</div>
+    </div>
+    <div style="flex:1;min-width:120px;background:#f5f8fc;border-radius:9px;padding:10px 12px;text-align:center;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">처리상태</div>
+      <div style="font-size:14px;font-weight:700;
+        color:${e.status==="완료"?"#2e7d32":e.status==="처리중"?"#e65100":"#1e2761"};">
+        ${e.status||"접수"}
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:10px;">
+    <div style="font-size:12px;color:#aaa;margin-bottom:5px;">현재 상황</div>
+    <div style="background:#f9fbfd;border:1px solid #dce8f4;border-radius:8px;
+      padding:10px 12px;font-size:13px;line-height:1.7;color:#333;">
+      ${(e.situation||"-").replace(/\n/g,"<br>")}
+    </div>
+  </div>
+
+  ${e.actionTaken&&e.actionTaken!=="없음"?`
+  <div style="margin-bottom:10px;">
+    <div style="font-size:12px;color:#aaa;margin-bottom:5px;">즉시 조치</div>
+    <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:8px;
+      padding:10px 12px;font-size:13px;line-height:1.7;color:#333;">
+      ${e.actionTaken.replace(/\n/g,"<br>")}
+    </div>
+  </div>`:""}
+
+  ${e.supportNeeded&&e.supportNeeded!=="없음"?`
+  <div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:5px;">추가 지원 필요 여부</div>
+    <div style="background:#fffbe6;border:1px solid #ffe082;border-radius:8px;
+      padding:10px 12px;font-size:13px;line-height:1.7;color:#333;">
+      ${e.supportNeeded.replace(/\n/g,"<br>")}
+    </div>
+  </div>`:""}
+</div>
+
+<!-- 현장 사진 -->
+${e.photos&&e.photos.length>0?`
+<div class="card">
+  <div class="section-title">📷 현장 사진</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    ${(Array.isArray(e.photos)?e.photos:JSON.parse(e.photos||"[]")).filter(Boolean).map(url=>`
+    <a href="${url}" target="_blank" style="display:block;">
+      <img src="${url}"
+        style="width:100px;height:100px;object-fit:cover;border-radius:9px;
+        border:1px solid #dce8f4;cursor:pointer;"
+        onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'"/>
+    </a>`).join("")}
+  </div>
+  <div style="font-size:11px;color:#aaa;margin-top:8px;">사진을 탭하면 크게 볼 수 있습니다.</div>
+</div>`:""}
+
+<!-- 후속조치 이력 -->
+${e.followUp?`
+<div class="card">
+  <div class="section-title">✅ 후속조치 이력</div>
+  ${e.followUp.split("\n\n").filter(Boolean).map((item,idx)=>`
+  <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:9px;
+    padding:10px 12px;margin-bottom:8px;font-size:13px;color:#1a1a1a;line-height:1.7;">
+    <div style="font-size:11px;color:#2e7d32;font-weight:700;margin-bottom:4px;">
+      후속조치 ${idx+1}
+    </div>
+    ${item.replace(/\n/g,"<br>")}
+  </div>`).join("")}
+</div>`:""}
+
+<!-- 하단 버튼 -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:1.5rem;">
+  <button id="btn-acc-back"
+    style="padding:11px 24px;background:#f5f5f5;border:none;border-radius:9px;
+    font-size:14px;color:#666;cursor:pointer;font-family:inherit;">
+    ← ${currentUser ? "메인으로" : "로그인"}
+  </button>
+  ${currentUser ? `
+  <button id="btn-acc-admin"
+    style="padding:11px 24px;background:#1e2761;color:#fff;border:none;border-radius:9px;
+    font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+    🛡️ ${isAdmin ? "관리자 페이지" : "메인으로"}
+  </button>` : `
+  <button id="btn-acc-login"
+    style="padding:11px 24px;background:#1e2761;color:#fff;border:none;border-radius:9px;
+    font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+    🔐 로그인 / 회원가입
+  </button>`}
+</div>`;
+}
+
+/* ── 내 접수 조회 화면 ── */
+function renderMyReport(){
+  const myList = myReportPhone
+    ? Object.entries(entries)
+        .filter(([,e]) => e.phone && e.phone.replace(/\D/g,"") === myReportPhone.replace(/\D/g,""))
+        .sort((a,b) => (b[1].createdAt||"").localeCompare(a[1].createdAt||""))
+    : [];
+
+  const lvStyle = {
+    "1":{bg:"#fff5f5",color:"#b71c1c",border:"#f5c6c6"},
+    "2":{bg:"#fff8f0",color:"#e65100",border:"#fcd8a8"},
+    "3":{bg:"#f0faf0",color:"#2e7d32",border:"#b8e0ba"}
+  };
+
+  // 상세 선택된 사고
+  const sel = myReportSelected ? entries[myReportSelected] : null;
+
+  return `
+<div class="header" style="margin-bottom:1.25rem;">
+  <div class="icon-wrap" style="background:#e8eef7;">📋</div>
+  <div class="form-title">내 접수 조회</div>
+  <div class="form-desc">접수 시 입력한 연락처로 본인 확인 후<br>나의 사고 접수 내역을 확인하고 후속조치를 입력할 수 있습니다.</div>
+</div>
+
+<!-- 연락처 조회 -->
+<div class="card">
+  <div class="section-title">🔍 연락처로 조회</div>
+  <div style="display:flex;gap:8px;">
+    <input id="my-phone" class="input" value="${myReportPhone}" placeholder="010-0000-0000" type="tel" style="flex:1;"/>
+    <button id="btn-my-search" style="padding:10px 18px;background:#1e2761;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">조회</button>
+  </div>
+</div>
+
+${myReportPhone && myList.length===0 ? `
+<div class="card" style="text-align:center;color:#aaa;padding:2rem;font-size:14px;">
+  접수 내역이 없습니다.
+</div>` : ""}
+
+${myList.length>0 ? `
+<!-- 접수 목록 -->
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="padding:12px 16px;font-size:13px;font-weight:700;color:#1e2761;border-bottom:1px solid #eef2f7;">
+    총 ${myList.length}건의 접수 내역
+  </div>
+  ${myList.map(([key,e])=>{
+    const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
+    const isSelected = myReportSelected===key;
+    return `
+  <div style="border-bottom:1px solid #eef2f7;">
+    <!-- 사고 요약 행 -->
+    <div onclick="selectMyReport('${key}')"
+      style="padding:12px 16px;cursor:pointer;background:${isSelected?"#f0f4ff":"#fff"};transition:background .15s;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};">
+          Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
+        </span>
+        <span style="font-family:monospace;font-size:11px;color:#999;">${e.accNo||"-"}</span>
+        <span style="margin-left:auto;font-size:11px;color:#aaa;">${(e.createdAt||"").slice(0,16)}</span>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:3px;">${e.site} · ${e.accType} > ${e.accDetail}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#888;">📍 ${e.location||"-"}</span>
+        <span style="font-size:12px;padding:1px 7px;border-radius:5px;font-weight:600;
+          background:${e.status==="완료"?"#e8f5e9":e.status==="처리중"?"#fff8f0":"#f0f4ff"};
+          color:${e.status==="완료"?"#2e7d32":e.status==="처리중"?"#e65100":"#1e2761"};">
+          ${e.status||"접수"}
+        </span>
+        ${e.followUp?`<span style="font-size:12px;color:#2e7d32;">✅ 후속조치 ${e.followUp.split("\n\n").filter(Boolean).length}건</span>`:""}
+      </div>
+    </div>
+
+    <!-- 상세 + 후속조치 입력 (선택 시 펼침) -->
+    ${isSelected?`
+    <div style="background:#f9fbfd;border-top:1px dashed #dce8f4;padding:14px 16px;">
+
+      <!-- 접수 상세 -->
+      <div style="font-size:12px;font-weight:700;color:#888;margin-bottom:8px;">📄 접수 내용</div>
+      <div style="background:#fff;border:1px solid #dce8f4;border-radius:9px;padding:12px;font-size:13px;line-height:2;margin-bottom:14px;">
+        <strong>발생일시</strong>: ${e.accDateTime||"-"}<br>
+        <strong>긴급도</strong>: ${["","Level 1 최긴급","Level 2 긴급","Level 3 일반"][+e.level]||"-"}<br>
+        <strong>라인중단</strong>: ${e.lineStop||"-"} &nbsp;|&nbsp; <strong>고객사영향</strong>: ${e.customerEffect||"-"}<br>
+        <strong>현재 상황</strong>: ${(e.situation||"-").replace(/\n/g,"<br>")}
+        ${e.actionTaken&&e.actionTaken!=="없음"?`<br><strong>즉시 조치</strong>: ${e.actionTaken}`:""}
+      </div>
+
+      <!-- 후속조치 이력 -->
+      ${e.followUp?`
+      <div style="font-size:12px;font-weight:700;color:#2e7d32;margin-bottom:8px;">✅ 후속조치 이력</div>
+      <div style="margin-bottom:14px;">
+        ${e.followUp.split("\n\n").filter(Boolean).map((item,idx)=>`
+        <div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:9px;padding:10px 12px;margin-bottom:8px;font-size:13px;color:#1a1a1a;line-height:1.7;">
+          <div style="font-size:11px;color:#2e7d32;font-weight:700;margin-bottom:4px;">후속조치 ${idx+1}</div>
+          ${item.replace(/\n/g,"<br>")}
+        </div>`).join("")}
+      </div>`:""}
+
+      <!-- 후속조치 입력 -->
+      <div style="font-size:12px;font-weight:700;color:#e05c00;margin-bottom:8px;">📝 후속조치 입력 (2차 보고)</div>
+      <textarea id="followup-input-${key}" class="textarea"
+        placeholder="후속조치 내용을 입력해 주세요.&#10;예) 파손 부품 교체 완료, 고객사 보고 완료, 재발방지 교육 실시 등"
+        style="min-height:100px;font-size:14px;margin-bottom:8px;"></textarea>
+      <button onclick="saveFollowUp('${key}')"
+        style="width:100%;padding:11px;background:#e05c00;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+        📤 후속조치 저장 (2차 보고)
+      </button>
+      <div id="followup-ok-${key}" style="display:none;text-align:center;font-size:13px;color:#2e7d32;margin-top:8px;font-weight:600;">
+        ✅ 후속조치가 저장되었습니다.
+      </div>
+    </div>`:""}
+  </div>`;
+  }).join("")}
+</div>`:""
+}
+
+<div style="text-align:center;margin-top:1.5rem;">
+  <button id="btn-my-back" style="padding:10px 24px;background:#f5f5f5;border:none;border-radius:9px;font-size:14px;color:#666;cursor:pointer;font-family:inherit;">← 접수 폼으로 돌아가기</button>
+</div>`;
+}
+
+/* ── 관리자 화면 ── */
+function renderAdmin(){
+  const list = Object.entries(entries);
+  const total = list.length;
+  const lv1 = list.filter(([,e])=>e.level==="1").length;
+  const lv2 = list.filter(([,e])=>e.level==="2").length;
+  const lv3 = list.filter(([,e])=>e.level==="3").length;
+  const lineStop = list.filter(([,e])=>e.lineStop==="라인중단발생"||e.lineStop==="라인중단예상"||e.lineStop==="미장착").length;
+
+  let filtered = list.filter(([,e])=>{
+    if(filter.accType!=="전체" && e.accType!==filter.accType) return false;
+    if(filter.level!=="전체" && String(e.level)!==String(filter.level)) return false;
+    if(filter.search && !(e.reporter||"").includes(filter.search) && !(e.site||"").includes(filter.search) && !(e.accDetail||"").includes(filter.search)) return false;
+    return true;
+  });
+  filtered.sort((a,b)=>(b[1].createdAt||"").localeCompare(a[1].createdAt||""));
+
+  const lvC = {"1":{bg:"#fff5f5",color:"#b71c1c",bd:"#f5c6c6"},"2":{bg:"#fff8f0",color:"#e65100",bd:"#fcd8a8"},"3":{bg:"#f0faf0",color:"#2e7d32",bd:"#b8e0ba"}};
+
+  // ── 사고 카드 목록 (문자열 연결 방식 - 백틱 중첩 없음) ──
+  function makeCard(key, e){
+    const ls = lvC[e.level]||{bg:"#f5f5f5",color:"#999",bd:"#ddd"};
+    const lvLabel = ["","최긴급","긴급","일반"][+e.level]||"";
+    let lineTag = "";
+    if(e.lineStop==="라인중단발생") lineTag='<span style="font-size:10px;background:#fff0f0;color:#b71c1c;font-weight:700;padding:1px 6px;border-radius:4px;">중단발생</span>';
+    else if(e.lineStop==="라인중단예상") lineTag='<span style="font-size:10px;background:#fff8f0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">중단예상</span>';
+    else if(e.lineStop==="미장착") lineTag='<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">미장착</span>';
+    else lineTag='<span style="font-size:10px;background:#f0faf0;color:#2e7d32;font-weight:700;padding:1px 6px;border-radius:4px;">영향없음</span>';
+    const custTag = e.customerEffect==="예" ? '<span style="font-size:10px;background:#fff3e0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">고객사영향</span>' : "";
+    const detailTag = e.accDetail ? '<span style="font-size:11px;color:#888;background:#f0f4f8;padding:1px 6px;border-radius:5px;">'+e.accDetail+'</span>' : "";
+    const statusOpts = ["접수","처리중","완료","보류"].map(function(st){ return '<option'+(e.status===st?' selected':'')+'>'+st+'</option>'; }).join("");
+    const situation = (e.situation||"-").replace(/\n/g,"<br>");
+    const actionHtml = e.actionTaken ? '<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">즉시 조치</div><div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">'+e.actionTaken.replace(/\n/g,"<br>")+'</div></div>' : "";
+    const followHtml = e.followUp ? '<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">후속조치</div><div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;padding:8px 10px;color:#2e7d32;line-height:1.6;">'+e.followUp.replace(/\n/g,"<br>")+'</div></div>' : "";
+    let photoHtml = "";
+    if(e.photos && e.photos.length>0){
+      const photoArr = Array.isArray(e.photos)?e.photos:JSON.parse(e.photos||"[]");
+      photoHtml = '<div><div style="color:#aaa;margin-bottom:4px;">현장 사진</div><div style="display:flex;gap:6px;flex-wrap:wrap;">'+
+        photoArr.filter(Boolean).map(function(u){ return '<a href="'+u+'" target="_blank"><img src="'+u+'" style="width:70px;height:70px;object-fit:cover;border-radius:7px;border:1px solid #dce8f4;"/></a>'; }).join("")+
+        '</div></div>';
+    }
+
+    return '<div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">'
+      + '<div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;" class="card-hd" data-key="\'+key+\'">'
+        + '<div style="flex-shrink:0;margin-top:1px;"><span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;background:'+ls.bg+';color:'+ls.color+';border:1px solid '+ls.bd+';white-space:nowrap;">Lv'+(e.level||"?")+" "+lvLabel+'</span></div>'
+        + '<div style="flex:1;min-width:0;">'
+          + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;"><span style="font-weight:700;font-size:13px;color:#1a1a1a;">'+(e.site||"-")+'</span><span style="font-size:12px;color:#555;">'+(e.accType||"-")+'</span>'+detailTag+'</div>'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+lineTag+custTag+'<span style="font-size:11px;color:#aaa;">'+(e.reporter||"")+" "+(e.rank||"")+'</span><span style="font-size:11px;color:#bbb;">'+(e.createdAt||"").slice(0,16)+'</span></div>'
+        + '</div>'
+        + '<div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px;" onclick="event.stopPropagation()">'
+          + '<select class="status-sel" data-key="'+key+'" style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:11px;cursor:pointer;font-family:inherit;max-width:68px;">'+statusOpts+'</select>'
+          + '<div style="display:flex;gap:4px;">'
+            + '<button class="del-btn" data-key="'+key+'" style="background:none;border:1px solid #eee;border-radius:5px;cursor:pointer;color:#ccc;font-size:12px;padding:2px 6px;">✕</button>'
+            + '<button class="edit-btn" data-key="\'+key+\'" style="background:#e05c00;border:none;border-radius:5px;cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">수정</button>'
+          + '</div>'
+        + '</div>'
+      + '</div>'
+      + '<div id="detail-'+key+'" style="display:none;border-top:1px dashed #eef2f7;padding:12px 14px;background:#f9fbfd;font-size:12px;">'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
+          + '<div><span style="color:#aaa;">사고번호</span> <strong>'+(e.accNo||"-")+'</strong></div>'
+          + '<div><span style="color:#aaa;">발생위치</span> <strong>'+(e.location||"-")+'</strong></div>'
+          + '<div><span style="color:#aaa;">발생일시</span> <strong>'+(e.accDateTime||"-")+'</strong></div>'
+          + '<div><span style="color:#aaa;">연락처</span> <strong>'+(e.phone||"-")+'</strong></div>'
+        + '</div>'
+        + '<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">현재 상황</div><div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">'+situation+'</div></div>'
+        + actionHtml + followHtml + photoHtml
+        + '<div style="margin-top:8px;"><button class="edit-btn" data-key="\'+key+\'" style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 내용 수정 + 재발송</button></div>'
+      + '</div>'
+    + '</div>';
+  }
+
+  const accCards = filtered.length===0
+    ? '<div class="card" style="text-align:center;padding:2.5rem;color:#bbb;font-size:14px;">접수된 사고가 없습니다.</div>'
+    : filtered.map(([k,e])=>makeCard(k,e)).join("");
+
+  // ── 안전개선 제안 행 ──
+  function makeSugRow(key, s){
+    const statusOpts = ["접수","검토중","완료","보류"].map(function(st){ return '<option'+(s.status===st?' selected':'')+'>'+st+'</option>'; }).join("");
+    const nameCell = s.anonymous ? '<span style="color:#aaa;">익명</span>' : (s.name||"-");
+    const realInfo = (s.anonymous && s.realEmail)
+      ? '<div style="margin-top:10px;background:#fff8f0;border:1px solid #fcd8a8;border-radius:8px;padding:10px 12px;"><div style="font-size:11px;font-weight:700;color:#e05c00;margin-bottom:4px;">🔑 관리자 전용 — 실제 계정 정보</div><div style="font-size:13px;color:#333;">이름: <strong>'+(s.realName||"미입력")+'</strong></div><div style="font-size:13px;color:#333;">이메일: <strong>'+s.realEmail+'</strong></div></div>'
+      : "";
+    return '<tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" class="sug-hd" data-key="\'+key+\'">'
+      + '<td style="padding:10px 11px;font-size:12px;color:#888;white-space:nowrap;">'+(s.createdAt||"").slice(0,16)+'</td>'
+      + '<td style="padding:10px 11px;font-weight:600;">'+(s.site||"-")+'</td>'
+      + '<td style="padding:10px 11px;"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">'+(s.category||"-")+'</span></td>'
+      + '<td style="padding:10px 11px;color:#333;">'+(s.title||"-")+'</td>'
+      + '<td style="padding:10px 11px;font-size:13px;">'+nameCell+'</td>'
+      + '<td style="padding:10px 11px;font-size:12px;background:#fff8f0;"><div style="color:#e05c00;font-weight:600;">'+(s.realEmail||'<span style="color:#ccc;font-size:11px;">이전 데이터</span>')+'</div><div style="color:#aaa;font-size:11px;">'+(s.realName||"")+'</div></td>'
+      + '<td style="padding:10px 11px;" onclick="event.stopPropagation()"><select class="sug-status-sel" data-key="'+key+'" style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer;font-family:inherit;">'+statusOpts+'</select></td>'
+      + '</tr>'
+      + '<tr id="sug-'+key+'" style="display:none;background:#f9fbfd;">'
+        + '<td colspan="7" style="padding:14px 16px;font-size:13px;line-height:1.7;border-top:1px dashed #dce8f4;">'
+          + '<div style="font-weight:700;color:#2e7d32;margin-bottom:8px;">💡 상세 내용</div>'
+          + '<div style="background:#fff;border:1px solid #dce8f4;border-radius:8px;padding:10px 12px;color:#333;">'+(s.detail||"-").replace(/\n/g,"<br>")+'</div>'
+          + realInfo
+        + '</td>'
+      + '</tr>';
+  }
+
+  const sugRows = Object.entries(suggestions)
+    .sort((a,b)=>(b[1].createdAt||"").localeCompare(a[1].createdAt||""))
+    .map(([k,s])=>makeSugRow(k,s)).join("");
+
+  const sugHtml = Object.keys(suggestions).length===0
+    ? '<div class="card" style="text-align:center;padding:2.5rem;color:#aaa;font-size:14px;">아직 접수된 안전개선 제안이 없습니다.</div>'
+    : '<div class="card" style="padding:0;overflow:hidden;"><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
+      + '<thead style="background:#f5f8fc;"><tr style="border-bottom:1px solid #dce8f4;">'
+      + '<th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;white-space:nowrap;">접수일시</th>'
+      + '<th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">사업소</th>'
+      + '<th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">분류</th>'
+      + '<th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">제목</th>'
+      + '<th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">제안자</th>'
+      + '<th style="padding:9px 11px;text-align:left;font-weight:600;color:#e05c00;">🔑 실제 계정</th>'
+      + '<th style="padding:9px 11px;text-align:left;font-weight:600;color:#888;">상태</th>'
+      + '</tr></thead><tbody>'+sugRows+'</tbody></table></div></div>'
+      + '<div style="font-size:12px;color:#bbb;margin-top:7px;text-align:right;">총 '+Object.keys(suggestions).length+'건</div>';
+
+  const tabAccStyle  = adminTab==="accidents"  ? "color:#1e2761;border-bottom:2px solid #1e2761;" : "color:#aaa;border-bottom:2px solid transparent;";
+  const tabSugStyle  = adminTab==="suggestions"? "color:#2e7d32;border-bottom:2px solid #2e7d32;" : "color:#aaa;border-bottom:2px solid transparent;";
+
+  const mainContent = adminTab==="accidents"
+    ? '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:1.25rem;">'
+        + '<div style="background:#e8eef7;border-radius:9px;padding:10px 13px;"><div style="font-size:12px;color:#3a5a8a;margin-bottom:3px;">총 접수</div><div style="font-size:24px;font-weight:700;color:#1a3a6b;">'+total+'</div></div>'
+        + '<div style="background:#fff5f5;border-radius:9px;padding:10px 13px;"><div style="font-size:12px;color:#b71c1c;margin-bottom:3px;">최긴급(Lv1)</div><div style="font-size:24px;font-weight:700;color:#b71c1c;">'+lv1+'</div></div>'
+        + '<div style="background:#fff8f0;border-radius:9px;padding:10px 13px;"><div style="font-size:12px;color:#e65100;margin-bottom:3px;">긴급(Lv2)</div><div style="font-size:24px;font-weight:700;color:#e65100;">'+lv2+'</div></div>'
+        + '<div style="background:#f0faf0;border-radius:9px;padding:10px 13px;"><div style="font-size:12px;color:#2e7d32;margin-bottom:3px;">일반(Lv3)</div><div style="font-size:24px;font-weight:700;color:#2e7d32;">'+lv3+'</div></div>'
+        + '<div style="background:#FCEBEB;border-radius:9px;padding:10px 13px;"><div style="font-size:12px;color:#A32D2D;margin-bottom:3px;">라인중단</div><div style="font-size:24px;font-weight:700;color:#791F1F;">'+lineStop+'</div></div>'
+      + '</div>'
+      + '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;">'
+        + '<input id="a-search" value="'+filter.search+'" placeholder="사업소 / 접수자 / 세부유형" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;min-width:160px;font-family:inherit;flex:1;"/>'
+        + '<select id="a-acctype" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;">'
+          + ["전체","인사사고","제품사고","공급사고","차량사고"].map(function(s){ return '<option'+(filter.accType===s?' selected':'')+'>'+s+'</option>'; }).join("")
+        + '</select>'
+        + '<select id="a-level" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;">'
+          + '<option value="전체">전체 긴급도</option>'
+          + '<option value="1"'+(filter.level==="1"?' selected':'') + '>Level 1 최긴급</option>'
+          + '<option value="2"'+(filter.level==="2"?' selected':'') + '>Level 2 긴급</option>'
+          + '<option value="3"'+(filter.level==="3"?' selected':'') + '>Level 3 일반</option>'
+        + '</select>'
+      + '</div>'
+      + '<div id="admin-table">'+accCards+'</div>'
+      + '<div id="admin-count" style="font-size:12px;color:#bbb;margin-top:4px;text-align:right;">총 '+filtered.length+'건</div>'
+    : sugHtml;
+
+  return '<div style="padding-bottom:2rem;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem;">'
+      + '<div><div style="font-size:17px;font-weight:700;">🛡️ 관리자 대시보드</div><div style="font-size:13px;color:#888;margin-top:2px;">실시간 현황 관리</div></div>'
+      + '<div style="display:flex;gap:7px;flex-wrap:wrap;">'
+        + '<button onclick="location.reload()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">새로고침</button>'
+        + '<button id="btn-excel" style="padding:7px 12px;border:1px solid #1d6f42;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;color:#1d6f42;font-weight:500;">⬇ 엑셀 다운로드</button>'
+        + '<button id="go-form" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">접수 폼 보기</button>'
+        + '<button id="go-logout" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;font-size:13px;cursor:pointer;color:#999;font-family:inherit;">로그아웃</button>'
+      + '</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:0;margin-bottom:1.25rem;border-bottom:2px solid #eef2f7;">'
+      + '<button id="tab-accidents" class="tab-btn" data-tab="accidents" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-2px;'+tabAccStyle+'">🚨 사고접수 ('+total+')</button>'
+      + '<button id="tab-suggestions" class="tab-btn" data-tab="suggestions" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-2px;'+tabSugStyle+'">💡 안전개선 제안 ('+Object.keys(suggestions).length+')</button>'
+    + '</div>'
+    + mainContent
+    + '<div id="login-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;">'
+      + '<div style="background:#fff;border-radius:14px;padding:2rem 1.75rem;width:300px;text-align:center;">'
+        + '<div style="font-size:22px;margin-bottom:8px;">🔐</div>'
+        + '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">관리자 로그인</div>'
+        + '<div style="font-size:13px;color:#888;margin-bottom:1rem;">비밀번호를 입력해 주세요</div>'
+        + '<input id="modal-pw" type="password" class="input" placeholder="비밀번호" style="margin-bottom:8px;"/>'
+        + '<div id="modal-err" style="font-size:12px;color:#c0392b;margin-bottom:8px;display:none;"></div>'
+        + '<button id="modal-login" class="submit-btn" style="font-size:14px;padding:11px;">로그인</button>'
+        + '<button id="modal-cancel" style="margin-top:8px;width:100%;padding:9px;background:#f5f5f5;border:none;border-radius:9px;font-size:13px;cursor:pointer;color:#888;font-family:inherit;">취소</button>'
+      + '</div>'
+    + '</div>'
+  + '</div>';
+}
+
+
+/* ── 이벤트 바인딩 ── */
+function bindEvents(){
+  const $ = id => document.getElementById(id);
+
+  /* ── 로그인 ── */
+  if(view==="login"){
+    $("btn-google-login") && ($("btn-google-login").onclick = () => handleGoogleLogin("login-err"));
+    $("btn-email-login") && ($("btn-email-login").onclick = async () => {
+      const email = $("login-email").value.trim();
+      const pw    = $("login-pw").value;
+      const errEl = $("login-err");
+      if(!email||!pw){ errEl.textContent="이메일과 비밀번호를 입력해 주세요."; errEl.style.display="block"; return; }
+      try {
+        await signInWithEmailAndPassword(auth, email, pw);
+      } catch(err) {
+        errEl.textContent = "이메일 또는 비밀번호가 올바르지 않습니다.";
+        errEl.style.display="block";
+      }
+    });
+    $("login-pw") && ($("login-pw").onkeydown = e => { if(e.key==="Enter") $("btn-email-login").click(); });
+    $("go-register") && ($("go-register").onclick = () => { view="register"; render(); });
+    $("btn-login-lang") && ($("btn-login-lang").onclick = () => {
+      lang = lang==="ko" ? "zh" : "ko";
+      localStorage.setItem("accLang", lang);
+      render();
+    });
+
+    // 비회원 즉시 접수
+    $("btn-guest-form") && ($("btn-guest-form").onclick = () => {
+      isGuest = true;
+      currentUser = null;
+      isAdmin = false;
+      view = "form";
+      render();
+    });
+  }
+
+  /* ── 회원가입 ── */
+  if(view==="register"){
+    $("btn-google-register") && ($("btn-google-register").onclick = () => handleGoogleLogin("reg-err"));
+    $("btn-email-register") && ($("btn-email-register").onclick = async () => {
+      const name  = $("reg-name").value.trim();
+      const email = $("reg-email").value.trim();
+      const pw    = $("reg-pw").value;
+      const pw2   = $("reg-pw2").value;
+      const errEl = $("reg-err");
+      if(!name||!email||!pw||!pw2){ errEl.textContent="모든 항목을 입력해 주세요."; errEl.style.display="block"; return; }
+      if(pw !== pw2){ errEl.textContent="비밀번호가 일치하지 않습니다."; errEl.style.display="block"; return; }
+      if(pw.length < 6){ errEl.textContent="비밀번호는 6자리 이상이어야 합니다."; errEl.style.display="block"; return; }
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, pw);
+        await updateProfile(cred.user, { displayName: name });
+      } catch(err) {
+        const msg = err.code==="auth/email-already-in-use" ? "이미 사용 중인 이메일입니다." : "회원가입에 실패했습니다.";
+        errEl.textContent=msg; errEl.style.display="block";
+      }
+    });
+    $("go-login") && ($("go-login").onclick = () => { view="login"; render(); });
+  }
+
+  /* ── 메인 ── */
+  if(view==="main"){
+    $("btn-logout") && ($("btn-logout").onclick = async () => {
+      await signOut(auth);
+      view="login"; render();
+    });
+    $("btn-main-lang") && ($("btn-main-lang").onclick = () => {
+      lang = lang==="ko" ? "zh" : "ko";
+      localStorage.setItem("accLang", lang);
+      render();
+    });
+    $("btn-main-lang-bottom") && ($("btn-main-lang-bottom").onclick = () => {
+      lang = lang==="ko" ? "zh" : "ko";
+      localStorage.setItem("accLang", lang);
+      render();
+    });
+    $("btn-main-form")    && ($("btn-main-form").onclick    = () => { view="form"; render(); });
+    $("btn-main-manual")  && ($("btn-main-manual").onclick  = () => { view="manual"; render(); });
+    $("btn-main-suggest") && ($("btn-main-suggest").onclick = () => {
+      window._suggest = {site:"",category:"",title:"",detail:"",anonymous:false,name:"",phone:"",submitted:false};
+      view="suggest"; render();
+    });
+    $("btn-main-admin")   && ($("btn-main-admin").onclick   = () => { view="admin"; render(); });
+    $("go-myreport-main") && ($("go-myreport-main").onclick = () => {
+      if(currentUser) myReportPhone = currentUser.phoneNumber || "";
+      view="myreport"; render();
+    });
+  }
+
+  if(view==="manual"){
+    $("btn-manual-back")  && ($("btn-manual-back").onclick  = () => { view="main"; render(); });
+    $("btn-manual-back2") && ($("btn-manual-back2").onclick = () => { view="main"; render(); });
+  }
+
+  if(view==="suggest"){
+    $("btn-suggest-back-top") && ($("btn-suggest-back-top").onclick = () => { view="main"; render(); });
+    $("btn-suggest-back")     && ($("btn-suggest-back").onclick     = () => { view="main"; render(); });
+    $("btn-suggest-another")  && ($("btn-suggest-another").onclick  = () => {
+      window._suggest = {site:"",category:"",title:"",detail:"",anonymous:false,name:"",phone:"",submitted:false};
+      render();
+    });
+    document.querySelectorAll("[data-sug-site]").forEach(b => {
+      b.onclick = () => { window._suggest.site = b.dataset.sugSite; render(); };
+    });
+    $("sug-title")  && ($("sug-title").oninput   = e => { window._suggest.title=e.target.value; });
+    $("sug-detail") && ($("sug-detail").oninput  = e => { window._suggest.detail=e.target.value; });
+    $("sug-name")   && ($("sug-name").oninput    = e => { window._suggest.name=e.target.value; });
+    $("sug-phone")  && ($("sug-phone").oninput   = e => { window._suggest.phone=fmt(e.target.value); $("sug-phone").value=window._suggest.phone; });
+    $("sug-anon")   && ($("sug-anon").onchange   = e => { window._suggest.anonymous=e.target.checked; render(); });
+
+    document.querySelectorAll("[data-sug-cat]").forEach(b => {
+      b.onclick = () => { window._suggest.category = b.dataset.sugCat; render(); };
+    });
+
+    $("btn-suggest-submit") && ($("btn-suggest-submit").onclick = async () => {
+      const s = window._suggest;
+      const errEl = $("sug-err");
+      if(!s.site||!s.category||!s.title.trim()||!s.detail.trim()){
+        errEl.textContent = "사업소, 분류, 제목, 상세 내용을 모두 입력해 주세요.";
+        errEl.style.display="block"; return;
+      }
+      errEl.style.display="none";
+      await push(ref(db,"suggestions"),{
+        site: s.site, category: s.category,
+        title: s.title.trim(), detail: s.detail.trim(),
+        anonymous: s.anonymous,
+        name: s.anonymous ? "익명" : (s.name || currentUser?.displayName || "미입력"),
+        phone: s.anonymous ? "-" : (s.phone || "미입력"),
+        // 관리자만 볼 수 있는 실제 계정 정보 (항상 저장)
+        realEmail: currentUser ? currentUser.email : "비회원",
+        realName: currentUser ? (currentUser.displayName || "이름없음") : "비회원",
+        userId: currentUser ? currentUser.uid : "guest",
+        status:"접수", createdAt: new Date().toLocaleString("ko-KR")
+      });
+      window._suggest.submitted = true;
+      render();
+    });
+  }
+
+  if(view==="form"){
+    document.querySelectorAll("[data-site-btn]").forEach(b => {
+      b.onclick = () => { form.site = b.dataset.siteBtn; delete errors.site; render(); };
+    });
+    $("f-reporter") && ($("f-reporter").oninput   = e => { form.reporter = e.target.value; delete errors.reporter; });
+    $("f-rank")     && ($("f-rank").onchange       = e => { form.rank = e.target.value; delete errors.rank; });
+    $("f-phone")    && ($("f-phone").oninput      = e => { const v=fmt(e.target.value); form.phone=v; e.target.value=v; delete errors.phone; });
+    $("f-acc-year") && ($("f-acc-year").onchange  = e => { form.accYear=e.target.value; delete errors.accYear; });
+    $("f-acc-month")&& ($("f-acc-month").onchange = e => { form.accMonth=e.target.value; delete errors.accMonth; });
+    $("f-acc-day")  && ($("f-acc-day").onchange   = e => { form.accDay=e.target.value; delete errors.accDay; });
+    $("f-acc-ampm") && ($("f-acc-ampm").onchange  = e => { form.accAmPm=e.target.value; });
+    $("f-acc-hour") && ($("f-acc-hour").onchange  = e => { form.accHour=e.target.value; delete errors.accHour; });
+    $("f-acc-min")  && ($("f-acc-min").onchange   = e => { form.accMin=e.target.value; delete errors.accMin; });
+    $("f-location") && ($("f-location").oninput   = e => { form.location = e.target.value; delete errors.location; });
+    $("f-situation")&& ($("f-situation").oninput  = e => { form.situation = e.target.value; delete errors.situation; });
+    $("f-action")   && ($("f-action").oninput     = e => { form.actionTaken = e.target.value; });
+    $("f-support")  && ($("f-support").oninput    = e => { form.supportNeeded = e.target.value; });
+
+    // 복합사고 토글
+    const chkComplex = document.getElementById("chk-complex");
+    if(chkComplex) chkComplex.onchange = () => {
+      form.isComplex = chkComplex.checked;
+      form.accType=""; form.accDetail="";
+      form.accTypes=[]; form.accDetails=[];
+      delete errors.accType; delete errors.accDetail;
+      render();
+    };
+
+    // 사고유형 버튼
+    document.querySelectorAll("[data-type-btn]").forEach(b => {
+      b.onclick = () => {
+        const t = b.dataset.typeBtn;
+        if(form.isComplex){
+          if(form.accTypes.includes(t)) form.accTypes = form.accTypes.filter(x=>x!==t);
+          else form.accTypes.push(t);
+          // 제거된 유형의 세부유형도 제거
+          const detailVals = {
+            ...Object.fromEntries(Object.entries(T[lang].accDetailMap).map(([k,v])=>[k,v.map(d=>d.val)]))
+          };
+          if(!form.accTypes.includes(t)){
+            form.accDetails = form.accDetails.filter(d=>!(detailVals[t]||[]).includes(d));
+          }
+        } else {
+          form.accType = t; form.accDetail = "";
+        }
+        delete errors.accType;
+        render();
+      };
+    });
+
+    // 세부유형 버튼
+    document.querySelectorAll("[data-detail-btn]").forEach(b => {
+      b.onclick = () => {
+        const d = b.dataset.detailBtn;
+        if(form.isComplex){
+          if(form.accDetails.includes(d)) form.accDetails = form.accDetails.filter(x=>x!==d);
+          else form.accDetails.push(d);
+        } else {
+          form.accDetail = d;
+        }
+        delete errors.accDetail;
+        render();
+      };
+    });
+
+    // 기존 data-field 버튼 (라인중단, 고객사영향 등)
+    document.querySelectorAll("[data-field]").forEach(b => {
+      b.onclick = () => {
+        const field = b.dataset.field;
+        const val   = b.dataset.val;
+        form[field]=val; delete errors[field];
+        render();
+      };
+    });
+
+    // 긴급도 버튼
+    document.querySelectorAll("[data-lv]").forEach(b => {
+      b.onclick = () => { form.level=b.dataset.lv; delete errors.level; render(); };
+    });
+
+    // 체크박스
+    document.querySelectorAll("[data-chk]").forEach(c => {
+      c.onchange = () => {
+        form.checks[+c.dataset.chk] = c.checked;
+        if(form.checks.every(Boolean)) delete errors.checks;
+      };
+    });
+
+    $("btn-submit")          && ($("btn-submit").onclick          = handleSubmit);
+    $("go-admin")            && ($("go-admin").onclick            = () => showLoginModal());
+    $("go-myreport")         && ($("go-myreport").onclick         = () => { view="myreport"; render(); });
+    $("go-main-from-form")   && ($("go-main-from-form").onclick   = () => {
+      if(isGuest){ isGuest=false; view="login"; }
+      else { view="main"; }
+      if(_recognition){ _recognition.stop(); _recognition=null; }
+      render();
+    });
+
+    // 언어 전환
+    $("btn-lang-toggle") && ($("btn-lang-toggle").onclick = () => {
+      lang = lang==="ko" ? "zh" : "ko";
+      localStorage.setItem("accLang", lang);
+      form.accType=""; form.accDetail="";
+      form.accTypes=[]; form.accDetails=[];
+      render();
+    });
+
+    // 음성 입력 버튼
+    $("btn-voice-start") && ($("btn-voice-start").onclick = () => startVoiceInput());
+
+    // 사진 업로드
+    const photoInput = document.getElementById("photo-input");
+    if(photoInput){
+      photoInput.onchange = async (e) => {
+        const files = Array.from(e.target.files);
+        const remaining = 3 - form.photos.length;
+        const toUpload = files.slice(0, remaining);
+        for(const file of toUpload){
+          // 미리보기 먼저 추가
+          const previewUrl = URL.createObjectURL(file);
+          form.photosPreviews.push(previewUrl);
+          form.photos.push("uploading");
+          render();
+          // 업로드
+          const url = await uploadPhotoDirectly(file);
+          const idx = form.photos.indexOf("uploading");
+          if(idx !== -1){
+            form.photos[idx] = url || "";
+          }
+          render();
+        }
+      };
+    }
+
+    // 인사사고 대상자 입력 바인딩
+    document.querySelectorAll(".victim-name").forEach(el=>{
+      el.oninput = ()=>{ form.victims[+el.dataset.vi].name=el.value; };
+    });
+    document.querySelectorAll(".victim-aff").forEach(el=>{
+      el.oninput = ()=>{ form.victims[+el.dataset.vi].affiliation=el.value; };
+    });
+    document.querySelectorAll(".victim-unknown").forEach(el=>{
+      el.onchange = ()=>{
+        form.victims[+el.dataset.vi].unknown=el.checked;
+        if(el.checked){ form.victims[+el.dataset.vi].name="미확인"; form.victims[+el.dataset.vi].affiliation="미확인"; }
+        else { form.victims[+el.dataset.vi].name=""; form.victims[+el.dataset.vi].affiliation=""; }
+        render();
+      };
+    });
+    document.querySelectorAll(".perp-name").forEach(el=>{
+      el.oninput = ()=>{ form.perpetrators[+el.dataset.pi].name=el.value; };
+    });
+    document.querySelectorAll(".perp-aff").forEach(el=>{
+      el.oninput = ()=>{ form.perpetrators[+el.dataset.pi].affiliation=el.value; };
+    });
+    document.querySelectorAll(".perp-unknown").forEach(el=>{
+      el.onchange = ()=>{
+        form.perpetrators[+el.dataset.pi].unknown=el.checked;
+        if(el.checked){ form.perpetrators[+el.dataset.pi].name="미확인"; form.perpetrators[+el.dataset.pi].affiliation="미확인"; }
+        else { form.perpetrators[+el.dataset.pi].name=""; form.perpetrators[+el.dataset.pi].affiliation=""; }
+        render();
+      };
+    });
+  }
+
+  if(view==="success"){
+    $("btn-reset") && ($("btn-reset").onclick = () => {
+      form = makeEmptyForm();
+      errors={}; submitted=null; view="form"; render();
+    });
+    $("btn-guest-to-login") && ($("btn-guest-to-login").onclick = () => {
+      isGuest=false; view="login"; render();
+    });
+    $("btn-go-myreport") && ($("btn-go-myreport").onclick = () => {
+      if(submitted) myReportPhone = submitted.phone;
+      myReportSelected = null;
+      view="myreport"; render();
+    });
+
+    // 후속조치 저장
+    $("btn-followup") && ($("btn-followup").onclick = async () => {
+      const text = $("follow-up-text").value.trim();
+      if(!text){ alert("후속조치 내용을 입력해 주세요."); return; }
+      if(!submitted) return;
+      // Firebase에서 해당 키 찾아서 업데이트
+      const snap = Object.entries(entries).find(([,e])=>e.accNo===submitted.accNo);
+      if(snap){
+        const prev = snap[1].followUp || "";
+        const now = new Date().toLocaleString("ko-KR");
+        const updated = prev ? prev+"\n\n["+now+"]\n"+text : "["+now+"]\n"+text;
+        await update(ref(db,`accidents/${snap[0]}`),{followUp: updated, status:"처리중"});
+        $("followup-msg").style.display="block";
+        $("follow-up-text").value="";
+        setTimeout(()=>{ if($("followup-msg")) $("followup-msg").style.display="none"; },3000);
+      }
+    });
+  }
+
+  if(view==="accdetail"){
+    $("btn-acc-back") && ($("btn-acc-back").onclick = () => {
+      window._accDetailKey = null;
+      history.replaceState(null,"",location.pathname);
+      if(currentUser){ view="main"; }
+      else { view="login"; }
+      render();
+    });
+    $("btn-acc-admin") && ($("btn-acc-admin").onclick = () => {
+      if(isAdmin){ view="admin"; render(); }
+      else { view="main"; render(); }
+    });
+    $("btn-acc-login") && ($("btn-acc-login").onclick = () => {
+      view="login"; render();
+    });
+  }
+
+  if(view==="myreport"){
+    $("btn-my-back") && ($("btn-my-back").onclick = () => { view="form"; render(); });
+    $("btn-my-search") && ($("btn-my-search").onclick = () => {
+      const v = $("my-phone").value;
+      myReportPhone = v; myReportSelected = null; render();
+    });
+    $("my-phone") && ($("my-phone").onkeydown = e => {
+      if(e.key==="Enter"){
+        myReportPhone = $("my-phone").value; myReportSelected=null; render();
+      }
+    });
+    $("my-phone") && ($("my-phone").oninput = e => {
+      const v = fmt(e.target.value);
+      myReportPhone = v; e.target.value = v;
+    });
+  }
+
+  if(view==="admin"){
+    $("go-form")   && ($("go-form").onclick   = () => { view="main"; render(); });
+    document.querySelectorAll(".card-hd").forEach(el=>{el.addEventListener("click",ev=>{if(ev.target.closest(".status-sel")||ev.target.closest(".del-btn")||ev.target.closest(".edit-btn"))return;toggleDetail("detail-"+el.dataset.key);});});
+    document.querySelectorAll(".edit-btn").forEach(b=>{b.addEventListener("click",ev=>{ev.stopPropagation();openEditModal(b.dataset.key);});});
+    document.querySelectorAll(".sug-hd").forEach(el=>{el.addEventListener("click",ev=>{if(ev.target.closest(".sug-status-sel"))return;toggleSugDetail("sug-"+el.dataset.key);});});
+    document.querySelectorAll(".tab-btn").forEach(b=>{b.addEventListener("click",()=>{setAdminTab(b.dataset.tab);});});
+    $("go-logout") && ($("go-logout").onclick = async () => { await signOut(auth); view="login"; render(); });
+
+    // 검색창 - render() 없이 직접 필터링만 처리 (키보드 유지)
+    $("a-search") && ($("a-search").oninput = e => {
+      filter.search = e.target.value;
+      // 테이블만 업데이트 (전체 render 하지 않음)
+      updateAdminTable();
+    });
+    $("a-acctype") && ($("a-acctype").onchange = e => { filter.accType=e.target.value; render(); });
+    $("a-level")   && ($("a-level").onchange   = e => { filter.level=e.target.value; render(); });
+    $("btn-excel") && ($("btn-excel").onclick  = () => downloadExcel());
+
+    document.querySelectorAll(".status-sel").forEach(s => {
+      s.onchange = () => { update(ref(db,`accidents/${s.dataset.key}`),{status:s.value}); };
+    });
+    document.querySelectorAll(".sug-status-sel").forEach(s => {
+      s.onchange = () => { update(ref(db,`suggestions/${s.dataset.key}`),{status:s.value}); };
+    });
+    document.querySelectorAll(".del-btn").forEach(b => {
+      b.onclick = () => {
+        if(!confirm("이 사고 접수 건을 삭제하시겠습니까?")) return;
+        remove(ref(db,`accidents/${b.dataset.key}`));
+      };
+    });
+
+    const modal = $("login-modal");
+    if(modal){
+      modal.onclick = e => {
+        if(e.target===modal){
+          modal.style.display="none";
+          view="form"; render();
+        }
+      };
+      $("modal-cancel") && ($("modal-cancel").onclick = () => {
+        modal.style.display="none";
+        view="form"; render();
+      });
+      $("modal-login")  && ($("modal-login").onclick  = doModalLogin);
+      $("modal-pw")     && ($("modal-pw").onkeydown   = e => { if(e.key==="Enter") doModalLogin(); });
+    }
+  }
+}
+
+/* ── 내 접수 조회 - 사고 선택 ── */
+window.selectMyReport = function(key){
+  myReportSelected = myReportSelected===key ? null : key;
+  render();
+};
+
+/* ── 내 접수 조회 - 후속조치 저장 ── */
+window.saveFollowUp = async function(key){
+  const el = document.getElementById(`followup-input-${key}`);
+  const okEl = document.getElementById(`followup-ok-${key}`);
+  if(!el) return;
+  const text = el.value.trim();
+  if(!text){ alert("후속조치 내용을 입력해 주세요."); return; }
+  const prev = (entries[key]||{}).followUp || "";
+  const now = new Date().toLocaleString("ko-KR");
+  const updated = prev ? prev+"\n\n["+now+"]\n"+text : "["+now+"]\n"+text;
+  try{
+    await update(ref(db,`accidents/${key}`),{followUp: updated, status:"처리중"});
+    el.value = "";
+    if(okEl){ okEl.style.display="block"; setTimeout(()=>{ okEl.style.display="none"; },3000); }
+  }catch(err){
+    alert("저장 중 오류가 발생했습니다. 다시 시도해 주세요.");
+  }
+};
+
+/* ── 음성 인식 + AI 정제 ── */
+let _recognition = null;
+
+function startVoiceInput(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    alert(lang==="zh"
+      ? "此浏览器不支持语音识别。\n请使用Chrome浏览器。"
+      : "이 브라우저는 음성 인식을 지원하지 않습니다.\n크롬(Chrome) 브라우저를 사용해 주세요.");
+    return;
+  }
+
+  // 이미 인식 중이면 중지
+  if(_recognition){
+    _recognition.stop();
+    _recognition = null;
+    form._voiceOn = false;
+    render();
+    return;
+  }
+
+  _recognition = new SpeechRecognition();
+  _recognition.lang = t("voiceLang");
+  _recognition.continuous = false;
+  _recognition.interimResults = true;
+
+  let finalTranscript = "";
+
+  // 상태 표시 업데이트
+  form._voiceOn = true;
+  form._voiceStatus = lang==="zh" ? "正在识别语音..." : "음성 인식 중...";
+  render();
+
+  _recognition.onresult = (e) => {
+    let interim = "";
+    finalTranscript = "";
+    for(let i = 0; i < e.results.length; i++){
+      if(e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    // 실시간 미리보기
+    const ta = document.getElementById("f-situation");
+    if(ta) ta.value = (finalTranscript || interim) + (interim && !finalTranscript ? " ···" : "");
+  };
+
+  _recognition.onerror = (e) => {
+    console.warn("음성 인식 오류:", e.error);
+    if(e.error === "not-allowed"){
+      alert(lang==="zh"
+        ? "需要麦克风访问权限。\n请在浏览器设置中允许麦克风权限。"
+        : "마이크 접근 권한이 필요합니다.\n브라우저 설정에서 마이크 권한을 허용해 주세요.");
+    }
+    _recognition = null;
+    form._voiceOn = false;
+    render();
+  };
+
+  _recognition.onend = async () => {
+    _recognition = null;
+    if(!finalTranscript.trim()){
+      form._voiceOn = false;
+      render();
+      return;
+    }
+
+    // ── AI 정제 단계 ──
+    form._voiceOn = false;
+    form._voiceStatus = lang==="zh" ? "AI正在整理内容..." : "AI가 내용을 정리하는 중...";
+    form._voiceProcessing = true;
+
+    const ta = document.getElementById("f-situation");
+    if(ta) ta.value = lang==="zh" ? "AI 정리 중..." : "AI가 정리 중...";
+    render();
+
+    try {
+      const prompt = lang==="zh"
+        ? `당신은 공장 현장 사고 보고서 작성을 돕는 AI입니다.
+아래 음성 녹음 내용을 분석하여 사고 보고서의 "현재 상황" 항목에 맞게 정리해 주세요.
+
+음성 내용: "${finalTranscript}"
+
+규칙:
+- 핵심 사실만 간결하게 정리 (2~4줄)
+- 발생 위치, 사고 내용, 피해 상황, 현재 상태 순으로 정리
+- 불명확한 내용은 그대로 포함
+- 한국어로 작성 (사고 보고서는 한국어 기준)
+- 불필요한 설명 없이 내용만 출력`
+        : `당신은 공장 현장 사고 보고서 작성을 돕는 AI입니다.
+아래 음성 녹음 내용을 분석하여 사고 보고서의 "현재 상황" 항목에 맞게 정리해 주세요.
+
+음성 내용: "${finalTranscript}"
+
+규칙:
+- 핵심 사실만 간결하게 정리 (2~4줄)
+- 발생 위치, 사고 내용, 피해 상황, 현재 상태 순서로 작성
+- 불명확한 내용은 그대로 포함 (임의로 추가하지 말 것)
+- 불필요한 설명 없이 정리된 내용만 출력`;
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 500,
+          system: "사고 보고서 현재상황 항목을 간결하게 정리해주는 AI입니다. 정리된 텍스트만 출력합니다.",
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+
+      const data = await res.json();
+      const refined = data.content?.[0]?.text?.trim() || finalTranscript;
+
+      form.situation = refined;
+      form._voiceProcessing = false;
+      form._voiceStatus = "";
+
+      const ta2 = document.getElementById("f-situation");
+      if(ta2) ta2.value = refined;
+      render();
+
+      // 원본도 보여주기
+      setTimeout(() => {
+        const origEl = document.getElementById("voice-original");
+        if(origEl) origEl.style.display = "block";
+      }, 100);
+
+    } catch(err) {
+      console.warn("AI 정제 실패, 원본 사용:", err);
+      form.situation = finalTranscript;
+      form._voiceProcessing = false;
+      form._voiceStatus = "";
+      const ta2 = document.getElementById("f-situation");
+      if(ta2) ta2.value = finalTranscript;
+      render();
+    }
+  };
+
+  _recognition.start();
+}
+
+/* ── 사진 삭제 ── */
+window.removePhoto = function(idx){
+  form.photos.splice(idx, 1);
+  form.photosPreviews.splice(idx, 1);
+  render();
+};
+
+/* ── 사진 업로드 (GAS 경유 ImgBB) ── */
+async function uploadPhotoToGAS(file, idx){
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(",")[1];
+      const formData = new FormData();
+      formData.append("action", "uploadImage");
+      formData.append("image", base64);
+      formData.append("name", `accident_${Date.now()}_${idx}`);
+      try {
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          mode: "no-cors",
+          body: formData
+        });
+        // no-cors 모드라 응답을 못 받으므로 직접 ImgBB API 호출
+        resolve(null);
+      } catch(err) {
+        console.warn("이미지 업로드 실패:", err);
+        resolve(null);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ── 사진 직접 ImgBB 업로드 ── */
+async function uploadPhotoDirectly(file){
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(",")[1];
+      const fd = new FormData();
+      fd.append("key", "f6ceb324bed80f18fbfcf46a5fca6450");
+      fd.append("image", base64);
+      try {
+        const res = await fetch("https://api.imgbb.com/1/upload", {
+          method: "POST",
+          body: fd
+        });
+        const json = await res.json();
+        if(json.success) resolve(json.data.url);
+        else resolve(null);
+      } catch(err) {
+        console.warn("이미지 업로드 실패:", err);
+        resolve(null);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ── 인사사고 대상자 추가/삭제 ── */
+window.addPerson = function(type){
+  if(type==="victims") form.victims.push({name:"",affiliation:"",unknown:false});
+  else form.perpetrators.push({name:"",affiliation:"",unknown:false});
+  render();
+};
+window.removePerson = function(type, idx){
+  if(type==="victims") form.victims.splice(idx,1);
+  else form.perpetrators.splice(idx,1);
+  render();
+};
+
+/* ── 관리자 카드 목록 업데이트 (키보드 유지용) ── */
+function updateAdminTable(){
+  const wrap = document.getElementById("admin-table");
+  if(!wrap) return;
+
+  const list = Object.entries(entries);
+  let filtered = list.filter(([,e])=>{
+    if(filter.accType!=="전체" && e.accType!==filter.accType) return false;
+    if(filter.level!=="전체" && String(e.level)!==String(filter.level)) return false;
+    if(filter.search){
+      const s = filter.search.toLowerCase();
+      if(!(e.reporter||"").includes(filter.search) &&
+         !(e.site||"").includes(filter.search) &&
+         !(e.accDetail||"").includes(filter.search) &&
+         !(e.accNo||"").toLowerCase().includes(s)) return false;
+    }
+    return true;
+  });
+  filtered.sort((a,b)=>(b[1].createdAt||"").localeCompare(a[1].createdAt||""));
+
+  const countEl = document.getElementById("admin-count");
+  if(countEl) countEl.textContent = `총 ${filtered.length}건`;
+
+  const lvStyle = {
+    "1":{bg:"#fff5f5",color:"#b71c1c",border:"#f5c6c6"},
+    "2":{bg:"#fff8f0",color:"#e65100",border:"#fcd8a8"},
+    "3":{bg:"#f0faf0",color:"#2e7d32",border:"#b8e0ba"}
+  };
+
+  if(filtered.length===0){
+    wrap.innerHTML = `<div class="card" style="text-align:center;padding:2rem;color:#bbb;font-size:14px;">검색 결과가 없습니다.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = filtered.map(([key,e])=>{
+    const ls = lvStyle[e.level]||{bg:"#f5f5f5",color:"#999",border:"#ddd"};
+    return `
+    <div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;
+      margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">
+      <div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;"
+        onclick="toggleDetail('detail-${key}')">
+        <div style="flex-shrink:0;margin-top:1px;">
+          <span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;
+            font-weight:700;background:${ls.bg};color:${ls.color};border:1px solid ${ls.border};white-space:nowrap;">
+            Lv${e.level||"?"} ${["","최긴급","긴급","일반"][+e.level]||""}
+          </span>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+            <span style="font-weight:700;font-size:13px;">${e.site||"-"}</span>
+            <span style="font-size:12px;color:#555;">${e.accType||"-"}</span>
+            ${e.accDetail?`<span style="font-size:11px;color:#888;background:#f0f4f8;padding:1px 6px;border-radius:5px;">${e.accDetail}</span>`:""}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${e.lineStop==="라인중단발생"?`<span style="font-size:10px;background:#fff0f0;color:#b71c1c;font-weight:700;padding:1px 6px;border-radius:4px;">중단발생</span>`
+            :e.lineStop==="라인중단예상"?`<span style="font-size:10px;background:#fff8f0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">중단예상</span>`
+            :e.lineStop==="미장착"?`<span style="font-size:10px;background:#fffde7;color:#7b5e00;font-weight:700;padding:1px 6px;border-radius:4px;">${lang==="zh"?"未装配":"미장착"}</span>`
+            :`<span style="font-size:10px;background:#f0faf0;color:#2e7d32;font-weight:700;padding:1px 6px;border-radius:4px;">영향없음</span>`}
+            ${e.customerEffect==="예"?`<span style="font-size:10px;background:#fff3e0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">고객사영향</span>`:""}
+            <span style="font-size:11px;color:#aaa;">${e.reporter||""} ${e.rank||""}</span>
+            <span style="font-size:11px;color:#bbb;">${(e.createdAt||"").slice(0,16)}</span>
+          </div>
+        </div>
+        <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px;"
+          onclick="event.stopPropagation()">
+          <select class="status-sel" data-key="${key}"
+            style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:11px;cursor:pointer;font-family:inherit;max-width:68px;">
+            ${["접수","처리중","완료","보류"].map(st=>`<option${e.status===st?" selected":""}>${st}</option>`).join("")}
+          </select>
+          <div style="display:flex;gap:4px;">
+            <button class="del-btn" data-key="${key}"
+              style="background:none;border:1px solid #eee;border-radius:5px;cursor:pointer;color:#ccc;font-size:12px;padding:2px 6px;">✕</button>
+            <button onclick="openEditModal('${key}')"
+              style="background:#e05c00;border:none;border-radius:5px;cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">수정</button>
+          </div>
+        </div>
+      </div>
+      <div id="detail-${key}" style="display:none;border-top:1px dashed #eef2f7;padding:12px 14px;background:#f9fbfd;font-size:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+          <div><span style="color:#aaa;">사고번호</span> <strong>${e.accNo||"-"}</strong></div>
+          <div><span style="color:#aaa;">발생위치</span> <strong>${e.location||"-"}</strong></div>
+          <div><span style="color:#aaa;">발생일시</span> <strong>${e.accDateTime||"-"}</strong></div>
+          <div><span style="color:#aaa;">연락처</span> <strong>${e.phone||"-"}</strong></div>
+        </div>
+        <div style="margin-bottom:6px;">
+          <div style="color:#aaa;margin-bottom:3px;">현재 상황</div>
+          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">${(e.situation||"-").replace(/\\n/g,"<br>")}</div>
+        </div>
+        ${e.actionTaken?`<div style="margin-bottom:6px;">
+          <div style="color:#aaa;margin-bottom:3px;">즉시 조치</div>
+          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">${e.actionTaken.replace(/\\n/g,"<br>")}</div>
+        </div>`:""}
+      </div>
+    </div>`;
+  }).join("");
+
+  document.querySelectorAll(".status-sel").forEach(s => {
+    s.onchange = () => { update(ref(db,`accidents/${s.dataset.key}`),{status:s.value}); };
+  });
+  document.querySelectorAll(".del-btn").forEach(b => {
+    b.onclick = () => {
+      if(!confirm("이 사고 접수 건을 삭제하시겠습니까?")) return;
+      remove(ref(db,`accidents/${b.dataset.key}`));
+    };
+  });
+}
+/* ── 상세 행 펼치기/접기 ── */
+window.toggleDetail = function(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.display = el.style.display==="none" ? "table-row" : "none";
+};
+
+/* ── 엑셀 다운로드 ── */
+function downloadExcel(){
+  const list = Object.values(entries);
+  if(!list.length){ alert("다운로드할 데이터가 없습니다."); return; }
+  const BOM = "\uFEFF";
+  const headers = ["사고번호","접수일시","사고발생일시","사업소","접수자","직급","연락처","사고유형","세부유형","긴급도","라인중단","고객사영향","상황","즉시조치","상태"];
+  const rows = list.map(e=>[
+    e.accNo||"", e.createdAt||"", e.accDateTime||"", e.site||"", e.reporter||"", e.rank||"", e.phone||"",
+    e.accType||"", e.accDetail||"",
+    {1:"최긴급",2:"긴급",3:"일반"}[e.level]||"",
+    e.lineStop||"", e.customerEffect||"",
+    e.situation||"", e.actionTaken||"", e.status||""
+  ]);
+  const csv = BOM + [headers,...rows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url; a.download="사고접수현황.csv";
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/* ── 관리자 화면 진입 ── */
+function showLoginModal(){
+  if(isAdmin){
+    view="admin"; render();
+  } else {
+    alert("관리자 권한이 없습니다.\n관리자 계정으로 로그인해 주세요.");
+  }
+}
+function doModalLogin(){
+  const pw = document.getElementById("modal-pw").value;
+  const errEl = document.getElementById("modal-err");
+  if(pw===ADMIN_PW){
+    document.getElementById("login-modal").style.display="none";
+    view="admin"; render();
+  } else {
+    errEl.textContent="비밀번호가 올바르지 않습니다.";
+    errEl.style.display="block";
+  }
+}
+
+/* ── 제출 처리 ── */
+async function handleSubmit(){
+  // 중국어 선택 시 Firebase에는 한국어 값으로 저장
+  const toKo = (val) => {
+    if(lang !== "zh" || !val) return val;
+    const typeMap = T.zh.accTypeMap || {};
+    const detailMap = T.zh.accDetailKo || {};
+    return typeMap[val] || detailMap[val] || val;
+  };
+
+  if(form.photos.includes("uploading")){
+    errors={submit:"사진 업로드가 완료될 때까지 기다려 주세요."};
+    render(); window.scrollTo(0,0); return;
+  }
+
+  const errs={};
+  if(!form.site)          errs.site=lang==="zh"?"请选择事业所。":"${lang==='zh'?'请选择事业所':'사업소를 선택해 주세요.'}";
+  if(!form.reporter.trim()) errs.reporter=lang==="zh"?"请输入报告人姓名。":"${lang==='zh'?'请输入报告人姓名':'접수자 성명을 입력해 주세요.'}";
+  if(!form.rank)            errs.rank=lang==="zh"?"请选择职级。":"${lang==='zh'?'请选择职级':'직급을 선택해 주세요.'}";
+  if(!form.phone||form.phone.replace(/\D/g,"").length<10) errs.phone=lang==="zh"?"请输入联系电话。":"${lang==='zh'?'请输入联系电话':'연락처를 입력해 주세요.'}";
+  if(!form.accYear||!form.accMonth||!form.accDay) errs.accYear="사고 발생 날짜를 선택해 주세요.";
+  if(!form.accHour||!form.accMin) errs.accHour="사고 발생 시간을 선택해 주세요.";
+  if(!form.location.trim()) errs.location="사고 발생 위치를 입력해 주세요.";
+  if(form.isComplex){
+    if(form.accTypes.length===0) errs.accType="사고 유형을 하나 이상 선택해 주세요.";
+    if(form.accDetails.length===0) errs.accDetail="세부 유형을 하나 이상 선택해 주세요.";
+  } else {
+    if(!form.accType) errs.accType=lang==="zh"?"请选择事故类型。":"${lang==='zh'?'请选择事故类型':'사고 유형을 선택해 주세요.'}";
+    if(!form.accDetail) errs.accDetail=lang==="zh"?"请选择细分类型。":"${lang==='zh'?'请选择细分类型':'세부 유형을 선택해 주세요.'}";
+  }
+  if(!form.level)         errs.level=lang==="zh"?"请选择紧急程度。":"${lang==='zh'?'请选择紧急程度':'긴급도를 선택해 주세요.'}";
+  if(!form.lineStop)      errs.lineStop=lang==="zh"?"请选择停线情况。":"${lang==='zh'?'请选择停线情况':'라인중단 여부를 선택해 주세요.'}";
+  if(!form.customerEffect) errs.customerEffect=lang==="zh"?"请选择客户影响。":"고객사 영향 여부를 선택해 주세요.";
+  if(!form.situation.trim()) errs.situation=lang==="zh"?"请填写当前状况。":"${lang==='zh'?'请输入当前状况':'현재 상황을 입력해 주세요.'}";
+  if(form.checks.some(c=>!c)) errs.checks="모든 확인 사항을 체크해 주세요.";
+  // 인사사고 대상자 검증
+  const hasPersonalAcc = form.isComplex ? form.accTypes.includes("인사사고") : form.accType==="인사사고";
+  if(hasPersonalAcc){
+    if(!form.accidentType) errs.accidentType="단독/쌍방 여부를 선택해 주세요.";
+    const victimOk = form.victims.every(v=>v.unknown||v.name.trim());
+    if(!victimOk) errs.victims="피해자 성명을 입력하거나 '미확인'을 체크해 주세요.";
+    if(form.accidentType==="쌍방사고"){
+      const perpOk = form.perpetrators.every(p=>p.unknown||p.name.trim());
+      if(!perpOk) errs.perpetrators="가해자 성명을 입력하거나 '미확인'을 체크해 주세요.";
+    }
+  }
+  if(Object.keys(errs).length){ errors=errs; render(); window.scrollTo(0,0); return; }
+
+  saving=true; render();
+  const accNo = genAccNo();
+  const entry={
+    accNo,
+    site: form.site,
+    reporter: form.reporter.trim(),
+    rank: form.rank,
+    phone: form.phone,
+    accDateTime: `${form.accYear}년 ${form.accMonth}월 ${form.accDay}일 ${form.accAmPm} ${form.accHour}시 ${form.accMin}분`,
+
+    location: form.location.trim(),
+    isComplex: form.isComplex,
+    accType:    toKo(form.isComplex ? form.accTypes.join(", ") : form.accType),
+    accDetail:  toKo(form.isComplex ? form.accDetails.join(", ") : form.accDetail),
+    accTypes: form.isComplex ? form.accTypes.join(", ") : "",
+    accDetails: form.isComplex ? form.accDetails.join(", ") : "",
+    level: form.level,
+    lineStop: form.lineStop,
+    customerEffect: form.customerEffect,
+    situation: form.situation.trim(),
+    actionTaken: form.actionTaken.trim()||"없음",
+    supportNeeded: form.supportNeeded.trim()||"없음",
+    accidentType: form.accidentType||"",
+    victims: (form.isComplex?form.accTypes.includes("인사사고"):form.accType==="인사사고") ? JSON.stringify(form.victims) : "",
+    perpetrators: (form.isComplex?form.accTypes.includes("인사사고"):form.accType==="인사사고")&&form.accidentType==="쌍방사고" ? JSON.stringify(form.perpetrators) : "",
+    followUp: "",
+    photos: form.photos.filter(p => p && p !== "uploading"),
+    status: "접수",
+    createdAt: new Date().toLocaleString("ko-KR")
+  };
+  try{
+    await push(ref(db,"accidents"), entry);
+    submitted=entry; view="success";
+    // Slack 알림 발송
+    sendSlackAlert(entry);
+  }catch(err){
+    errors={submit:"저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."};
+  }
+  saving=false; render();
+}
+
+/* ── 알림 발송 (GAS 경유 → Slack + SMS) ── */
+async function sendSlackAlert(e){
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyS-dsOL7tjKLcrDrXV-iDZurGxAhzgpT0GOWF4QWEYpWyFygqMZjIsKcpQL0zuESMn/exec";
+  try {
+    const formData = new FormData();
+    formData.append("payload", JSON.stringify(e));
+    await fetch(GAS_URL, {
+      method: "POST",
+      mode: "no-cors",
+      body: formData
+    });
+    console.log("✅ GAS 알림 발송 요청 완료");
+  } catch(err) {
+    console.warn("❌ 알림 발송 실패:", err);
+  }
+}
+
+/* ── Firebase 초기화 ── */
+if(CONFIGURED){
+  const app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+  auth = getAuth(app);
+  // ✅ 로그인 상태 로컬 영구 저장 (재접속 시 로딩 문제 해결)
+  setPersistence(auth, browserLocalPersistence).catch(e => console.warn("persistence:", e));
+  entriesRef = ref(db,"accidents");
+
+  // 페이지 로드 시 URL 파라미터 미리 저장 (로그인 전에도 보존)
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _accParam = _urlParams.get("a") || _urlParams.get("acc");
+  if(_accParam) window._pendingAccNo = _accParam;
+
+  // 로그인 상태 감지
+  // ✅ 리스너 중복 방지
+let _unsubEntries = null;
+let _unsubSuggestions = null;
+
+function _stopListeners(){
+  if(_unsubEntries){ _unsubEntries(); _unsubEntries = null; }
+  if(_unsubSuggestions){ _unsubSuggestions(); _unsubSuggestions = null; }
+}
+
+function _startListeners(){
+  _stopListeners();
+  let _entriesReady = false;
+  let _suggestionsReady = false;
+
+  function _tryRender(){
+    // entries, suggestions 둘 다 로딩됐을 때만 render
+    if(_entriesReady && _suggestionsReady){
+
+      // pendingAccNo 처리
+      if(window._pendingAccNo){
+        const found = Object.entries(entries).find(([,e]) => e.accNo === window._pendingAccNo);
+        if(found){
+          view = "accdetail";
+          window._accDetailKey = found[0];
+          window._pendingAccNo = null;
+        } else if(view==="login"||view==="register"){
+          view = "main";
+        }
+      } else if(view==="login"||view==="register"){
+        view = "main";
+      }
+
+      render();
+    }
+  }
+
+  _unsubEntries = onValue(entriesRef, snapshot => {
+    entries = snapshot.val() || {};
+    _entriesReady = true;
+    _tryRender();
+  });
+
+  _unsubSuggestions = onValue(ref(db,"suggestions"), snap => {
+    suggestions = snap.val() || {};
+    _suggestionsReady = true;
+    _tryRender();
+  });
+}
+
+onAuthStateChanged(auth, user => {
+  if(user){
+    currentUser = user;
+    isAdmin = ADMIN_EMAILS.includes(user.email);
+
+    // 로딩 표시 (로그인 화면일 때)
+    if(view==="login" || view==="register"){
+      const appEl = document.getElementById("app");
+      if(appEl) appEl.innerHTML = '<div class="loading-bar">데이터 불러오는 중...</div>';
+    }
+
+    // 리스너 시작 → 데이터 로드 완료 후 자동으로 render() 호출됨
+    _startListeners();
+
+  } else {
+    currentUser = null;
+    isAdmin = false;
+    _stopListeners();
+
+    if(!isGuest){
+      if(window._pendingAccNo){
+        onValue(entriesRef, snapshot => {
+          entries = snapshot.val() || {};
+          const found = Object.entries(entries).find(([,e]) => e.accNo === window._pendingAccNo);
+          if(found){
+            view = "accdetail";
+            window._accDetailKey = found[0];
+            window._pendingAccNo = null;
+          } else {
+            view = "login";
+          }
+          render();
+        });
+      } else {
+        view = "login";
+        render();
+      }
+    }
+  }
+});
+
+} else {
+  view = "login";
+  render();
+}
+/* ── Service Worker 등록 ── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/safety001/sw.js')
+      .then(reg => console.log('SW 등록 완료:', reg.scope))
+      .catch(err => console.log('SW 등록 실패:', err));
+  });
+}
+</script>
+
+<!--
+════════════════════════════════════════════════════════════
+  Firebase 설정 방법 (5분 완성)
+════════════════════════════════════════════════════════════
+
+1. https://console.firebase.google.com 접속 (구글 계정 로그인)
+2. "프로젝트 만들기" → 이름 입력 → 생성
+3. 왼쪽 메뉴 "빌드" → "Realtime Database" → "데이터베이스 만들기"
+   → 위치: asia-southeast1 선택 → "테스트 모드"로 시작
+4. 프로젝트 개요(홈) → 앱 추가(</> 아이콘) → 웹 앱 등록
+5. "SDK 설정 및 구성"에서 firebaseConfig 객체 복사
+6. 이 파일 상단 firebaseConfig 부분에 붙여넣기 후 저장
+
+기본 관리자 비밀번호: safety2025
+(파일 내 ADMIN_PW 값을 변경해서 사용하세요)
+
+════ 배포 방법 ════
+
+방법 A — Netlify Drop (가장 쉬움, 1분)
+  1. https://app.netlify.com/drop 접속
+  2. 이 HTML 파일을 드래그 앤 드롭
+  3. 자동 생성된 링크 공유!
+
+방법 B — GitHub Pages
+  1. github.com → 새 저장소 생성 (Public)
+  2. 이 파일을 index.html 로 업로드
+  3. Settings → Pages → Branch: main 선택 → Save
+  4. https://[아이디].github.io/[저장소명] 링크 공유!
+
+════════════════════════════════════════════════════════════
+-->
+
+<!-- ── 사고 수정 모달 ── -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:1000;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:520px;
+    max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div style="background:#1e2761;padding:16px 20px;border-radius:16px 16px 0 0;
+      display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#fff;">✏️ 사고 내용 수정</div>
+        <div style="font-size:11px;color:#CADCFC;margin-top:2px;">수정 후 담당자에게 알림이 재발송됩니다</div>
+      </div>
+      <button onclick="closeEditModal()"
+        style="background:rgba(255,255,255,.15);border:none;color:#fff;
+        width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:16px 20px;">
+      <!-- 사고 유형 선택 -->
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px;">사고 유형 <span style="color:#e05c00;">*</span></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;" id="edit-type-btns">
+          <button type="button" onclick="editSelectType('인사사고')" id="edit-type-인사사고"
+            style="padding:7px 14px;border-radius:8px;border:1.5px solid #dce8f4;
+            background:#f5f8fc;font-size:13px;font-weight:600;cursor:pointer;
+            font-family:inherit;color:#555;transition:all .15s;">인사사고</button>
+          <button type="button" onclick="editSelectType('제품사고')" id="edit-type-제품사고"
+            style="padding:7px 14px;border-radius:8px;border:1.5px solid #dce8f4;
+            background:#f5f8fc;font-size:13px;font-weight:600;cursor:pointer;
+            font-family:inherit;color:#555;transition:all .15s;">제품사고</button>
+          <button type="button" onclick="editSelectType('공급사고')" id="edit-type-공급사고"
+            style="padding:7px 14px;border-radius:8px;border:1.5px solid #dce8f4;
+            background:#f5f8fc;font-size:13px;font-weight:600;cursor:pointer;
+            font-family:inherit;color:#555;transition:all .15s;">공급사고</button>
+          <button type="button" onclick="editSelectType('차량사고')" id="edit-type-차량사고"
+            style="padding:7px 14px;border-radius:8px;border:1.5px solid #dce8f4;
+            background:#f5f8fc;font-size:13px;font-weight:600;cursor:pointer;
+            font-family:inherit;color:#555;transition:all .15s;">차량사고</button>
+        </div>
+        <input type="hidden" id="edit-accType"/>
+      </div>
+
+      <!-- 세부 유형 선택 -->
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px;">세부 유형 <span style="color:#e05c00;">*</span></div>
+        <div id="edit-detail-wrap"
+          style="background:#f9fbfd;border:1px solid #eef2f7;border-radius:8px;
+          padding:10px;min-height:42px;font-size:13px;color:#bbb;">
+          사고 유형을 먼저 선택해 주세요.
+        </div>
+        <input type="hidden" id="edit-accDetail"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">긴급도 <span style="color:#e05c00;">*</span></div>
+          <select id="edit-level" class="select" style="font-size:13px;padding:8px 10px;">
+            <option value="">선택</option>
+            <option value="1">Level 1 최긴급</option>
+            <option value="2">Level 2 긴급</option>
+            <option value="3">Level 3 일반</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">라인중단</div>
+          <select id="edit-lineStop" class="select" style="font-size:13px;padding:8px 10px;">
+            <option value="라인중단발생">${lang==="zh"?"停线发生":"라인중단발생"}</option>
+            <option value="라인중단예상">${lang==="zh"?"预计停线":"라인중단예상"}</option>
+            <option value="미장착">${lang==="zh"?"未装配":"미장착"}</option>
+            <option value="라인영향없음">${lang==="zh"?"无影响":"라인영향없음"}</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">고객사 영향</div>
+          <select id="edit-custEffect" class="select" style="font-size:13px;padding:8px 10px;">
+            <option value="예">예</option>
+            <option value="아니오">아니오</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">발생 위치 <span style="color:#e05c00;">*</span></div>
+        <input id="edit-location" class="input" placeholder="발생 위치" style="font-size:13px;padding:8px 10px;"/>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">현재 상황 <span style="color:#e05c00;">*</span></div>
+        <textarea id="edit-situation" class="textarea" style="font-size:13px;min-height:80px;" placeholder="현재 상황"></textarea>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">즉시 조치</div>
+        <textarea id="edit-action" class="textarea" style="font-size:13px;min-height:60px;" placeholder="즉시 조치 내용"></textarea>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px;">추가 지원</div>
+        <textarea id="edit-support" class="textarea" style="font-size:13px;min-height:50px;" placeholder="추가 지원 필요 여부"></textarea>
+      </div>
+      <div style="background:#fff8f0;border:1px solid #fcd8a8;border-radius:8px;
+        padding:10px 12px;margin-bottom:12px;font-size:12px;color:#e65100;line-height:1.6;">
+        📢 저장 시 수정된 내용으로 <strong>SMS + Slack 알림이 재발송</strong>됩니다.
+      </div>
+      <div id="edit-err" style="display:none;font-size:12px;color:#e05c00;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closeEditModal()"
+          style="flex:1;padding:11px;background:#f5f5f5;border:none;border-radius:9px;
+          font-size:14px;color:#666;cursor:pointer;font-family:inherit;">취소</button>
+        <button onclick="saveEditAndResend()"
+          style="flex:2;padding:11px;background:#e05c00;color:#fff;border:none;border-radius:9px;
+          font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+          ✅ 수정 저장 + 알림 재발송
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
