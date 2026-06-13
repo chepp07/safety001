@@ -2098,12 +2098,9 @@ function renderAdmin(){
     const custTag = e.customerEffect==="예" ? '<span style="font-size:10px;background:#fff3e0;color:#e65100;font-weight:700;padding:1px 6px;border-radius:4px;">고객사영향</span>' : "";
     const detailTag = e.accDetail ? '<span style="font-size:11px;color:#888;background:#f0f4f8;padding:1px 6px;border-radius:5px;">'+e.accDetail+'</span>' : "";
     const statusOpts = ["접수","처리중","완료","보류"].map(function(st){ return '<option'+(e.status===st?' selected':'')+'>'+st+'</option>'; }).join("");
-    const situation = (e.situation||"-").replace(/
-/g,"<br>");
-    const actionHtml = e.actionTaken ? '<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">즉시 조치</div><div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">'+e.actionTaken.replace(/
-/g,"<br>")+'</div></div>' : "";
-    const followHtml = e.followUp ? '<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">후속조치</div><div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;padding:8px 10px;color:#2e7d32;line-height:1.6;">'+e.followUp.replace(/
-/g,"<br>")+'</div></div>' : "";
+    const situation = (e.situation||"-").replace(/\n/g,"<br>");
+    const actionHtml = e.actionTaken ? '<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">즉시 조치</div><div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">'+e.actionTaken.replace(/\n/g,"<br>")+'</div></div>' : "";
+    const followHtml = e.followUp ? '<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">후속조치</div><div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;padding:8px 10px;color:#2e7d32;line-height:1.6;">'+e.followUp.replace(/\n/g,"<br>")+'</div></div>' : "";
     let photoHtml = "";
     if(e.photos && e.photos.length>0){
       const photoArr = Array.isArray(e.photos)?e.photos:JSON.parse(e.photos||"[]");
@@ -2113,7 +2110,7 @@ function renderAdmin(){
     }
 
     return '<div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">'
-      + '<div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;" onclick="toggleDetail('detail-'+key+'')">'
+      + '<div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;" class="card-hd" data-key="\'+key+\'">'
         + '<div style="flex-shrink:0;margin-top:1px;"><span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;background:'+ls.bg+';color:'+ls.color+';border:1px solid '+ls.bd+';white-space:nowrap;">Lv'+(e.level||"?")+" "+lvLabel+'</span></div>'
         + '<div style="flex:1;min-width:0;">'
           + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;"><span style="font-weight:700;font-size:13px;color:#1a1a1a;">'+(e.site||"-")+'</span><span style="font-size:12px;color:#555;">'+(e.accType||"-")+'</span>'+detailTag+'</div>'
@@ -2123,7 +2120,7 @@ function renderAdmin(){
           + '<select class="status-sel" data-key="'+key+'" style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:11px;cursor:pointer;font-family:inherit;max-width:68px;">'+statusOpts+'</select>'
           + '<div style="display:flex;gap:4px;">'
             + '<button class="del-btn" data-key="'+key+'" style="background:none;border:1px solid #eee;border-radius:5px;cursor:pointer;color:#ccc;font-size:12px;padding:2px 6px;">✕</button>'
-            + '<button onclick="openEditModal(''+key+'')" style="background:#e05c00;border:none;border-radius:5px;cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">수정</button>'
+            + '<button class="edit-btn" data-key="\'+key+\'" style="background:#e05c00;border:none;border-radius:5px;cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">수정</button>'
           + '</div>'
         + '</div>'
       + '</div>'
@@ -2136,7 +2133,7 @@ function renderAdmin(){
         + '</div>'
         + '<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">현재 상황</div><div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">'+situation+'</div></div>'
         + actionHtml + followHtml + photoHtml
-        + '<div style="margin-top:8px;"><button onclick="openEditModal(''+key+'')" style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 내용 수정 + 재발송</button></div>'
+        + '<div style="margin-top:8px;"><button class="edit-btn" data-key="\'+key+\'" style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 내용 수정 + 재발송</button></div>'
       + '</div>'
     + '</div>';
   }
@@ -2152,7 +2149,7 @@ function renderAdmin(){
     const realInfo = (s.anonymous && s.realEmail)
       ? '<div style="margin-top:10px;background:#fff8f0;border:1px solid #fcd8a8;border-radius:8px;padding:10px 12px;"><div style="font-size:11px;font-weight:700;color:#e05c00;margin-bottom:4px;">🔑 관리자 전용 — 실제 계정 정보</div><div style="font-size:13px;color:#333;">이름: <strong>'+(s.realName||"미입력")+'</strong></div><div style="font-size:13px;color:#333;">이메일: <strong>'+s.realEmail+'</strong></div></div>'
       : "";
-    return '<tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" onclick="toggleSugDetail('sug-'+key+'')">'
+    return '<tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" class="sug-hd" data-key="\'+key+\'">'
       + '<td style="padding:10px 11px;font-size:12px;color:#888;white-space:nowrap;">'+(s.createdAt||"").slice(0,16)+'</td>'
       + '<td style="padding:10px 11px;font-weight:600;">'+(s.site||"-")+'</td>'
       + '<td style="padding:10px 11px;"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">'+(s.category||"-")+'</span></td>'
@@ -2164,8 +2161,7 @@ function renderAdmin(){
       + '<tr id="sug-'+key+'" style="display:none;background:#f9fbfd;">'
         + '<td colspan="7" style="padding:14px 16px;font-size:13px;line-height:1.7;border-top:1px dashed #dce8f4;">'
           + '<div style="font-weight:700;color:#2e7d32;margin-bottom:8px;">💡 상세 내용</div>'
-          + '<div style="background:#fff;border:1px solid #dce8f4;border-radius:8px;padding:10px 12px;color:#333;">'+(s.detail||"-").replace(/
-/g,"<br>")+'</div>'
+          + '<div style="background:#fff;border:1px solid #dce8f4;border-radius:8px;padding:10px 12px;color:#333;">'+(s.detail||"-").replace(/\n/g,"<br>")+'</div>'
           + realInfo
         + '</td>'
       + '</tr>';
@@ -2227,8 +2223,8 @@ function renderAdmin(){
       + '</div>'
     + '</div>'
     + '<div style="display:flex;gap:0;margin-bottom:1.25rem;border-bottom:2px solid #eef2f7;">'
-      + '<button id="tab-accidents" onclick="setAdminTab('accidents')" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-2px;'+tabAccStyle+'">🚨 사고접수 ('+total+')</button>'
-      + '<button id="tab-suggestions" onclick="setAdminTab('suggestions')" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-2px;'+tabSugStyle+'">💡 안전개선 제안 ('+Object.keys(suggestions).length+')</button>'
+      + '<button id="tab-accidents" class="tab-btn" data-tab="accidents" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-2px;'+tabAccStyle+'">🚨 사고접수 ('+total+')</button>'
+      + '<button id="tab-suggestions" class="tab-btn" data-tab="suggestions" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-2px;'+tabSugStyle+'">💡 안전개선 제안 ('+Object.keys(suggestions).length+')</button>'
     + '</div>'
     + mainContent
     + '<div id="login-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;">'
@@ -2619,6 +2615,10 @@ function bindEvents(){
 
   if(view==="admin"){
     $("go-form")   && ($("go-form").onclick   = () => { view="main"; render(); });
+    document.querySelectorAll(".card-hd").forEach(el=>{el.addEventListener("click",ev=>{if(ev.target.closest(".status-sel")||ev.target.closest(".del-btn")||ev.target.closest(".edit-btn"))return;toggleDetail("detail-"+el.dataset.key);});});
+    document.querySelectorAll(".edit-btn").forEach(b=>{b.addEventListener("click",ev=>{ev.stopPropagation();openEditModal(b.dataset.key);});});
+    document.querySelectorAll(".sug-hd").forEach(el=>{el.addEventListener("click",ev=>{if(ev.target.closest(".sug-status-sel"))return;toggleSugDetail("sug-"+el.dataset.key);});});
+    document.querySelectorAll(".tab-btn").forEach(b=>{b.addEventListener("click",()=>{setAdminTab(b.dataset.tab);});});
     $("go-logout") && ($("go-logout").onclick = async () => { await signOut(auth); view="login"; render(); });
 
     // 검색창 - render() 없이 직접 필터링만 처리 (키보드 유지)
@@ -2985,11 +2985,11 @@ function updateAdminTable(){
         </div>
         <div style="margin-bottom:6px;">
           <div style="color:#aaa;margin-bottom:3px;">현재 상황</div>
-          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">${(e.situation||"-").replace(/\n/g,"<br>")}</div>
+          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">${(e.situation||"-").replace(/\\n/g,"<br>")}</div>
         </div>
         ${e.actionTaken?`<div style="margin-bottom:6px;">
           <div style="color:#aaa;margin-bottom:3px;">즉시 조치</div>
-          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">${e.actionTaken.replace(/\n/g,"<br>")}</div>
+          <div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">${e.actionTaken.replace(/\\n/g,"<br>")}</div>
         </div>`:""}
       </div>
     </div>`;
@@ -3176,84 +3176,100 @@ if(CONFIGURED){
   if(_accParam) window._pendingAccNo = _accParam;
 
   // 로그인 상태 감지
-  // ✅ 리스너 중복 방지용 변수
-let _entriesListenerActive = false;
+  // ✅ 리스너 중복 방지
+let _unsubEntries = null;
+let _unsubSuggestions = null;
 
-onAuthStateChanged(auth, user => {
-    if(user){
-      currentUser = user;
-      isAdmin = ADMIN_EMAILS.includes(user.email);
-
-      // 로딩 표시 (로그인 화면에서 넘어올 때)
-      if(view==="login" || view==="register"){
-        document.getElementById("app").innerHTML =
-          '<div class="loading-bar">데이터 불러오는 중...</div>';
-      }
-
-      // ✅ 중복 리스너 방지: 이미 활성화됐으면 재등록 안 함
-      if(!_entriesListenerActive){
-        _entriesListenerActive = true;
-
-        onValue(entriesRef, snapshot => {
-          entries = snapshot.val() || {};
-
-          onValue(ref(db,"suggestions"), snap => {
-            suggestions = snap.val() || {};
-
-            if(window._pendingAccNo){
-              const found = Object.entries(entries).find(([,e]) => e.accNo === window._pendingAccNo);
-              if(found){
-                view = "accdetail";
-                window._accDetailKey = found[0];
-                window._pendingAccNo = null;
-              } else if(view==="login"||view==="register"){
-                view = "main";
-              }
-            } else if(view==="login" || view==="register"){
-              view = "main";
-            }
-            render();
-          }, { onlyOnce: false });
-
-        }, { onlyOnce: false });
-      } else {
-        // 리스너는 이미 살아있고 entries도 있음 → 바로 화면 전환만
-        if(view==="login" || view==="register"){
-          view = "main";
-          render();
-        }
-      }
-
-    } else {
-      currentUser = null;
-      isAdmin = false;
-      _entriesListenerActive = false;
-
-      if(!isGuest){
-        if(window._pendingAccNo){
-          onValue(entriesRef, snapshot => {
-            entries = snapshot.val() || {};
-            const found = Object.entries(entries).find(([,e]) => e.accNo === window._pendingAccNo);
-            if(found){
-              view = "accdetail";
-              window._accDetailKey = found[0];
-              window._pendingAccNo = null;
-            } else {
-              view = "login";
-            }
-            render();
-          }, { onlyOnce: true });
-        } else {
-          view = "login";
-          render();
-        }
-      }
-    }
-  });
-} else {
-  render();
+function _stopListeners(){
+  if(_unsubEntries){ _unsubEntries(); _unsubEntries = null; }
+  if(_unsubSuggestions){ _unsubSuggestions(); _unsubSuggestions = null; }
 }
 
+function _startListeners(){
+  _stopListeners();
+  let _entriesReady = false;
+  let _suggestionsReady = false;
+
+  function _tryRender(){
+    // entries, suggestions 둘 다 로딩됐을 때만 render
+    if(_entriesReady && _suggestionsReady){
+
+      // pendingAccNo 처리
+      if(window._pendingAccNo){
+        const found = Object.entries(entries).find(([,e]) => e.accNo === window._pendingAccNo);
+        if(found){
+          view = "accdetail";
+          window._accDetailKey = found[0];
+          window._pendingAccNo = null;
+        } else if(view==="login"||view==="register"){
+          view = "main";
+        }
+      } else if(view==="login"||view==="register"){
+        view = "main";
+      }
+
+      render();
+    }
+  }
+
+  _unsubEntries = onValue(entriesRef, snapshot => {
+    entries = snapshot.val() || {};
+    _entriesReady = true;
+    _tryRender();
+  });
+
+  _unsubSuggestions = onValue(ref(db,"suggestions"), snap => {
+    suggestions = snap.val() || {};
+    _suggestionsReady = true;
+    _tryRender();
+  });
+}
+
+onAuthStateChanged(auth, user => {
+  if(user){
+    currentUser = user;
+    isAdmin = ADMIN_EMAILS.includes(user.email);
+
+    // 로딩 표시 (로그인 화면일 때)
+    if(view==="login" || view==="register"){
+      const appEl = document.getElementById("app");
+      if(appEl) appEl.innerHTML = '<div class="loading-bar">데이터 불러오는 중...</div>';
+    }
+
+    // 리스너 시작 → 데이터 로드 완료 후 자동으로 render() 호출됨
+    _startListeners();
+
+  } else {
+    currentUser = null;
+    isAdmin = false;
+    _stopListeners();
+
+    if(!isGuest){
+      if(window._pendingAccNo){
+        onValue(entriesRef, snapshot => {
+          entries = snapshot.val() || {};
+          const found = Object.entries(entries).find(([,e]) => e.accNo === window._pendingAccNo);
+          if(found){
+            view = "accdetail";
+            window._accDetailKey = found[0];
+            window._pendingAccNo = null;
+          } else {
+            view = "login";
+          }
+          render();
+        });
+      } else {
+        view = "login";
+        render();
+      }
+    }
+  }
+});
+
+} else {
+  view = "login";
+  render();
+}
 /* ── Service Worker 등록 ── */
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
