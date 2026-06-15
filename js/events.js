@@ -9,7 +9,8 @@ import {
   setAdminTab, toggleDetail, toggleSugDetail, openEditModal, editSelectType
 } from "./features/admin.js";
 import {
-  makeEmptyRA, makeEmptyHazard, loadFromAccident, saveRA, deleteRA, loadDraftFromSaved
+  makeEmptyRA, makeEmptyHazard, loadFromAccident, saveRA, deleteRA, loadDraftFromSaved,
+  makeEmptyEducation, makeEmptyAttendee, saveEducation
 } from "./features/risk.js";
 import { signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -120,6 +121,7 @@ export function bindEvents() {
       document.querySelectorAll(".ra-report-btn").forEach(b => {
         b.addEventListener("click", () => {
           state.risk.current = state.riskAssessments[b.dataset.key];
+          state.risk.currentKey = b.dataset.key;
           state.risk.mode="report"; render();
         });
       });
@@ -196,20 +198,81 @@ export function bindEvents() {
       $("btn-ra-complete")?.addEventListener("click", async () => {
         const res = await saveRA(true);
         const errEl = $("ra-err");
-        if(res.ok){ state.risk.current = res.data; state.risk.mode="report"; render(); }
+        if(res.ok){ state.risk.current = res.data; state.risk.currentKey = res.key; state.risk.mode="report"; render(); }
         else if(errEl){ errEl.textContent=res.msg; errEl.style.display="block"; window.scrollTo(0,0); }
       });
     }
 
     if(risk.mode==="report"){
       $("btn-ra-report-back")?.addEventListener("click", () => {
-        state.risk.mode="list"; state.risk.current=null; render();
+        state.risk.mode="list"; state.risk.current=null; state.risk.currentKey=null; render();
       });
       $("btn-ra-report-edit")?.addEventListener("click", () => {
         const cur = state.risk.current;
         const key = Object.keys(state.riskAssessments).find(k => state.riskAssessments[k].raNo === cur.raNo);
         if(key) loadDraftFromSaved(key);
         state.risk.mode="editor"; render();
+      });
+      $("btn-ra-edu")?.addEventListener("click", () => {
+        const cur = state.risk.current;
+        if(cur && cur.education){
+          state.risk.mode="edudoc";
+        } else {
+          state.risk.eduDraft = makeEmptyEducation(cur);
+          state.risk.mode="edu";
+        }
+        render();
+      });
+    }
+
+    if(risk.mode==="edu"){
+      const ed = state.risk.eduDraft;
+      $("edu-name")?.addEventListener("input",           e => { ed.eduName=e.target.value; });
+      $("edu-date")?.addEventListener("change",          e => { ed.eduDate=e.target.value; });
+      $("edu-method")?.addEventListener("change",        e => { ed.method=e.target.value; });
+      $("edu-start")?.addEventListener("change",         e => { ed.startTime=e.target.value; });
+      $("edu-end")?.addEventListener("change",           e => { ed.endTime=e.target.value; });
+      $("edu-duration")?.addEventListener("input",       e => { ed.duration=e.target.value; });
+      $("edu-place")?.addEventListener("input",          e => { ed.place=e.target.value; });
+      $("edu-instructor")?.addEventListener("input",     e => { ed.instructor=e.target.value; });
+      $("edu-instructor-org")?.addEventListener("input", e => { ed.instructorOrg=e.target.value; });
+      $("edu-target")?.addEventListener("input",         e => { ed.targetDept=e.target.value; });
+      $("edu-objective")?.addEventListener("input",      e => { ed.objective=e.target.value; });
+      $("edu-extra")?.addEventListener("input",          e => { ed.extraContent=e.target.value; });
+
+      document.querySelectorAll(".edu-att").forEach(el => {
+        el.addEventListener("input", () => { ed.attendees[+el.dataset.i][el.dataset.af] = el.value; });
+      });
+      document.querySelectorAll(".edu-att-del").forEach(el => {
+        el.addEventListener("click", () => {
+          ed.attendees.splice(+el.dataset.i, 1);
+          if(ed.attendees.length===0) ed.attendees.push(makeEmptyAttendee());
+          render();
+        });
+      });
+      $("btn-edu-att-add")?.addEventListener("click", () => { ed.attendees.push(makeEmptyAttendee()); render(); });
+
+      $("btn-edu-cancel")?.addEventListener("click", () => { state.risk.mode="report"; render(); });
+      $("btn-edu-make")?.addEventListener("click", async () => {
+        const res = await saveEducation();
+        const errEl = $("edu-err");
+        if(res.ok){ state.risk.mode="edudoc"; render(); }
+        else if(errEl){ errEl.textContent=res.msg; errEl.style.display="block"; window.scrollTo(0,0); }
+      });
+    }
+
+    if(risk.mode==="edudoc"){
+      $("btn-edu-back")?.addEventListener("click", () => { state.risk.mode="report"; render(); });
+      $("btn-edu-edit")?.addEventListener("click", () => {
+        const cur = state.risk.current;
+        state.risk.eduDraft = {
+          ...makeEmptyEducation(cur),
+          ...(cur && cur.education ? JSON.parse(JSON.stringify(cur.education)) : {})
+        };
+        if(!Array.isArray(state.risk.eduDraft.attendees) || state.risk.eduDraft.attendees.length===0){
+          state.risk.eduDraft.attendees = [ makeEmptyAttendee() ];
+        }
+        state.risk.mode="edu"; render();
       });
     }
   }
