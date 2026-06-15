@@ -181,3 +181,58 @@ export function loadDraftFromSaved(key) {
   if(!Array.isArray(d.photos)) d.photos = [];
   state.risk.draft = d;
 }
+
+// ───────────────────────── 특별안전교육 (산업안전보건법 제29조) ─────────────────────────
+export const EDU_METHODS = ["집체교육", "현장교육", "비대면(온라인)교육"];
+
+export function makeEmptyAttendee() {
+  return { name:"", dept:"", note:"" };
+}
+
+export function makeEmptyEducation(ra) {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  const me = state.currentUser ? (state.currentUser.displayName || state.currentUser.email.split("@")[0]) : "";
+  const name = [ra?.accNo, ra?.site].filter(Boolean).join(" ");
+  return {
+    eduName: (name ? name + " 사고 관련 특별안전교육" : "특별안전교육").trim(),
+    eduDate: today, startTime:"", endTime:"", duration:"1",
+    place: ra?.site || "", method: EDU_METHODS[0],
+    instructor: me, instructorOrg:"", targetDept: ra?.targetWork || "",
+    objective: "사고 발생 원인과 위험성평가 결과를 공유하고, 동종·유사 재해의 재발을 방지한다.",
+    extraContent: "",
+    attendees: [ makeEmptyAttendee(), makeEmptyAttendee(), makeEmptyAttendee() ],
+    createdAt: ""
+  };
+}
+
+// 교육 정보를 해당 위험성평가 레코드 하위(education)에 저장
+export async function saveEducation() {
+  const key = state.risk.currentKey;
+  const ed  = state.risk.eduDraft;
+  if(!key || !ed) return { ok:false, msg:"대상 평가를 찾을 수 없습니다." };
+  if(!ed.eduName.trim())    return { ok:false, msg:"교육명을 입력해 주세요." };
+  if(!ed.instructor.trim()) return { ok:false, msg:"강사(교육자)를 입력해 주세요." };
+  const named = ed.attendees.filter(a => a.name.trim());
+  if(named.length === 0)    return { ok:false, msg:"참석자를 최소 1명 이상 입력해 주세요." };
+
+  const payload = {
+    eduName: ed.eduName.trim(), eduDate: ed.eduDate,
+    startTime: ed.startTime, endTime: ed.endTime, duration: ed.duration,
+    place: ed.place.trim(), method: ed.method,
+    instructor: ed.instructor.trim(), instructorOrg: ed.instructorOrg.trim(),
+    targetDept: ed.targetDept.trim(), objective: ed.objective.trim(),
+    extraContent: ed.extraContent.trim(),
+    attendees: named.map(a => ({ name:a.name.trim(), dept:a.dept.trim(), note:a.note.trim() })),
+    createdAt: ed.createdAt || new Date().toLocaleString("ko-KR")
+  };
+
+  try {
+    await update(ref(state.db, `riskAssessments/${key}/education`), payload);
+    if(state.risk.current) state.risk.current.education = payload;
+    ed.createdAt = payload.createdAt;
+    return { ok:true, data: payload };
+  } catch(err) {
+    return { ok:false, msg:"저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." };
+  }
+}
