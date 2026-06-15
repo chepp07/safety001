@@ -1,7 +1,7 @@
 import { state } from "../state.js";
 import { SITES } from "../config.js";
 import {
-  LIKELIHOOD, SEVERITY, RA_REASONS,
+  LIKELIHOOD, SEVERITY, RA_REASONS, EDU_METHODS,
   riskScore, resRiskScore, riskLevel
 } from "../features/risk.js";
 
@@ -14,6 +14,8 @@ export function renderRisk() {
   const mode = state.risk?.mode || "list";
   if(mode === "editor") return renderEditor();
   if(mode === "report") return renderReport();
+  if(mode === "edu")    return renderEduEditor();
+  if(mode === "edudoc") return renderEduDoc();
   return renderList();
 }
 
@@ -260,10 +262,11 @@ function renderReport() {
       @page { margin:14mm; }
     }
   </style>
-  <div class="no-print" style="max-width:820px;margin:0 auto;display:flex;gap:8px;justify-content:space-between;padding:0 0 14px;">
+  <div class="no-print" style="max-width:820px;margin:0 auto;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;padding:0 0 14px;">
     <button id="btn-ra-report-back" style="padding:8px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">← 목록</button>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button id="btn-ra-report-edit" style="padding:8px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">수정</button>
+      <button id="btn-ra-edu" style="padding:8px 16px;border:none;border-radius:8px;background:#1d6f42;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">${r.education ? "📋 특별안전교육 문서" : "📋 특별안전교육 일지 생성"}</button>
       <button onclick="window.print()" style="padding:8px 16px;border:none;border-radius:8px;background:#1e2761;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ 인쇄 / PDF 저장</button>
     </div>
   </div>
@@ -309,6 +312,206 @@ function renderReport() {
     </table>
     <div style="text-align:center;font-size:11px;color:#aaa;margin-top:14px;">
       작성일시 ${esc(r.createdAt||"-")}${r.completedAt?` · 완료 ${esc(r.completedAt)}`:""}
+    </div>
+  </div>`;
+}
+
+// ───────────────────────── 특별안전교육 편집기 ─────────────────────────
+function renderEduEditor() {
+  const ed = state.risk.eduDraft;
+  const r  = state.risk.current;
+  if(!ed) return renderList();
+
+  const inp = "padding:9px 11px;border:1px solid #dce8f4;border-radius:8px;font-size:14px;font-family:inherit;width:100%;box-sizing:border-box;";
+  const sel = inp + "background:#fff;";
+  const lbl = "font-size:12px;font-weight:700;color:#445;margin:0 0 5px;";
+  const sectionTitle = (t) => `<div style="font-size:13px;font-weight:800;color:#1d6f42;margin:1.4rem 0 .7rem;padding-bottom:6px;border-bottom:2px solid #eef2f7;">${t}</div>`;
+
+  const methodOpts = EDU_METHODS.map(m=>`<option value="${esc(m)}"${ed.method===m?" selected":""}>${esc(m)}</option>`).join("");
+
+  const attRows = ed.attendees.map((a,i)=>`
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 32px;gap:7px;margin-bottom:7px;align-items:center;">
+      <input class="edu-att" data-i="${i}" data-af="name" value="${esc(a.name)}" placeholder="성명" style="${inp}"/>
+      <input class="edu-att" data-i="${i}" data-af="dept" value="${esc(a.dept)}" placeholder="소속/직급" style="${inp}"/>
+      <button class="edu-att-del" data-i="${i}" style="background:none;border:1px solid #f0c4c4;color:#c0392b;border-radius:7px;font-size:13px;padding:7px 0;cursor:pointer;font-family:inherit;">×</button>
+    </div>`).join("");
+
+  return `
+  <div style="padding-bottom:3rem;max-width:640px;margin:0 auto;">
+    ${header(r ? `${esc(r.raNo||"")} 특별안전교육` : "특별안전교육")}
+    <div style="background:#eaf5ee;border:1px solid #b6dcc4;border-radius:9px;padding:10px 12px;font-size:12px;color:#1d6f42;line-height:1.6;margin-bottom:14px;">
+      산업안전보건법 제29조에 따른 <strong>특별안전교육 일지</strong>를 작성합니다. 교육자료 내용(사고 개요·위험성평가 결과·재발방지대책)은 평가 데이터에서 <strong>자동 생성</strong>됩니다.
+    </div>
+
+    <div id="edu-err" style="display:none;background:#fff5f5;border:1px solid #f5c6c6;color:#b71c1c;border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:12px;"></div>
+
+    ${sectionTitle("교육 개요")}
+    <div><div style="${lbl}">교육명 <span style="color:#c0392b;">*</span></div><input id="edu-name" value="${esc(ed.eduName)}" style="${inp}"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+      <div><div style="${lbl}">교육일자</div><input type="date" id="edu-date" value="${esc(ed.eduDate)}" style="${inp}"/></div>
+      <div><div style="${lbl}">교육방법</div><select id="edu-method" style="${sel}">${methodOpts}</select></div>
+      <div><div style="${lbl}">시작시간</div><input type="time" id="edu-start" value="${esc(ed.startTime)}" style="${inp}"/></div>
+      <div><div style="${lbl}">종료시간</div><input type="time" id="edu-end" value="${esc(ed.endTime)}" style="${inp}"/></div>
+      <div><div style="${lbl}">교육시간(시간)</div><input id="edu-duration" value="${esc(ed.duration)}" placeholder="예: 1" style="${inp}"/></div>
+      <div><div style="${lbl}">교육장소</div><input id="edu-place" value="${esc(ed.place)}" placeholder="예: 안전교육장" style="${inp}"/></div>
+      <div><div style="${lbl}">강사(교육자) <span style="color:#c0392b;">*</span></div><input id="edu-instructor" value="${esc(ed.instructor)}" placeholder="성명" style="${inp}"/></div>
+      <div><div style="${lbl}">강사 소속/직책</div><input id="edu-instructor-org" value="${esc(ed.instructorOrg)}" placeholder="예: 안전관리자" style="${inp}"/></div>
+    </div>
+    <div style="margin-top:10px;"><div style="${lbl}">교육 대상(부서/공정)</div><input id="edu-target" value="${esc(ed.targetDept)}" style="${inp}"/></div>
+    <div style="margin-top:10px;"><div style="${lbl}">교육 목표</div><textarea id="edu-objective" style="${inp}min-height:60px;resize:vertical;">${esc(ed.objective)}</textarea></div>
+    <div style="margin-top:10px;"><div style="${lbl}">추가 교육내용(선택)</div><textarea id="edu-extra" placeholder="자동 생성되는 교육자료 외에 강조할 내용을 입력하세요." style="${inp}min-height:60px;resize:vertical;">${esc(ed.extraContent)}</textarea></div>
+
+    ${sectionTitle("참석자 명단")}
+    <div style="font-size:11px;color:#aaa;margin-bottom:8px;">※ 서명란은 인쇄된 일지에 자필 서명하도록 비워서 출력됩니다.</div>
+    <div id="edu-attendees">${attRows}</div>
+    <button id="btn-edu-att-add" style="width:100%;padding:10px;background:#eef7f1;color:#1d6f42;border:1.5px dashed #b6dcc4;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;">＋ 참석자 추가</button>
+
+    <div style="display:flex;gap:8px;margin-top:1.5rem;">
+      <button id="btn-edu-cancel" style="flex:1;padding:13px;background:#fff;color:#666;border:1.5px solid #ddd;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">취소</button>
+      <button id="btn-edu-make" style="flex:1.6;padding:13px;background:#1d6f42;color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">교육 문서 생성 (일지·자료)</button>
+    </div>
+  </div>`;
+}
+
+// ───────────────────────── 특별안전교육 문서 (일지 + 교육자료, 인쇄/PDF) ─────────────────────────
+function renderEduDoc() {
+  const r  = state.risk.current;
+  const ed = r && r.education;
+  if(!r || !ed) return renderList();
+  const hazards = Array.isArray(r.hazards) ? r.hazards : [];
+  const acc = r.accSnapshot;
+
+  const th  = "border:1px solid #b9c6e8;padding:6px 7px;background:#eef2fb;font-size:11px;font-weight:700;color:#1e2761;";
+  const td  = "border:1px solid #cdd8ec;padding:6px 7px;font-size:11px;color:#222;vertical-align:top;";
+  const ovh = "border:1px solid #b9c6e8;padding:7px 9px;font-size:12px;background:#f3f6fc;font-weight:700;color:#445;white-space:nowrap;";
+  const ov  = "border:1px solid #cdd8ec;padding:7px 9px;font-size:12px;";
+
+  const timeStr = (ed.startTime || ed.endTime)
+    ? `${esc(ed.startTime||"")}${ed.endTime?` ~ ${esc(ed.endTime)}`:""}${ed.duration?` (${esc(ed.duration)}시간)`:""}`
+    : (ed.duration ? `${esc(ed.duration)}시간` : "-");
+
+  // ── 일지: 참석자 명단(서명란 포함) ──
+  const attRows = (ed.attendees||[]).map((a,i)=>`
+    <tr>
+      <td style="${td}text-align:center;">${i+1}</td>
+      <td style="${td}">${esc(a.name)}</td>
+      <td style="${td}">${esc(a.dept||"-")}</td>
+      <td style="${td}height:26px;"></td>
+    </tr>`).join("");
+
+  // ── 교육자료: 위험성평가 기반 자동 생성 ──
+  const hazRows = hazards.map((h,i)=>{
+    const lv = riskLevel(riskScore(h)), rlv = riskLevel(resRiskScore(h));
+    return `<tr>
+      <td style="${td}text-align:center;">${i+1}</td>
+      <td style="${td}"><strong>${esc(h.hazard)}</strong>${h.cause?`<br><span style="color:#777;">${esc(h.cause)}</span>`:""}</td>
+      <td style="${td}text-align:center;font-weight:800;color:${lv.color};">${riskScore(h)} ${lv.label}</td>
+      <td style="${td}">${nl2br(h.reduction||"-")}</td>
+      <td style="${td}text-align:center;font-weight:800;color:${rlv.color};">${rlv.label}</td>
+    </tr>`;
+  }).join("");
+
+  // 작업자 안전수칙 = 감소대책에서 도출
+  const rules = hazards.map(h=>h.reduction).filter(s=>s && s.trim());
+  const ruleItems = rules.length
+    ? rules.map(s=>`<li style="margin-bottom:5px;">${esc(s)}</li>`).join("")
+    : '<li>작업 전 위험요인을 확인하고 안전수칙을 준수한다.</li>';
+
+  const sigBox = (role)=>`<td style="border:1px solid #b9c6e8;padding:0;width:33.3%;">
+    <div style="background:#f3f6fc;font-size:11px;font-weight:700;color:#445;padding:5px;text-align:center;border-bottom:1px solid #b9c6e8;">${role}</div>
+    <div style="height:50px;"></div></td>`;
+
+  return `
+  <style>
+    @media print {
+      .no-print { display:none !important; }
+      body { background:#fff !important; }
+      #app { padding:0 !important; }
+      .edu-page { box-shadow:none !important; border:none !important; margin:0 !important; max-width:none !important; }
+      .page-break { break-before:page; page-break-before:always; }
+      @page { margin:14mm; }
+    }
+  </style>
+  <div class="no-print" style="max-width:820px;margin:0 auto;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;padding:0 0 14px;">
+    <button id="btn-edu-back" style="padding:8px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">← 보고서</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button id="btn-edu-edit" style="padding:8px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">교육정보 수정</button>
+      <button onclick="window.print()" style="padding:8px 16px;border:none;border-radius:8px;background:#1d6f42;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ 인쇄 / PDF 저장</button>
+    </div>
+  </div>
+
+  <!-- 1면: 특별안전교육 일지 -->
+  <div class="edu-page" style="max-width:820px;margin:0 auto 18px;background:#fff;border:1px solid #e3ebf5;border-radius:8px;padding:30px 32px;box-shadow:0 2px 10px rgba(0,0,0,.06);color:#222;">
+    <div style="text-align:center;border-bottom:2.5px solid #1d6f42;padding-bottom:12px;margin-bottom:12px;">
+      <div style="font-size:21px;font-weight:800;letter-spacing:2px;color:#1d6f42;">특별안전교육 일지</div>
+      <div style="font-size:11px;color:#888;margin-top:4px;">산업안전보건법 제29조 (근로자 안전보건교육) · 교육 실시 기록 3년 보존</div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:6px;">
+      <tr><td style="${ovh}">교육명</td><td style="${ov}" colspan="3">${esc(ed.eduName||"-")}</td></tr>
+      <tr><td style="${ovh}">교육일자</td><td style="${ov}">${esc(ed.eduDate||"-")}</td><td style="${ovh}">교육시간</td><td style="${ov}">${timeStr}</td></tr>
+      <tr><td style="${ovh}">교육장소</td><td style="${ov}">${esc(ed.place||"-")}</td><td style="${ovh}">교육방법</td><td style="${ov}">${esc(ed.method||"-")}</td></tr>
+      <tr><td style="${ovh}">강사</td><td style="${ov}">${esc(ed.instructor||"-")}${ed.instructorOrg?` (${esc(ed.instructorOrg)})`:""}</td><td style="${ovh}">교육대상</td><td style="${ov}">${esc(ed.targetDept||"-")}</td></tr>
+      <tr><td style="${ovh}">관련 사고</td><td style="${ov}">${esc(r.accNo||"해당없음")}</td><td style="${ovh}">평가번호</td><td style="${ov}">${esc(r.raNo||"-")}</td></tr>
+      <tr><td style="${ovh}">교육목표</td><td style="${ov}" colspan="3">${nl2br(ed.objective||"-")}</td></tr>
+    </table>
+
+    <div style="font-size:12px;font-weight:800;color:#1d6f42;margin:14px 0 6px;">교육 내용 요약</div>
+    <div style="border:1px solid #cdd8ec;border-radius:5px;padding:10px 12px;font-size:12px;line-height:1.7;">
+      ${acc?`① 사고 개요: ${esc(acc.accType||"")} ${acc.accDetail?`> ${esc(acc.accDetail)}`:""} / ${esc(acc.location||"-")} / ${esc(acc.accDateTime||"-")}<br>`:""}
+      ② 위험성평가 결과: 유해·위험요인 ${hazards.length}건 도출, 감소대책 수립<br>
+      ③ 재발방지 대책 및 작업자 안전수칙 교육 (상세 — 별첨 교육자료)
+      ${ed.extraContent?`<br>④ 추가 강조사항: ${nl2br(ed.extraContent)}`:""}
+    </div>
+
+    <div style="font-size:12px;font-weight:800;color:#1d6f42;margin:16px 0 6px;">참석자 명단 (이수 확인)</div>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th style="${th}width:34px;">No</th><th style="${th}width:130px;">성명</th><th style="${th}">소속/직급</th><th style="${th}width:150px;">서명</th>
+      </tr></thead>
+      <tbody>${attRows || `<tr><td style="${td}" colspan="4">참석자 없음</td></tr>`}</tbody>
+    </table>
+    <div style="text-align:right;font-size:11px;color:#888;margin-top:6px;">총 ${ (ed.attendees||[]).length }명 참석</div>
+
+    <table style="width:100%;border-collapse:collapse;margin-top:18px;">
+      <tr>${sigBox("교육 담당자")}${sigBox("안전관리자")}${sigBox("승인")}</tr>
+    </table>
+  </div>
+
+  <!-- 2면: 특별안전교육 자료 (자동 생성) -->
+  <div class="edu-page page-break" style="max-width:820px;margin:0 auto;background:#fff;border:1px solid #e3ebf5;border-radius:8px;padding:30px 32px;box-shadow:0 2px 10px rgba(0,0,0,.06);color:#222;">
+    <div style="text-align:center;border-bottom:2.5px solid #1e2761;padding-bottom:12px;margin-bottom:14px;">
+      <div style="font-size:20px;font-weight:800;letter-spacing:1px;color:#1e2761;">특별안전교육 자료</div>
+      <div style="font-size:12px;color:#666;margin-top:4px;">${esc(ed.eduName||"")}</div>
+    </div>
+
+    <div style="font-size:13px;font-weight:800;color:#1e2761;margin:6px 0 6px;">1. 사고 개요</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:6px;">
+      <tr><td style="${ovh}">사고번호</td><td style="${ov}">${esc(r.accNo||"해당없음")}</td><td style="${ovh}">발생일시</td><td style="${ov}">${esc(acc?.accDateTime||"-")}</td></tr>
+      <tr><td style="${ovh}">사고유형</td><td style="${ov}">${esc(acc?.accType||"-")} ${acc?.accDetail?`> ${esc(acc.accDetail)}`:""}</td><td style="${ovh}">발생장소</td><td style="${ov}">${esc(acc?.location||r.targetWork||"-")}</td></tr>
+      <tr><td style="${ovh}">사고경위</td><td style="${ov}" colspan="3">${nl2br(acc?.situation||"-")}</td></tr>
+    </table>
+
+    <div style="font-size:13px;font-weight:800;color:#1e2761;margin:16px 0 6px;">2. 유해·위험요인 및 위험성평가 결과</div>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th style="${th}width:26px;">No</th><th style="${th}">유해·위험요인 / 원인</th><th style="${th}width:70px;">위험성</th><th style="${th}">재발방지·감소대책</th><th style="${th}width:60px;">개선후</th>
+      </tr></thead>
+      <tbody>${hazRows || `<tr><td style="${td}" colspan="5">-</td></tr>`}</tbody>
+    </table>
+
+    <div style="font-size:13px;font-weight:800;color:#1e2761;margin:16px 0 6px;">3. 작업자 안전수칙 (반드시 준수)</div>
+    <ul style="margin:0;padding-left:20px;font-size:12px;line-height:1.7;color:#222;">${ruleItems}</ul>
+
+    ${r.conclusion?`<div style="font-size:13px;font-weight:800;color:#1e2761;margin:16px 0 6px;">4. 종합 의견</div>
+      <div style="border:1px solid #cdd8ec;border-radius:5px;padding:10px 12px;font-size:12px;line-height:1.7;">${nl2br(r.conclusion)}</div>`:""}
+
+    ${(Array.isArray(r.photos)&&r.photos.filter(Boolean).length)?`
+      <div style="font-size:13px;font-weight:800;color:#1e2761;margin:16px 0 6px;">5. 현장 사진</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">${r.photos.filter(Boolean).map(u=>`<img src="${esc(u)}" style="width:150px;height:150px;object-fit:cover;border:1px solid #cdd8ec;border-radius:4px;"/>`).join("")}</div>`:""}
+
+    <div style="text-align:center;font-size:11px;color:#aaa;margin-top:18px;border-top:1px solid #eee;padding-top:10px;">
+      본 자료는 수시 위험성평가(${esc(r.raNo||"-")}) 결과를 바탕으로 자동 생성되었습니다.
     </div>
   </div>`;
 }
