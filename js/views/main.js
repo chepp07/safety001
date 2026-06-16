@@ -42,6 +42,15 @@ export function renderMain() {
       <div style="font-size:11px;color:#aaa;">${lang==="zh"?"光明事业部 安全·质量·物流 综合管理":"광명사업부 안전·품질·물류 통합관리"}</div>
     </div>
 
+    ${currentUser && !state.myPhone ? `
+    <div style="background:#fff8f0;border:1.5px solid #fcd8a8;border-radius:11px;padding:11px 13px;margin-bottom:8px;flex-shrink:0;">
+      <div style="font-size:12px;font-weight:700;color:#e05c00;margin-bottom:6px;">📱 ${lang==="zh"?"登记手机号以接收事故短信通知":"문자 사고 알림을 받으려면 번호를 등록하세요"}</div>
+      <div style="display:flex;gap:6px;">
+        <input id="my-phone-input" type="tel" inputmode="numeric" placeholder="${lang==="zh"?"手机号码":"휴대폰 번호"}" style="flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;"/>
+        <button id="btn-my-phone-save" style="padding:8px 16px;background:#e05c00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">${lang==="zh"?"登记":"등록"}</button>
+      </div>
+    </div>` : ""}
+
     <div style="flex:1;display:flex;flex-direction:column;gap:7px;justify-content:center;">
 
       <button id="btn-main-form" style="width:100%;padding:0;border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;">

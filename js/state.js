@@ -33,6 +33,7 @@ export const state = {
   isAdmin: false,
   isMaster: false,
   myRole: "user",          // "master" | "admin" | "user"
+  myPhone: "",             // 내 등록 번호 (없으면 메인에서 등록 안내)
   isGuest: false,
 
   // 내 접수 조회

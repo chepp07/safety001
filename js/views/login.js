@@ -162,6 +162,10 @@ export function renderRegister() {
       <input id="reg-email" class="input" type="email" placeholder="이메일 주소 입력"/>
     </div>
     <div class="field">
+      <div class="label">${lang==="zh"?"手机号码":"휴대폰 번호"}</div>
+      <input id="reg-phone" class="input" type="tel" inputmode="numeric" placeholder="${lang==="zh"?"用于事故短信通知(可选)":"사고 문자 알림 수신용 (선택)"}"/>
+    </div>
+    <div class="field">
       <div class="label">${lang==="zh"?"密码":"비밀번호"} <span class="req">*</span></div>
       <input id="reg-pw" class="input" type="password" placeholder="6자리 이상 입력"/>
     </div>

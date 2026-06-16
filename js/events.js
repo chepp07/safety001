@@ -13,7 +13,8 @@ import {
   makeEmptyEducation, makeEmptyAttendee, saveEducation
 } from "./features/risk.js";
 import {
-  setUserRole, addRecipient, toggleRecipient, deleteRecipient
+  setUserRole, setUserPhone, addRecipient, removeRecipientByPhone,
+  toggleRecipientSite, toggleRecipientLevel, toggleRecipient, deleteRecipient
 } from "./features/master.js";
 import { signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -58,6 +59,7 @@ export function bindEvents() {
     $("btn-email-register")?.addEventListener("click", async () => {
       const name  = $("reg-name").value.trim();
       const email = $("reg-email").value.trim();
+      const phone = ($("reg-phone")?.value || "").replace(/[^0-9]/g,"");
       const pw    = $("reg-pw").value;
       const pw2   = $("reg-pw2").value;
       const errEl = $("reg-err");
@@ -67,6 +69,7 @@ export function bindEvents() {
       try {
         const cred = await createUserWithEmailAndPassword(state.auth, email, pw);
         await updateProfile(cred.user, { displayName: name });
+        if(phone){ try { await update(ref(state.db, `users/${cred.user.uid}`), { phone }); } catch(e){} }
       } catch(err) {
         const msg = err.code==="auth/email-already-in-use" ? "이미 사용 중인 이메일입니다." : "회원가입에 실패했습니다.";
         errEl.textContent=msg; errEl.style.display="block";
@@ -99,6 +102,13 @@ export function bindEvents() {
     $("go-myreport-main")?.addEventListener("click", () => {
       if(state.currentUser) state.myReportPhone = state.currentUser.phoneNumber || "";
       state.view="myreport"; render();
+    });
+    $("btn-my-phone-save")?.addEventListener("click", async () => {
+      const p = ($("my-phone-input")?.value || "").replace(/[^0-9]/g,"");
+      if(p.length < 10){ alert("올바른 휴대폰 번호를 입력해 주세요."); return; }
+      if(state.currentUser){
+        try { await update(ref(state.db, `users/${state.currentUser.uid}`), { phone: p }); } catch(e){}
+      }
     });
   }
 
@@ -587,6 +597,7 @@ export function bindEvents() {
         el.style.display = "block";
       };
 
+      // 권한 변경
       document.querySelectorAll(".role-sel").forEach(sel => {
         sel.addEventListener("change", async () => {
           const res = await setUserRole(sel.dataset.uid, sel.value);
@@ -595,16 +606,35 @@ export function bindEvents() {
         });
       });
 
-      $("btn-rec-add")?.addEventListener("click", async () => {
-        const levels = {};
-        document.querySelectorAll(".rec-lv").forEach(c => { levels[c.dataset.lv] = c.checked; });
-        const scope = $("rec-scope")?.value || "";
-        const res = await addRecipient($("rec-name")?.value, $("rec-phone")?.value, scope, levels);
-        if(res.ok){ showMsg("수신자가 추가되었습니다.", true); }
-        else showMsg(res.msg, false);
+      // 가입자 전화번호 저장 (입력 후 포커스 아웃 시)
+      document.querySelectorAll(".user-phone").forEach(el => {
+        el.addEventListener("change", () => setUserPhone(el.dataset.uid, el.value));
       });
-      $("rec-phone")?.addEventListener("keydown", e => { if(e.key==="Enter") $("btn-rec-add")?.click(); });
 
+      // 가입자 → 문자 수신 등록 (기본: 전체 사업장, 전 긴급도)
+      document.querySelectorAll(".rec-user-add").forEach(b => {
+        b.addEventListener("click", async () => {
+          const res = await addRecipient(b.dataset.name, b.dataset.phone, [], {"1":true,"2":true,"3":true}, b.dataset.uid);
+          if(res.ok) showMsg(`${b.dataset.name} 님을 문자 수신자로 등록했습니다. 아래에서 사업장·긴급도를 조정하세요.`, true);
+          else showMsg(res.msg, false);
+        });
+      });
+      // 가입자 → 문자 수신 해제
+      document.querySelectorAll(".rec-user-remove").forEach(b => {
+        b.addEventListener("click", async () => {
+          if(!confirm("이 가입자를 문자 수신자에서 해제하시겠습니까?")) return;
+          await removeRecipientByPhone(b.dataset.phone);
+          showMsg("문자 수신을 해제했습니다.", true);
+        });
+      });
+
+      // 수신자 사업장 / 긴급도 토글
+      document.querySelectorAll(".rec-site-chip").forEach(b => {
+        b.addEventListener("click", () => toggleRecipientSite(b.dataset.id, b.dataset.site));
+      });
+      document.querySelectorAll(".rec-lv-chip").forEach(b => {
+        b.addEventListener("click", () => toggleRecipientLevel(b.dataset.id, b.dataset.lv));
+      });
       document.querySelectorAll(".rec-toggle").forEach(c => {
         c.addEventListener("change", () => toggleRecipient(c.dataset.id, c.checked));
       });
@@ -613,6 +643,17 @@ export function bindEvents() {
           if(!confirm("이 수신자를 삭제하시겠습니까?")) return;
           deleteRecipient(b.dataset.id);
         });
+      });
+
+      // 외부 수신자(비가입자) 추가
+      $("btn-ext-add")?.addEventListener("click", async () => {
+        const sites = Array.from(document.querySelectorAll(".ext-site"))
+          .filter(c => c.checked).map(c => c.value);
+        const levels = {};
+        document.querySelectorAll(".ext-lv").forEach(c => { levels[c.dataset.lv] = c.checked; });
+        const res = await addRecipient($("ext-name")?.value, $("ext-phone")?.value, sites, levels, "");
+        if(res.ok) showMsg("외부 수신자가 추가되었습니다.", true);
+        else showMsg(res.msg, false);
       });
     }
   }

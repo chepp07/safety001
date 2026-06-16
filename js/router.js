@@ -24,11 +24,18 @@ const VIEW_BACK = new Map([
 
 // popstate(뒤로가기)로 인한 render인지 표시 — 이때는 히스토리를 다시 쌓지 않는다
 let _fromPopstate = false;
+let _lastView = null;   // 화면 전환 감지용 (스크롤 처리)
 
 export function render() {
   if(!state.form) state.form = makeEmptyForm();
   const app = document.getElementById("app");
   if(!app) return;
+
+  // 같은 화면을 다시 그릴 때(폼 버튼 클릭 등)는 스크롤 위치를 유지하고,
+  // 화면이 바뀔 때만 최상단으로 이동한다.
+  const viewChanged = state.view !== _lastView;
+  const prevScroll = window.scrollY;
+  _lastView = state.view;
 
   // 앞으로 이동할 때마다 히스토리 항목을 쌓아, 뒤로가기가 앱을 닫지 않고 이전 화면으로 돌아가게 한다.
   // 단, 루트 화면(login/main 등)은 항목을 쌓지 않고 교체해서 히스토리가 중복으로 불어나지 않게 한다.
@@ -67,7 +74,9 @@ export function render() {
   // lazy import events to avoid circular dep at module load time
   import("./events.js").then(m => m.bindEvents());
 
-  window.scrollTo(0, 0);
+  // 화면 전환 시에만 최상단으로, 같은 화면 재렌더 시엔 위치 유지
+  if(viewChanged) window.scrollTo(0, 0);
+  else window.scrollTo(0, prevScroll);
 }
 
 // Back navigation

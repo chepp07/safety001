@@ -5,6 +5,15 @@ body {
   background: #f0f4f8;
   color: #1a1a1a;
   min-height: 100vh;
+  /* 버튼/레이블 등 글자 터치 시 텍스트 선택 → 크롬 '탭하여 검색' 팝업 방지 */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* 입력 가능한 요소는 선택/편집 허용 */
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .page { max-width: 580px; margin: 0 auto; padding: 2rem 1rem 4rem; }

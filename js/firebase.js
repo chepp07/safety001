@@ -123,6 +123,7 @@ function _startListeners() {
     _unsubMe = onValue(ref(state.db, `users/${_user.uid}`), snap => {
       const me = snap.val() || {};
       _applyRole(_user.email, me.role);
+      state.myPhone = me.phone || "";
 
       // 마스터면 가입자/수신자 전체 리스너 1회 부착
       if(state.isMaster && !_masterAttached){
@@ -179,6 +180,7 @@ export function initFirebase() {
       state.isAdmin     = false;
       state.isMaster    = false;
       state.myRole      = "user";
+      state.myPhone     = "";
       _stopListeners();
 
       if(!state.isGuest){
