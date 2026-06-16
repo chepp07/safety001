@@ -4,6 +4,9 @@ import { genAccNo } from "../utils.js";
 import { ref, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 export async function handleSubmit(renderFn) {
+  // 중복 제출 방어: 이미 저장이 진행 중이면 즉시 무시 (1건이 여러 건으로 접수되는 문제 방지)
+  if(state.saving) return;
+
   const { lang, form, errors } = state;
 
   const toKo = (val) => {
