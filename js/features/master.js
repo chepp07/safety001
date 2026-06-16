@@ -1,12 +1,13 @@
 // 마스터 관리 — 가입자/권한/문자 수신자 관리 (마스터 전용)
 import { state } from "../state.js";
-import { ref, update, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { emailKey } from "../config.js";
+import { ref, update, push, remove, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 export const ROLE_LABEL = { master:"마스터", admin:"관리자", user:"일반" };
 
 const norm = (p) => (p||"").replace(/[^0-9]/g, "");
 
-// 사용자 역할 변경
+// 가입한(접속 이력 있는) 사용자의 역할 변경 — users/{uid}.role (규칙 적용)
 export async function setUserRole(uid, role) {
   if(!state.isMaster) return { ok:false, msg:"마스터 권한이 필요합니다." };
   if(!["master","admin","user"].includes(role)) return { ok:false, msg:"잘못된 역할입니다." };
@@ -16,6 +17,35 @@ export async function setUserRole(uid, role) {
   } catch(err) {
     return { ok:false, msg:"역할 변경 중 오류가 발생했습니다. (규칙 설정을 확인하세요)" };
   }
+}
+
+// 이메일로 권한 부여 (아직 로그인 안 한 사람도 가능)
+export async function grantRoleByEmail(email, role) {
+  if(!state.isMaster) return { ok:false, msg:"마스터 권한이 필요합니다." };
+  const e = (email||"").trim().toLowerCase();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return { ok:false, msg:"올바른 이메일을 입력해 주세요." };
+  if(!["admin","master"].includes(role)) return { ok:false, msg:"부여할 권한을 선택해 주세요." };
+  try {
+    await set(ref(state.db, `roleGrants/${emailKey(e)}`), { email: e, role,
+      grantedBy: state.currentUser?.email || "", grantedAt: new Date().toLocaleString("ko-KR") });
+    return { ok:true };
+  } catch(err) {
+    return { ok:false, msg:"권한 부여 중 오류가 발생했습니다. (규칙 설정을 확인하세요)" };
+  }
+}
+
+// 이메일 권한부여 회수
+export async function revokeGrant(key) {
+  if(!state.isMaster) return;
+  try { await remove(ref(state.db, `roleGrants/${key}`)); } catch(e) {}
+}
+
+// 수신자 이름/번호 수정
+export async function updateRecipientField(id, field, value) {
+  if(!state.isMaster) return;
+  const v = field === "phone" ? norm(value) : (value||"").trim();
+  if(!v) return;
+  try { await update(ref(state.db, `recipients/${id}`), { [field]: v }); } catch(e) {}
 }
 
 // 사용자 전화번호 저장 (문자 수신자로 등록하려면 필요)

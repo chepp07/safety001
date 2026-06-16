@@ -10,6 +10,11 @@ export const firebaseConfig = {
 };
 
 export const CONFIGURED = !firebaseConfig.apiKey.startsWith("YOUR");
+
+// 이메일을 Firebase 키로 안전하게 변환 (. # $ / [ ] 금지문자 → ,)
+export function emailKey(email) {
+  return (email||"").trim().toLowerCase().replace(/[.#$/\[\]]/g, ",");
+}
 export const ADMIN_PW   = "safety2025";
 export const GAS_URL    = "https://script.google.com/macros/s/AKfycbyS-dsOL7tjKLcrDrXV-iDZurGxAhzgpT0GOWF4QWEYpWyFygqMZjIsKcpQL0zuESMn/exec";
 export const APP_NAME   = "광명사업부 안전관리 시스템";

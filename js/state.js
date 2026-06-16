@@ -12,6 +12,7 @@ export const state = {
   riskAssessments: {},
   users: {},               // 가입자 목록 (마스터 전용)
   recipients: {},          // 문자 수신자 목록 (마스터 전용)
+  roleGrants: {},          // 이메일 기반 권한 부여 (미접속자 사전 부여 포함)
 
   // UI 상태
   adminTab: "accidents",   // "accidents" | "suggestions" | "master"
@@ -32,7 +33,8 @@ export const state = {
   currentUser: null,
   isAdmin: false,
   isMaster: false,
-  myRole: "user",          // "master" | "admin" | "user"
+  myRole: "user",          // "master" | "admin" | "user" (effective)
+  myDbRole: "",            // users/{uid}.role 원본 값 (grant와 합산 전)
   myPhone: "",             // 내 등록 번호 (없으면 메인에서 등록 안내)
   isGuest: false,
 

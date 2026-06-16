@@ -1,20 +1,25 @@
-import { firebaseConfig, CONFIGURED, ADMIN_EMAILS, MASTER_EMAILS } from "./config.js";
+import { firebaseConfig, CONFIGURED, ADMIN_EMAILS, MASTER_EMAILS, emailKey } from "./config.js";
 import { state } from "./state.js";
 import { render } from "./router.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// 현재 사용자의 역할 계산 (시드 마스터/레거시 관리자 폴백 포함)
+// 현재 사용자의 역할 계산 — 시드 마스터 / DB역할 / 이메일 권한부여 / 레거시 중 가장 높은 권한
+function _rank(r) { return r === "master" ? 3 : r === "admin" ? 2 : 1; }
 function _computeRole(email, dbRole) {
-  if(MASTER_EMAILS.includes(email)) return "master";
-  if(dbRole) return dbRole;
-  if(ADMIN_EMAILS.includes(email)) return "admin";
-  return "user";
+  let best = "user";
+  const consider = (r) => { if(r && _rank(r) > _rank(best)) best = r; };
+  if(MASTER_EMAILS.includes(email)) consider("master");
+  if(ADMIN_EMAILS.includes(email))  consider("admin");
+  consider(dbRole);
+  const g = state.roleGrants && state.roleGrants[emailKey(email)];
+  consider(g && (g.role || g));
+  return best;
 }
 function _applyRole(email, dbRole) {
   state.myRole  = _computeRole(email, dbRole);
   state.isMaster = state.myRole === "master";
-  state.isAdmin  = state.isMaster || state.myRole === "admin" || ADMIN_EMAILS.includes(email);
+  state.isAdmin  = state.isMaster || state.myRole === "admin";
 }
 
 // 가입자 정보를 users/{uid}에 기록 (역할은 보존, 시드/레거시는 자동 부여)
@@ -46,6 +51,7 @@ let _unsubEntries = null;
 let _unsubSuggestions = null;
 let _unsubRisk = null;
 let _unsubMe = null;
+let _unsubGrants = null;
 let _unsubUsers = null;
 let _unsubRecipients = null;
 let _masterAttached = false;
@@ -55,9 +61,24 @@ function _stopListeners() {
   if(_unsubSuggestions){ _unsubSuggestions(); _unsubSuggestions = null; }
   if(_unsubRisk){ _unsubRisk(); _unsubRisk = null; }
   if(_unsubMe){ _unsubMe(); _unsubMe = null; }
+  if(_unsubGrants){ _unsubGrants(); _unsubGrants = null; }
   if(_unsubUsers){ _unsubUsers(); _unsubUsers = null; }
   if(_unsubRecipients){ _unsubRecipients(); _unsubRecipients = null; }
   _masterAttached = false;
+}
+
+// 마스터가 되면 가입자/수신자 전체 리스너를 1회 부착
+function _maybeAttachMaster() {
+  if(!state.isMaster || _masterAttached) return;
+  _masterAttached = true;
+  _unsubUsers = onValue(ref(state.db, "users"), s => {
+    state.users = s.val() || {};
+    if(state.view === "admin") render();
+  }, err => { console.error("users 읽기 실패:", err.message); state.users = {}; });
+  _unsubRecipients = onValue(ref(state.db, "recipients"), s => {
+    state.recipients = s.val() || {};
+    if(state.view === "admin") render();
+  }, err => { console.error("recipients 읽기 실패:", err.message); state.recipients = {}; });
 }
 
 function _startListeners() {
@@ -117,29 +138,28 @@ function _startListeners() {
     state.riskAssessments = {};
   });
 
-  // 내 역할(role) 실시간 반영 — 마스터가 권한을 바꾸면 즉시 적용
+  // 내 역할(role) + 이메일 권한부여(roleGrants) 실시간 반영
   const _user = state.currentUser;
   if(_user){
     _unsubMe = onValue(ref(state.db, `users/${_user.uid}`), snap => {
       const me = snap.val() || {};
-      _applyRole(_user.email, me.role);
-      state.myPhone = me.phone || "";
-
-      // 마스터면 가입자/수신자 전체 리스너 1회 부착
-      if(state.isMaster && !_masterAttached){
-        _masterAttached = true;
-        _unsubUsers = onValue(ref(state.db, "users"), s => {
-          state.users = s.val() || {};
-          if(state.view === "admin") render();
-        }, err => { console.error("users 읽기 실패:", err.message); state.users = {}; });
-        _unsubRecipients = onValue(ref(state.db, "recipients"), s => {
-          state.recipients = s.val() || {};
-          if(state.view === "admin") render();
-        }, err => { console.error("recipients 읽기 실패:", err.message); state.recipients = {}; });
-      }
+      state.myDbRole = me.role || "";
+      state.myPhone  = me.phone || "";
+      _applyRole(_user.email, state.myDbRole);
+      _maybeAttachMaster();
       render();
     }, err => {
       console.error("내 역할 읽기 실패:", err.message);
+    });
+
+    _unsubGrants = onValue(ref(state.db, "roleGrants"), snap => {
+      state.roleGrants = snap.val() || {};
+      _applyRole(_user.email, state.myDbRole);
+      _maybeAttachMaster();
+      render();
+    }, err => {
+      console.error("roleGrants 읽기 실패:", err.message);
+      state.roleGrants = {};
     });
   }
 }
@@ -180,7 +200,9 @@ export function initFirebase() {
       state.isAdmin     = false;
       state.isMaster    = false;
       state.myRole      = "user";
+      state.myDbRole    = "";
       state.myPhone     = "";
+      state.roleGrants  = {};
       _stopListeners();
 
       if(!state.isGuest){

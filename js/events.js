@@ -13,7 +13,8 @@ import {
   makeEmptyEducation, makeEmptyAttendee, saveEducation
 } from "./features/risk.js";
 import {
-  setUserRole, setUserPhone, addRecipient, removeRecipientByPhone,
+  setUserRole, setUserPhone, grantRoleByEmail, revokeGrant,
+  addRecipient, removeRecipientByPhone, updateRecipientField,
   toggleRecipientSite, toggleRecipientLevel, toggleRecipient, deleteRecipient
 } from "./features/master.js";
 import { signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile }
@@ -609,6 +610,28 @@ export function bindEvents() {
       // 가입자 전화번호 저장 (입력 후 포커스 아웃 시)
       document.querySelectorAll(".user-phone").forEach(el => {
         el.addEventListener("change", () => setUserPhone(el.dataset.uid, el.value));
+      });
+
+      // 이메일로 권한 부여 / 회수
+      $("btn-grant")?.addEventListener("click", async () => {
+        const res = await grantRoleByEmail($("grant-email")?.value, $("grant-role")?.value);
+        if(res.ok) showMsg("권한을 부여했습니다. 해당 계정이 로그인하면 적용됩니다.", true);
+        else showMsg(res.msg, false);
+      });
+      document.querySelectorAll(".grant-revoke").forEach(b => {
+        b.addEventListener("click", async () => {
+          if(!confirm("이 권한 부여를 회수하시겠습니까?")) return;
+          await revokeGrant(b.dataset.key);
+          showMsg("권한 부여를 회수했습니다.", true);
+        });
+      });
+
+      // 수신자 이름/번호 수정
+      document.querySelectorAll(".rec-name-edit").forEach(el => {
+        el.addEventListener("change", () => updateRecipientField(el.dataset.id, "name", el.value));
+      });
+      document.querySelectorAll(".rec-phone-edit").forEach(el => {
+        el.addEventListener("change", () => updateRecipientField(el.dataset.id, "phone", el.value));
       });
 
       // 가입자 → 문자 수신 등록 (기본: 전체 사업장, 전 긴급도)
