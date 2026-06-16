@@ -14,6 +14,12 @@ export const ADMIN_PW   = "safety2025";
 export const GAS_URL    = "https://script.google.com/macros/s/AKfycbyS-dsOL7tjKLcrDrXV-iDZurGxAhzgpT0GOWF4QWEYpWyFygqMZjIsKcpQL0zuESMn/exec";
 export const APP_NAME   = "광명사업부 안전관리 시스템";
 
+// 마스터 관리자 시드 — 코드에 고정되어 항상 마스터 권한 (회수 불가, 권한의 뿌리)
+export const MASTER_EMAILS = [
+  "chepp07@gmail.com"
+];
+
+// 레거시 관리자 — 첫 로그인 시 DB role=admin 으로 자동 이관됨 (이후엔 마스터가 화면에서 관리)
 export const ADMIN_EMAILS = [
   "dlacksgus@gmail.com",
   "rlarufo123456@gmail.com",

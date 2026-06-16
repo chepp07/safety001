@@ -1,4 +1,4 @@
-const CACHE_NAME = 'safety001-v7';
+const CACHE_NAME = 'safety001-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -22,11 +22,13 @@ const ASSETS = [
   './js/views/myreport.js',
   './js/views/admin.js',
   './js/views/risk.js',
+  './js/views/master.js',
   './js/features/voice.js',
   './js/features/photo.js',
   './js/features/submit.js',
   './js/features/admin.js',
   './js/features/risk.js',
+  './js/features/master.js',
 ];
 
 // 설치 시 캐시 저장

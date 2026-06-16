@@ -1,8 +1,43 @@
-import { firebaseConfig, CONFIGURED, ADMIN_EMAILS } from "./config.js";
+import { firebaseConfig, CONFIGURED, ADMIN_EMAILS, MASTER_EMAILS } from "./config.js";
 import { state } from "./state.js";
 import { render } from "./router.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// 현재 사용자의 역할 계산 (시드 마스터/레거시 관리자 폴백 포함)
+function _computeRole(email, dbRole) {
+  if(MASTER_EMAILS.includes(email)) return "master";
+  if(dbRole) return dbRole;
+  if(ADMIN_EMAILS.includes(email)) return "admin";
+  return "user";
+}
+function _applyRole(email, dbRole) {
+  state.myRole  = _computeRole(email, dbRole);
+  state.isMaster = state.myRole === "master";
+  state.isAdmin  = state.isMaster || state.myRole === "admin" || ADMIN_EMAILS.includes(email);
+}
+
+// 가입자 정보를 users/{uid}에 기록 (역할은 보존, 시드/레거시는 자동 부여)
+async function _ensureUserRecord(user) {
+  const uref = ref(state.db, `users/${user.uid}`);
+  let existing = {};
+  try { existing = (await get(uref)).val() || {}; } catch(e) {}
+  // 보안: 사용자가 스스로 역할을 올리지 못하도록, 시드 마스터 외에는 기존 역할만 보존(없으면 user)
+  // 레거시 관리자(ADMIN_EMAILS)는 _applyRole의 폴백으로 관리자 권한을 받고, 마스터가 화면에서 정식 부여 가능
+  const seedRole = MASTER_EMAILS.includes(user.email)
+    ? "master"
+    : (existing.role || "user");
+  const now = new Date().toLocaleString("ko-KR");
+  try {
+    await update(uref, {
+      email: user.email,
+      name: user.displayName || existing.name || (user.email||"").split("@")[0],
+      role: seedRole,
+      createdAt: existing.createdAt || now,
+      lastLogin: now
+    });
+  } catch(e) { /* 규칙 미설정 등으로 실패해도 로그인 흐름은 유지 */ }
+}
 import {
   getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -10,11 +45,19 @@ import {
 let _unsubEntries = null;
 let _unsubSuggestions = null;
 let _unsubRisk = null;
+let _unsubMe = null;
+let _unsubUsers = null;
+let _unsubRecipients = null;
+let _masterAttached = false;
 
 function _stopListeners() {
   if(_unsubEntries){ _unsubEntries(); _unsubEntries = null; }
   if(_unsubSuggestions){ _unsubSuggestions(); _unsubSuggestions = null; }
   if(_unsubRisk){ _unsubRisk(); _unsubRisk = null; }
+  if(_unsubMe){ _unsubMe(); _unsubMe = null; }
+  if(_unsubUsers){ _unsubUsers(); _unsubUsers = null; }
+  if(_unsubRecipients){ _unsubRecipients(); _unsubRecipients = null; }
+  _masterAttached = false;
 }
 
 function _startListeners() {
@@ -73,6 +116,31 @@ function _startListeners() {
     console.error("riskAssessments 읽기 실패:", err.message);
     state.riskAssessments = {};
   });
+
+  // 내 역할(role) 실시간 반영 — 마스터가 권한을 바꾸면 즉시 적용
+  const _user = state.currentUser;
+  if(_user){
+    _unsubMe = onValue(ref(state.db, `users/${_user.uid}`), snap => {
+      const me = snap.val() || {};
+      _applyRole(_user.email, me.role);
+
+      // 마스터면 가입자/수신자 전체 리스너 1회 부착
+      if(state.isMaster && !_masterAttached){
+        _masterAttached = true;
+        _unsubUsers = onValue(ref(state.db, "users"), s => {
+          state.users = s.val() || {};
+          if(state.view === "admin") render();
+        }, err => { console.error("users 읽기 실패:", err.message); state.users = {}; });
+        _unsubRecipients = onValue(ref(state.db, "recipients"), s => {
+          state.recipients = s.val() || {};
+          if(state.view === "admin") render();
+        }, err => { console.error("recipients 읽기 실패:", err.message); state.recipients = {}; });
+      }
+      render();
+    }, err => {
+      console.error("내 역할 읽기 실패:", err.message);
+    });
+  }
 }
 
 export function initFirebase() {
@@ -96,7 +164,7 @@ export function initFirebase() {
   onAuthStateChanged(state.auth, user => {
     if(user){
       state.currentUser = user;
-      state.isAdmin     = ADMIN_EMAILS.includes(user.email);
+      _applyRole(user.email, null);   // 즉시 적용할 baseline (시드/레거시 기준)
       state.isGuest     = false;
 
       if(state.view==="login"||state.view==="register"){
@@ -104,10 +172,13 @@ export function initFirebase() {
         if(appEl) appEl.innerHTML = '<div class="loading-bar">데이터 불러오는 중...</div>';
       }
 
+      _ensureUserRecord(user);   // 가입자 기록 업서트 (역할 리스너가 이어서 정확히 반영)
       _startListeners();
     } else {
       state.currentUser = null;
       state.isAdmin     = false;
+      state.isMaster    = false;
+      state.myRole      = "user";
       _stopListeners();
 
       if(!state.isGuest){

@@ -1,4 +1,5 @@
 import { state } from "../state.js";
+import { renderMasterTab } from "./master.js";
 
 export function renderAdmin() {
   const { entries, suggestions, filter, adminTab } = state;
@@ -193,6 +194,7 @@ export function renderAdmin() {
       +'</div>'
       +'<div id="admin-table">'+accCards+'</div>'
       +'<div id="admin-count" style="font-size:12px;color:#bbb;margin-top:4px;text-align:right;">총 '+filtered.length+'건</div>'
+    : adminTab==="master" ? renderMasterTab()
     : sugHtml;
 
   // 수정 모달 (원본에서 누락된 부분 — 여기서 구현)
@@ -254,6 +256,7 @@ export function renderAdmin() {
     +'<div style="display:flex;gap:0;margin-bottom:1.25rem;border-bottom:2px solid #eef2f7;">'
       +'<button id="tab-accidents" class="tab-btn" data-tab="accidents" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-2px;'+tabAccStyle+'">🚨 사고접수 ('+total+')</button>'
       +'<button id="tab-suggestions" class="tab-btn" data-tab="suggestions" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-2px;'+tabSugStyle+'">💡 안전개선 제안 ('+Object.keys(suggestions).length+')</button>'
+      +(state.isMaster ? '<button id="tab-master" class="tab-btn" data-tab="master" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:-2px;'+(adminTab==="master"?"color:#5b3ba8;border-bottom:2px solid #5b3ba8;":"color:#aaa;border-bottom:2px solid transparent;")+'">🪪 마스터 관리</button>' : '')
     +'</div>'
     +mainContent
     // 관리자 로그인 모달

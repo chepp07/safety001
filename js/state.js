@@ -10,9 +10,11 @@ export const state = {
   entries: {},
   suggestions: {},
   riskAssessments: {},
+  users: {},               // 가입자 목록 (마스터 전용)
+  recipients: {},          // 문자 수신자 목록 (마스터 전용)
 
   // UI 상태
-  adminTab: "accidents",   // "accidents" | "suggestions"
+  adminTab: "accidents",   // "accidents" | "suggestions" | "master"
   view: "login",
 
   // 수시 위험성평가
@@ -29,6 +31,8 @@ export const state = {
   // 사용자
   currentUser: null,
   isAdmin: false,
+  isMaster: false,
+  myRole: "user",          // "master" | "admin" | "user"
   isGuest: false,
 
   // 내 접수 조회

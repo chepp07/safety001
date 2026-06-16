@@ -12,6 +12,9 @@ import {
   makeEmptyRA, makeEmptyHazard, loadFromAccident, saveRA, deleteRA, loadDraftFromSaved,
   makeEmptyEducation, makeEmptyAttendee, saveEducation
 } from "./features/risk.js";
+import {
+  setUserRole, addRecipient, toggleRecipient, deleteRecipient
+} from "./features/master.js";
 import { signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { ref, update, remove, push }
@@ -571,6 +574,46 @@ export function bindEvents() {
         if(e.target===modal){ modal.style.display="none"; state.view="form"; render(); }
       });
       $("modal-cancel")?.addEventListener("click", () => { modal.style.display="none"; state.view="form"; render(); });
+    }
+
+    // ── 마스터 관리 탭 ──
+    if(state.isMaster && state.adminTab==="master"){
+      const showMsg = (text, ok) => {
+        const el = $("master-msg"); if(!el) return;
+        el.textContent = text;
+        el.style.background = ok ? "#f0faf0" : "#fff5f5";
+        el.style.border = ok ? "1px solid #b8e0ba" : "1px solid #f5c6c6";
+        el.style.color = ok ? "#2e7d32" : "#b71c1c";
+        el.style.display = "block";
+      };
+
+      document.querySelectorAll(".role-sel").forEach(sel => {
+        sel.addEventListener("change", async () => {
+          const res = await setUserRole(sel.dataset.uid, sel.value);
+          if(res.ok) showMsg("권한이 변경되었습니다.", true);
+          else { showMsg(res.msg, false); render(); }
+        });
+      });
+
+      $("btn-rec-add")?.addEventListener("click", async () => {
+        const levels = {};
+        document.querySelectorAll(".rec-lv").forEach(c => { levels[c.dataset.lv] = c.checked; });
+        const scope = $("rec-scope")?.value || "";
+        const res = await addRecipient($("rec-name")?.value, $("rec-phone")?.value, scope, levels);
+        if(res.ok){ showMsg("수신자가 추가되었습니다.", true); }
+        else showMsg(res.msg, false);
+      });
+      $("rec-phone")?.addEventListener("keydown", e => { if(e.key==="Enter") $("btn-rec-add")?.click(); });
+
+      document.querySelectorAll(".rec-toggle").forEach(c => {
+        c.addEventListener("change", () => toggleRecipient(c.dataset.id, c.checked));
+      });
+      document.querySelectorAll(".rec-del").forEach(b => {
+        b.addEventListener("click", () => {
+          if(!confirm("이 수신자를 삭제하시겠습니까?")) return;
+          deleteRecipient(b.dataset.id);
+        });
+      });
     }
   }
 }
