@@ -1,4 +1,4 @@
-const CACHE_NAME = 'safety001-v11';
+const CACHE_NAME = 'safety001-v13';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './img/manual-vehicle.jpg',
   './js/main.js',
   './js/config.js',
   './js/state.js',
