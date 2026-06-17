@@ -236,3 +236,91 @@ export async function saveEducation() {
     return { ok:false, msg:"저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." };
   }
 }
+
+// ───────────────────────── 아차사고 보고서 (Near-miss) ─────────────────────────
+export const NM_CATEGORIES = ["인적(불안전한 행동)", "설비·기계", "작업방법·절차", "작업환경", "기타"];
+
+export function makeEmptyNearMiss() {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  const me = state.currentUser ? (state.currentUser.displayName || state.currentUser.email.split("@")[0]) : "";
+  return {
+    docType: "nearmiss",
+    nmNo:"", site:"", occurredAt: today, location:"", reporter: me,
+    category: NM_CATEGORIES[0],
+    description:"", potentialRisk:"",
+    likelihood:3, severity:2,
+    immediateAction:"", preventiveMeasure:"",
+    photos:[], photosPreviews:[],
+    status:"작성중"
+  };
+}
+
+// 아차사고 번호 NM-YYYYMMDD-###
+export function genNmNo() {
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  const cnt = Object.values(state.riskAssessments||{}).filter(r => r.nmNo && r.nmNo.startsWith("NM-"+ymd)).length;
+  return `NM-${ymd}-${String(cnt+1).padStart(3,"0")}`;
+}
+
+export function loadNmDraftFromSaved(key) {
+  const saved = state.riskAssessments[key];
+  if(!saved) return;
+  const d = {
+    ...makeEmptyNearMiss(),
+    ...JSON.parse(JSON.stringify(saved)),
+    _key: key,
+    photosPreviews: Array.isArray(saved.photos) ? [...saved.photos] : []
+  };
+  if(!Array.isArray(d.photos)) d.photos = [];
+  state.risk.draft = d;
+}
+
+export async function saveNearMiss(complete) {
+  const d = state.risk.draft;
+  if(!d) return { ok:false, msg:"보고서 데이터가 없습니다." };
+
+  if(complete){
+    if(!d.site.trim())            return { ok:false, msg:"사업소를 입력해 주세요." };
+    if(!d.location.trim())        return { ok:false, msg:"발생 장소를 입력해 주세요." };
+    if(!d.description.trim())     return { ok:false, msg:"아차사고 내용을 입력해 주세요." };
+    if(!d.preventiveMeasure.trim()) return { ok:false, msg:"재발방지 대책을 입력해 주세요." };
+  }
+
+  const now = new Date().toLocaleString("ko-KR");
+  const payload = {
+    docType: "nearmiss",
+    nmNo: d.nmNo || genNmNo(),
+    site: d.site.trim(),
+    occurredAt: d.occurredAt,
+    location: d.location.trim(),
+    reporter: d.reporter.trim(),
+    category: d.category,
+    description: d.description.trim(),
+    potentialRisk: d.potentialRisk.trim(),
+    likelihood: Number(d.likelihood),
+    severity: Number(d.severity),
+    immediateAction: d.immediateAction.trim(),
+    preventiveMeasure: d.preventiveMeasure.trim(),
+    photos: d.photos.filter(p => p && p !== "uploading"),
+    status: complete ? "완료" : "작성중",
+    createdAt: d.createdAt || now,
+    createdBy: d.createdBy || state.currentUser?.email || "",
+  };
+  if(complete) payload.completedAt = d.completedAt || now;
+
+  try {
+    if(d._key){
+      await update(ref(state.db, `riskAssessments/${d._key}`), payload);
+    } else {
+      const r = await push(ref(state.db, "riskAssessments"), payload);
+      d._key = r.key;
+    }
+    d.nmNo = payload.nmNo;
+    d.createdAt = payload.createdAt;
+    return { ok:true, key:d._key, data: payload };
+  } catch(err) {
+    return { ok:false, msg:"저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." };
+  }
+}

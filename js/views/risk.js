@@ -1,7 +1,7 @@
 import { state } from "../state.js";
 import { SITES } from "../config.js";
 import {
-  LIKELIHOOD, SEVERITY, RA_REASONS, EDU_METHODS,
+  LIKELIHOOD, SEVERITY, RA_REASONS, EDU_METHODS, NM_CATEGORIES,
   riskScore, resRiskScore, riskLevel
 } from "../features/risk.js";
 
@@ -16,6 +16,8 @@ export function renderRisk() {
   if(mode === "report") return renderReport();
   if(mode === "edu")    return renderEduEditor();
   if(mode === "edudoc") return renderEduDoc();
+  if(mode === "nmEditor") return renderNmEditor();
+  if(mode === "nmReport") return renderNmReport();
   return renderList();
 }
 
@@ -31,45 +33,82 @@ function header(sub) {
 }
 
 // ───────────────────────── 목록 ─────────────────────────
-function renderList() {
-  const items = Object.entries(state.riskAssessments || {})
-    .sort((a,b) => (b[1].createdAt||"").localeCompare(a[1].createdAt||""));
+function raCard(key, r) {
+  const hazards = Array.isArray(r.hazards) ? r.hazards : [];
+  const lv = riskLevel(hazards.reduce((m,h)=>Math.max(m, riskScore(h)), 0));
+  const done = r.status === "완료";
+  return `
+  <div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;margin-bottom:10px;padding:13px 14px;box-shadow:0 1px 4px rgba(0,0,0,.05);">
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px;">
+        <span style="font-weight:700;font-size:13px;">${esc(r.raNo||"-")}</span>
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${done?"#e8f5e9":"#fff8e1"};color:${done?"#2e7d32":"#b88600"};">${done?"완료":"작성중"}</span>
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${lv.bg};color:${lv.color};border:1px solid ${lv.border};">최고위험성 ${lv.label}</span>
+      </div>
+      <div style="font-size:12px;color:#555;margin-bottom:2px;">${esc(r.site||"-")} · ${esc(r.targetWork||"-")}</div>
+      <div style="font-size:11px;color:#aaa;">평가일 ${esc(r.assessDate||"-")} · 평가자 ${esc(r.assessor||"-")}${r.accNo?` · 대상사고 ${esc(r.accNo)}`:""}</div>
+    </div>
+    <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;">
+      ${done
+        ? `<button class="ra-report-btn" data-key="${key}" style="padding:6px 14px;background:#1e2761;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">📄 보고서 보기</button>
+           <button class="ra-edit-btn" data-key="${key}" style="padding:6px 12px;background:#fff;color:#555;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">수정</button>`
+        : `<button class="ra-edit-btn" data-key="${key}" style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 이어서 작성</button>`}
+      <button class="ra-del-btn" data-key="${key}" style="padding:6px 10px;background:#fff;color:#ccc;border:1px solid #eee;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">삭제</button>
+    </div>
+  </div>`;
+}
 
-  const rows = items.length === 0
-    ? '<div class="card" style="text-align:center;padding:2.5rem;color:#bbb;font-size:14px;">아직 작성된 수시 위험성평가가 없습니다.</div>'
-    : items.map(([key,r]) => {
-        const hazards = Array.isArray(r.hazards) ? r.hazards : [];
-        const maxScore = hazards.reduce((m,h)=>Math.max(m, riskScore(h)), 0);
-        const lv = riskLevel(maxScore);
-        const done = r.status === "완료";
-        return `
-        <div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;margin-bottom:10px;padding:13px 14px;box-shadow:0 1px 4px rgba(0,0,0,.05);">
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <div style="flex:1;min-width:0;">
-              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px;">
-                <span style="font-weight:700;font-size:13px;">${esc(r.raNo||"-")}</span>
-                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${done?"#e8f5e9":"#fff8e1"};color:${done?"#2e7d32":"#b88600"};">${done?"완료":"작성중"}</span>
-                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${lv.bg};color:${lv.color};border:1px solid ${lv.border};">최고위험성 ${lv.label}</span>
-              </div>
-              <div style="font-size:12px;color:#555;margin-bottom:2px;">${esc(r.site||"-")} · ${esc(r.targetWork||"-")}</div>
-              <div style="font-size:11px;color:#aaa;">평가일 ${esc(r.assessDate||"-")} · 평가자 ${esc(r.assessor||"-")}${r.accNo?` · 대상사고 ${esc(r.accNo)}`:""}</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;">
-            ${done
-              ? `<button class="ra-report-btn" data-key="${key}" style="padding:6px 14px;background:#1e2761;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">📄 보고서 보기</button>
-                 <button class="ra-edit-btn" data-key="${key}" style="padding:6px 12px;background:#fff;color:#555;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">수정</button>`
-              : `<button class="ra-edit-btn" data-key="${key}" style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 이어서 작성</button>`}
-            <button class="ra-del-btn" data-key="${key}" style="padding:6px 10px;background:#fff;color:#ccc;border:1px solid #eee;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">삭제</button>
-          </div>
-        </div>`;
-      }).join("");
+function nmCard(key, r) {
+  const lv = riskLevel(riskScore(r));
+  const done = r.status === "완료";
+  return `
+  <div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;margin-bottom:10px;padding:13px 14px;box-shadow:0 1px 4px rgba(0,0,0,.05);">
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px;">
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fff3e6;color:#e65100;">아차사고</span>
+        <span style="font-weight:700;font-size:13px;">${esc(r.nmNo||"-")}</span>
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${done?"#e8f5e9":"#fff8e1"};color:${done?"#2e7d32":"#b88600"};">${done?"완료":"작성중"}</span>
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${lv.bg};color:${lv.color};border:1px solid ${lv.border};">위험성 ${lv.label}</span>
+      </div>
+      <div style="font-size:12px;color:#555;margin-bottom:2px;">${esc(r.site||"-")} · ${esc(r.location||"-")}</div>
+      <div style="font-size:11px;color:#aaa;">발생 ${esc(r.occurredAt||"-")} · 보고자 ${esc(r.reporter||"-")}</div>
+    </div>
+    <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;">
+      ${done
+        ? `<button class="nm-report-btn" data-key="${key}" style="padding:6px 14px;background:#1e2761;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">📄 보고서 보기</button>
+           <button class="nm-edit-btn" data-key="${key}" style="padding:6px 12px;background:#fff;color:#555;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">수정</button>`
+        : `<button class="nm-edit-btn" data-key="${key}" style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 이어서 작성</button>`}
+      <button class="nm-del-btn" data-key="${key}" style="padding:6px 10px;background:#fff;color:#ccc;border:1px solid #eee;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;">삭제</button>
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  const all = Object.entries(state.riskAssessments || {})
+    .sort((a,b) => (b[1].createdAt||"").localeCompare(a[1].createdAt||""));
+  const risks = all.filter(([,r]) => r.docType !== "nearmiss");
+  const nms   = all.filter(([,r]) => r.docType === "nearmiss");
+
+  const riskRows = risks.length === 0
+    ? '<div style="text-align:center;padding:1.5rem;color:#bbb;font-size:13px;">작성된 수시 위험성평가가 없습니다.</div>'
+    : risks.map(([k,r]) => raCard(k,r)).join("");
+  const nmRows = nms.length === 0
+    ? '<div style="text-align:center;padding:1.5rem;color:#bbb;font-size:13px;">작성된 아차사고 보고서가 없습니다.</div>'
+    : nms.map(([k,r]) => nmCard(k,r)).join("");
 
   return `
   <div style="padding-bottom:2rem;max-width:640px;margin:0 auto;">
     ${header("산업안전보건법 제36조 · 시행규칙 제37조")}
-    <button id="btn-risk-new" style="width:100%;padding:13px;background:#1e2761;color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:1.25rem;box-shadow:0 2px 8px rgba(30,39,97,.2);">＋ 새 수시 위험성평가 작성</button>
-    ${rows}
+    <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;">
+      <button id="btn-risk-new" style="flex:1;min-width:200px;padding:13px;background:#1e2761;color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(30,39,97,.2);">＋ 수시 위험성평가</button>
+      <button id="btn-nm-new" style="flex:1;min-width:200px;padding:13px;background:#e65100;color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(230,81,0,.2);">＋ 아차사고 보고서</button>
+    </div>
+
+    <div style="font-size:13px;font-weight:800;color:#1e2761;margin:0 0 .6rem;">📑 수시 위험성평가</div>
+    ${riskRows}
+
+    <div style="font-size:13px;font-weight:800;color:#e65100;margin:1.5rem 0 .6rem;">⚠️ 아차사고 보고서</div>
+    ${nmRows}
   </div>`;
 }
 
@@ -512,6 +551,158 @@ function renderEduDoc() {
 
     <div style="text-align:center;font-size:11px;color:#aaa;margin-top:18px;border-top:1px solid #eee;padding-top:10px;">
       본 자료는 수시 위험성평가(${esc(r.raNo||"-")}) 결과를 바탕으로 자동 생성되었습니다.
+    </div>
+  </div>`;
+}
+
+// ───────────────────────── 아차사고 보고서 편집기 ─────────────────────────
+function renderNmEditor() {
+  const d = state.risk.draft;
+  if(!d) return renderList();
+
+  const inp = "padding:9px 11px;border:1px solid #dce8f4;border-radius:8px;font-size:14px;font-family:inherit;width:100%;box-sizing:border-box;";
+  const sel = inp + "background:#fff;";
+  const lbl = "font-size:12px;font-weight:700;color:#445;margin:0 0 5px;";
+  const sectionTitle = (t) => `<div style="font-size:13px;font-weight:800;color:#e65100;margin:1.4rem 0 .7rem;padding-bottom:6px;border-bottom:2px solid #eef2f7;">${t}</div>`;
+
+  const siteOpts = ['<option value="">선택</option>']
+    .concat(SITES.map(s=>`<option value="${esc(s)}"${d.site===s?" selected":""}>${esc(s)}</option>`)).join("");
+  const catOpts = NM_CATEGORIES.map(c=>`<option value="${esc(c)}"${d.category===c?" selected":""}>${esc(c)}</option>`).join("");
+  const likOpts = LIKELIHOOD.map(o=>`<option value="${o.v}"${Number(d.likelihood)===o.v?" selected":""}>${o.l}</option>`).join("");
+  const sevOpts = SEVERITY.map(o=>`<option value="${o.v}"${Number(d.severity)===o.v?" selected":""}>${o.l}</option>`).join("");
+  const sc = riskScore(d), lv = riskLevel(sc);
+
+  const photos = d.photosPreviews.map((url,idx)=>{
+    const uploading = d.photos[idx]==="uploading";
+    return `
+    <div style="position:relative;width:74px;height:74px;border-radius:9px;overflow:hidden;border:1px solid #dce8f4;">
+      <img src="${url}" style="width:100%;height:100%;object-fit:cover;${uploading?"opacity:.4;":""}"/>
+      ${uploading?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#1e2761;font-weight:700;">업로드중</div>':
+        `<button class="nm-photo-del" data-idx="${idx}" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;font-size:11px;cursor:pointer;line-height:1;">×</button>`}
+    </div>`;
+  }).join("");
+
+  return `
+  <div style="padding-bottom:3rem;max-width:640px;margin:0 auto;">
+    ${header(d._key ? `${esc(d.nmNo||"")} 편집` : "아차사고 보고서 — 신규 작성")}
+    <div style="background:#fff3e6;border:1px solid #fcd8a8;border-radius:9px;padding:10px 12px;font-size:12px;color:#e65100;line-height:1.6;margin-bottom:14px;">
+      <strong>아차사고(near-miss)</strong>: 사고로 이어지진 않았으나 다칠 뻔했던 위험 상황을 기록하여, 실제 사고를 예방하기 위한 보고서입니다.
+    </div>
+
+    <div id="nm-err" style="display:none;background:#fff5f5;border:1px solid #f5c6c6;color:#b71c1c;border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:12px;"></div>
+
+    ${sectionTitle("① 개요")}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><div style="${lbl}">사업소 <span style="color:#c0392b;">*</span></div><select id="nm-site" style="${sel}">${siteOpts}</select></div>
+      <div><div style="${lbl}">발생 일자</div><input type="date" id="nm-date" value="${esc(d.occurredAt)}" style="${inp}"/></div>
+      <div><div style="${lbl}">발생 장소 <span style="color:#c0392b;">*</span></div><input id="nm-location" value="${esc(d.location)}" placeholder="예: 2공장 도킹존" style="${inp}"/></div>
+      <div><div style="${lbl}">보고자(발견자)</div><input id="nm-reporter" value="${esc(d.reporter)}" placeholder="성명" style="${inp}"/></div>
+    </div>
+    <div style="margin-top:10px;"><div style="${lbl}">아차사고 유형</div><select id="nm-category" style="${sel}">${catOpts}</select></div>
+
+    ${sectionTitle("② 아차사고 내용")}
+    <div style="${lbl}">어떤 위험한 상황이 있었는지 <span style="color:#c0392b;">*</span></div>
+    <textarea id="nm-desc" placeholder="예: 지게차 후진 중 작업자가 통로에 있어 충돌할 뻔함" style="${inp}min-height:80px;resize:vertical;">${esc(d.description)}</textarea>
+
+    ${sectionTitle("③ 잠재 위험성")}
+    <div style="${lbl}">사고로 이어졌다면 예상되는 피해</div>
+    <textarea id="nm-potential" placeholder="예: 충돌 시 작업자 중상(골절 등) 가능" style="${inp}min-height:60px;resize:vertical;">${esc(d.potentialRisk)}</textarea>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+      <div><div style="${lbl}">가능성(빈도)</div><select id="nm-likelihood" style="${sel}">${likOpts}</select></div>
+      <div><div style="${lbl}">중대성(강도)</div><select id="nm-severity" style="${sel}">${sevOpts}</select></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 11px;border-radius:9px;background:${lv.bg};border:1px solid ${lv.border};">
+      <span style="font-size:12px;color:#555;">위험성</span>
+      <span style="font-size:18px;font-weight:800;color:${lv.color};">${sc||"-"}</span>
+      <span style="font-size:12px;font-weight:800;color:${lv.color};padding:2px 9px;border-radius:20px;background:#fff;border:1px solid ${lv.border};">${lv.label}</span>
+      <span style="font-size:11px;color:#888;margin-left:auto;">${lv.action}</span>
+    </div>
+
+    ${sectionTitle("④ 조치 및 재발방지")}
+    <div style="${lbl}">즉시 조치 내용</div>
+    <textarea id="nm-action" placeholder="예: 통로 차단·경고, 지게차 운행 경로 분리 안내" style="${inp}min-height:56px;resize:vertical;">${esc(d.immediateAction)}</textarea>
+    <div style="${lbl}">재발방지 대책 <span style="color:#c0392b;">*</span></div>
+    <textarea id="nm-measure" placeholder="예: 보행자·차량 동선 분리, 후방 감지센서 설치, 운행 구역 표시" style="${inp}min-height:70px;resize:vertical;">${esc(d.preventiveMeasure)}</textarea>
+
+    ${sectionTitle("⑤ 현장 사진 (최대 3장)")}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      ${photos}
+      ${d.photos.filter(p=>p).length < 3 ? `
+      <label style="width:74px;height:74px;border-radius:9px;border:1.5px dashed #fcd8a8;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#e65100;font-size:11px;background:#fff8f0;">
+        <span style="font-size:20px;">＋</span>사진
+        <input id="nm-photo-input" type="file" accept="image/*" multiple style="display:none;"/>
+      </label>`:""}
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:1.5rem;">
+      <button id="btn-nm-save" style="flex:1;padding:13px;background:#fff;color:#e65100;border:1.5px solid #e65100;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">임시저장</button>
+      <button id="btn-nm-complete" style="flex:1.4;padding:13px;background:#e65100;color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">작성 완료 → 보고서 생성</button>
+    </div>
+  </div>`;
+}
+
+// ───────────────────────── 아차사고 보고서 (인쇄/PDF) ─────────────────────────
+function renderNmReport() {
+  const r = state.risk.current;
+  if(!r) return renderList();
+  const lv = riskLevel(riskScore(r));
+
+  const ovh = "border:1px solid #fcd8a8;padding:7px 9px;font-size:12px;background:#fff6ec;font-weight:700;color:#7a3b00;white-space:nowrap;";
+  const ov  = "border:1px solid #f0dcc4;padding:7px 9px;font-size:12px;";
+  const block = (title, body) => `
+    <div style="font-size:12px;font-weight:800;color:#e65100;margin:14px 0 6px;">${title}</div>
+    <div style="border:1px solid #f0dcc4;border-radius:5px;padding:10px 12px;font-size:12px;line-height:1.7;">${body}</div>`;
+
+  const photos = (Array.isArray(r.photos)?r.photos:[]).filter(Boolean).map(u=>
+    `<img src="${esc(u)}" style="width:150px;height:150px;object-fit:cover;border:1px solid #f0dcc4;border-radius:4px;"/>`).join("");
+  const sigBox = (role)=>`<td style="border:1px solid #fcd8a8;padding:0;width:33.3%;">
+    <div style="background:#fff6ec;font-size:11px;font-weight:700;color:#7a3b00;padding:5px;text-align:center;border-bottom:1px solid #fcd8a8;">${role}</div>
+    <div style="height:54px;"></div></td>`;
+
+  return `
+  <style>
+    @media print {
+      .no-print { display:none !important; }
+      body { background:#fff !important; }
+      #app { padding:0 !important; }
+      .nm-report { box-shadow:none !important; border:none !important; margin:0 !important; max-width:none !important; }
+      @page { margin:14mm; }
+    }
+  </style>
+  <div class="no-print" style="max-width:820px;margin:0 auto;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;padding:0 0 14px;">
+    <button id="btn-nm-report-back" style="padding:8px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">← 목록</button>
+    <div style="display:flex;gap:8px;">
+      <button id="btn-nm-report-edit" style="padding:8px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;">수정</button>
+      <button onclick="window.print()" style="padding:8px 16px;border:none;border-radius:8px;background:#e65100;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ 인쇄 / PDF 저장</button>
+    </div>
+  </div>
+
+  <div class="nm-report" style="max-width:820px;margin:0 auto;background:#fff;border:1px solid #e3ebf5;border-radius:8px;padding:30px 32px;box-shadow:0 2px 10px rgba(0,0,0,.06);color:#222;">
+    <div style="text-align:center;border-bottom:2.5px solid #e65100;padding-bottom:12px;margin-bottom:8px;">
+      <div style="font-size:21px;font-weight:800;letter-spacing:2px;color:#e65100;">아차사고 보고서</div>
+      <div style="font-size:11px;color:#888;margin-top:4px;">Near-miss Report · 잠재 위험 발굴 및 사고 예방</div>
+    </div>
+    <div style="text-align:right;font-size:11px;color:#888;margin-bottom:10px;">보고서번호 <strong>${esc(r.nmNo||"-")}</strong></div>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:6px;">
+      <tr><td style="${ovh}">사업소</td><td style="${ov}">${esc(r.site||"-")}</td><td style="${ovh}">발생일자</td><td style="${ov}">${esc(r.occurredAt||"-")}</td></tr>
+      <tr><td style="${ovh}">발생장소</td><td style="${ov}">${esc(r.location||"-")}</td><td style="${ovh}">보고자</td><td style="${ov}">${esc(r.reporter||"-")}</td></tr>
+      <tr><td style="${ovh}">유형</td><td style="${ov}">${esc(r.category||"-")}</td><td style="${ovh}">위험성</td><td style="${ov}"><strong style="color:${lv.color};">${riskScore(r)} · ${lv.label}</strong> (가능성 ${r.likelihood}×중대성 ${r.severity})</td></tr>
+    </table>
+
+    ${block("① 아차사고 내용", nl2br(r.description||"-"))}
+    ${block("② 잠재 위험성 (예상 피해)", nl2br(r.potentialRisk||"-"))}
+    ${block("③ 즉시 조치", nl2br(r.immediateAction||"없음"))}
+    ${block("④ 재발방지 대책", nl2br(r.preventiveMeasure||"-"))}
+
+    ${photos?`<div style="margin-top:14px;"><div style="font-size:12px;font-weight:800;color:#e65100;margin-bottom:6px;">현장 사진</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">${photos}</div></div>`:""}
+
+    <table style="width:100%;border-collapse:collapse;margin-top:22px;">
+      <tr>${sigBox("보고자")}${sigBox("안전관리자")}${sigBox("사업소장")}</tr>
+    </table>
+    <div style="text-align:center;font-size:11px;color:#aaa;margin-top:14px;">
+      작성일시 ${esc(r.createdAt||"-")}${r.completedAt?` · 완료 ${esc(r.completedAt)}`:""}
     </div>
   </div>`;
 }

@@ -10,7 +10,8 @@ import {
 } from "./features/admin.js";
 import {
   makeEmptyRA, makeEmptyHazard, loadFromAccident, saveRA, deleteRA, loadDraftFromSaved,
-  makeEmptyEducation, makeEmptyAttendee, saveEducation
+  makeEmptyEducation, makeEmptyAttendee, saveEducation,
+  makeEmptyNearMiss, loadNmDraftFromSaved, saveNearMiss
 } from "./features/risk.js";
 import {
   setUserRole, setUserPhone, grantRoleByEmail, revokeGrant,
@@ -143,6 +144,28 @@ export function bindEvents() {
         b.addEventListener("click", async () => {
           if(!confirm("이 수시 위험성평가를 삭제하시겠습니까?")) return;
           await deleteRA(b.dataset.key);   // 리스너가 목록을 다시 그림
+        });
+      });
+
+      // 아차사고 보고서
+      $("btn-nm-new")?.addEventListener("click", () => {
+        state.risk.draft = makeEmptyNearMiss();
+        state.risk.mode = "nmEditor"; render();
+      });
+      document.querySelectorAll(".nm-edit-btn").forEach(b => {
+        b.addEventListener("click", () => { loadNmDraftFromSaved(b.dataset.key); state.risk.mode="nmEditor"; render(); });
+      });
+      document.querySelectorAll(".nm-report-btn").forEach(b => {
+        b.addEventListener("click", () => {
+          state.risk.current = state.riskAssessments[b.dataset.key];
+          state.risk.currentKey = b.dataset.key;
+          state.risk.mode="nmReport"; render();
+        });
+      });
+      document.querySelectorAll(".nm-del-btn").forEach(b => {
+        b.addEventListener("click", async () => {
+          if(!confirm("이 아차사고 보고서를 삭제하시겠습니까?")) return;
+          await deleteRA(b.dataset.key);
         });
       });
     }
@@ -287,6 +310,70 @@ export function bindEvents() {
           state.risk.eduDraft.attendees = [ makeEmptyAttendee() ];
         }
         state.risk.mode="edu"; render();
+      });
+    }
+
+    // 아차사고 보고서 편집기
+    if(risk.mode==="nmEditor"){
+      const d = risk.draft;
+      $("nm-site")?.addEventListener("change",      e => { d.site=e.target.value; });
+      $("nm-date")?.addEventListener("change",      e => { d.occurredAt=e.target.value; });
+      $("nm-location")?.addEventListener("input",   e => { d.location=e.target.value; });
+      $("nm-reporter")?.addEventListener("input",   e => { d.reporter=e.target.value; });
+      $("nm-category")?.addEventListener("change",  e => { d.category=e.target.value; });
+      $("nm-desc")?.addEventListener("input",       e => { d.description=e.target.value; });
+      $("nm-potential")?.addEventListener("input",  e => { d.potentialRisk=e.target.value; });
+      $("nm-likelihood")?.addEventListener("change",e => { d.likelihood=+e.target.value; render(); });
+      $("nm-severity")?.addEventListener("change",  e => { d.severity=+e.target.value; render(); });
+      $("nm-action")?.addEventListener("input",     e => { d.immediateAction=e.target.value; });
+      $("nm-measure")?.addEventListener("input",    e => { d.preventiveMeasure=e.target.value; });
+
+      const npi = $("nm-photo-input");
+      if(npi){
+        npi.addEventListener("change", async e => {
+          const files = Array.from(e.target.files);
+          const remaining = 3 - d.photos.filter(p=>p).length;
+          for(const file of files.slice(0, remaining)){
+            d.photosPreviews.push(URL.createObjectURL(file));
+            d.photos.push("uploading");
+            render();
+            const url = await uploadPhotoDirectly(file);
+            const idx = d.photos.indexOf("uploading");
+            if(idx!==-1){ d.photos[idx] = url||""; if(url) d.photosPreviews[idx]=url; }
+            render();
+          }
+        });
+      }
+      document.querySelectorAll(".nm-photo-del").forEach(b => {
+        b.addEventListener("click", () => {
+          const idx=+b.dataset.idx;
+          d.photos.splice(idx,1); d.photosPreviews.splice(idx,1); render();
+        });
+      });
+
+      $("btn-nm-save")?.addEventListener("click", async () => {
+        const res = await saveNearMiss(false);
+        const errEl = $("nm-err");
+        if(res.ok){ state.risk.mode="list"; render(); }
+        else if(errEl){ errEl.textContent=res.msg; errEl.style.display="block"; window.scrollTo(0,0); }
+      });
+      $("btn-nm-complete")?.addEventListener("click", async () => {
+        const res = await saveNearMiss(true);
+        const errEl = $("nm-err");
+        if(res.ok){ state.risk.current = res.data; state.risk.currentKey = res.key; state.risk.mode="nmReport"; render(); }
+        else if(errEl){ errEl.textContent=res.msg; errEl.style.display="block"; window.scrollTo(0,0); }
+      });
+    }
+
+    if(risk.mode==="nmReport"){
+      $("btn-nm-report-back")?.addEventListener("click", () => {
+        state.risk.mode="list"; state.risk.current=null; state.risk.currentKey=null; render();
+      });
+      $("btn-nm-report-edit")?.addEventListener("click", () => {
+        const cur = state.risk.current;
+        const key = state.risk.currentKey || Object.keys(state.riskAssessments).find(k => state.riskAssessments[k].nmNo === cur.nmNo);
+        if(key) loadNmDraftFromSaved(key);
+        state.risk.mode="nmEditor"; render();
       });
     }
   }

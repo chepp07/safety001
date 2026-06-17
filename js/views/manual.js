@@ -35,7 +35,6 @@ export function renderManual() {
       checklist:[
         {label:"119 소방·구급", num:"119"},
         {label:"112 경찰", num:"112"},
-        {label:"고용노동부", num:"1350"},
       ],
       note:"⚠️ 중대재해(사망·3일 이상 휴업 등)는 지체 없이 고용노동부에 보고할 의무가 있습니다.",
     },
@@ -153,7 +152,6 @@ export function renderManual() {
         {label:"119 (소방/구급)", num:"119"},
         {label:"112 (경찰)", num:"112"},
         {label:"한국가스안전공사", num:"1544-4500"},
-        {label:"고용노동부 신고", num:"1350"},
       ].map(c=>`
       <a href="tel:${c.num}" style="background:rgba(255,255,255,.1);border-radius:9px;
         padding:10px 12px;text-decoration:none;display:block;">
