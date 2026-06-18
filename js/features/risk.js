@@ -246,7 +246,7 @@ export function makeEmptyNearMiss() {
   const me = state.currentUser ? (state.currentUser.displayName || state.currentUser.email.split("@")[0]) : "";
   return {
     docType: "nearmiss",
-    nmNo:"", site:"", occurredAt: today, location:"", reporter: me,
+    nmNo:"", accNo:"", site:"", occurredAt: today, location:"", reporter: me,
     category: NM_CATEGORIES[0],
     description:"", potentialRisk:"",
     likelihood:3, severity:2,
@@ -254,6 +254,21 @@ export function makeEmptyNearMiss() {
     photos:[], photosPreviews:[],
     status:"작성중"
   };
+}
+
+// 아차사고 보고서에 기존 사고 불러오기 (인사사고 '아차사고' 등 접수건에서 자동 채움)
+export function loadAccidentIntoNm(key) {
+  const e = state.entries[key];
+  const d = state.risk.draft;
+  if(!e || !d) return;
+  d.accNo = e.accNo || "";
+  d.site = e.site || d.site;
+  d.location = e.location || d.location;
+  if(!d.description.trim()) d.description = e.situation || "";
+  if(!d.immediateAction.trim() && e.actionTaken && e.actionTaken !== "없음") d.immediateAction = e.actionTaken;
+  d.severity = e.level==="1" ? 4 : e.level==="2" ? 3 : 2;
+  const ph = Array.isArray(e.photos) ? e.photos.filter(Boolean) : [];
+  if(ph.length && d.photos.length===0){ ph.slice(0,3).forEach(u => { d.photos.push(u); d.photosPreviews.push(u); }); }
 }
 
 // 아차사고 번호 NM-YYYYMMDD-###
@@ -292,6 +307,7 @@ export async function saveNearMiss(complete) {
   const payload = {
     docType: "nearmiss",
     nmNo: d.nmNo || genNmNo(),
+    accNo: d.accNo || "",
     site: d.site.trim(),
     occurredAt: d.occurredAt,
     location: d.location.trim(),

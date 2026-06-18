@@ -1,6 +1,25 @@
 import { firebaseConfig, CONFIGURED, ADMIN_EMAILS, MASTER_EMAILS, emailKey } from "./config.js";
 import { state } from "./state.js";
-import { render } from "./router.js";
+import { render, restoreNavState } from "./router.js";
+
+// 새로고침 시 복원할 화면 (sessionStorage에 저장된 nav). 로그인 필요한 화면만 대상.
+const _RESTORE_VIEWS = ["main","admin","risk","manual","suggest","myreport","form"];
+function _loadPendingNav() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem("nav") || "null");
+    if(saved && _RESTORE_VIEWS.includes(saved.view)) window._pendingNav = saved;
+  } catch(e) {}
+}
+// 보류된 복원 적용 — report류는 데이터가 와야 완전 복원되므로 미도착 시 보류 유지
+function _applyPendingNav() {
+  const nav = window._pendingNav;
+  if(!nav) return false;
+  restoreNavState(nav);
+  const needsData = nav.view==="risk" && ["report","nmReport","edudoc"].includes(nav.riskMode||"");
+  if(needsData && !((state.riskAssessments||{})[nav.currentKey])) return true; // 아직 보류
+  window._pendingNav = null;
+  return true;
+}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
@@ -32,11 +51,17 @@ async function _ensureUserRecord(user) {
   const seedRole = MASTER_EMAILS.includes(user.email)
     ? "master"
     : (existing.role || "user");
+  // 구글 가입자는 별명이 들어오므로 실명(realName)은 비워두고 메인에서 등록받음.
+  // 이메일 가입자는 가입 시 입력한 이름을 실명으로 간주.
+  const isGoogle = (user.providerData||[]).some(p => p.providerId === "google.com");
+  const realName = existing.realName || (isGoogle ? "" : (user.displayName || ""));
+  const name = existing.realName || existing.name || user.displayName || (user.email||"").split("@")[0];
   const now = new Date().toLocaleString("ko-KR");
   try {
     await update(uref, {
       email: user.email,
-      name: user.displayName || existing.name || (user.email||"").split("@")[0],
+      name,
+      realName,
       role: seedRole,
       createdAt: existing.createdAt || now,
       lastLogin: now
@@ -99,7 +124,9 @@ function _startListeners() {
         state.view = "main";
       }
     } else if(state.view==="login"||state.view==="register"){
-      state.view = "main";
+      // 새로고침 복원: 저장된 화면이 있으면 그쪽으로, 없으면 메인
+      if(window._pendingNav) _applyPendingNav();
+      else state.view = "main";
     }
 
     render();
@@ -132,7 +159,9 @@ function _startListeners() {
   // 수시 위험성평가 — 초기 렌더 게이팅과 무관한 독립 리스너
   _unsubRisk = onValue(ref(state.db, "riskAssessments"), snap => {
     state.riskAssessments = snap.val() || {};
-    if(state.view === "risk") render();
+    // 새로고침으로 보고서 화면 복원이 보류 중이었다면, 데이터 도착 시 적용
+    if(window._pendingNav && window._pendingNav.view === "risk"){ _applyPendingNav(); render(); }
+    else if(state.view === "risk") render();
   }, err => {
     console.error("riskAssessments 읽기 실패:", err.message);
     state.riskAssessments = {};
@@ -143,8 +172,9 @@ function _startListeners() {
   if(_user){
     _unsubMe = onValue(ref(state.db, `users/${_user.uid}`), snap => {
       const me = snap.val() || {};
-      state.myDbRole = me.role || "";
-      state.myPhone  = me.phone || "";
+      state.myDbRole   = me.role || "";
+      state.myPhone    = me.phone || "";
+      state.myRealName = me.realName || "";
       _applyRole(_user.email, state.myDbRole);
       _maybeAttachMaster();
       render();
@@ -182,6 +212,9 @@ export function initFirebase() {
   const accParam  = urlParams.get("a") || urlParams.get("acc");
   if(accParam) window._pendingAccNo = accParam;
 
+  // 사고 알림 링크(?a=)가 아니면, 새로고침 전 화면 복원 대상을 불러온다
+  if(!accParam) _loadPendingNav();
+
   onAuthStateChanged(state.auth, user => {
     if(user){
       state.currentUser = user;
@@ -202,6 +235,7 @@ export function initFirebase() {
       state.myRole      = "user";
       state.myDbRole    = "";
       state.myPhone     = "";
+      state.myRealName  = "";
       state.roleGrants  = {};
       _stopListeners();
 

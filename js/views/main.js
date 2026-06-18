@@ -3,7 +3,7 @@ import { state } from "../state.js";
 
 export function renderMain() {
   const { lang, currentUser, isAdmin } = state;
-  const userName = currentUser ? (currentUser.displayName || currentUser.email.split("@")[0]) : "";
+  const userName = state.myRealName || (currentUser ? (currentUser.displayName || currentUser.email.split("@")[0]) : "");
   const userPhoto = currentUser && currentUser.photoURL;
 
   return `
@@ -42,12 +42,13 @@ export function renderMain() {
       <div style="font-size:11px;color:#aaa;">${lang==="zh"?"光明事业部 安全·质量·物流 综合管理":"광명사업부 안전·품질·물류 통합관리"}</div>
     </div>
 
-    ${currentUser && !state.myPhone ? `
+    ${currentUser && (!state.myRealName || !state.myPhone) ? `
     <div style="background:#fff8f0;border:1.5px solid #fcd8a8;border-radius:11px;padding:11px 13px;margin-bottom:8px;flex-shrink:0;">
-      <div style="font-size:12px;font-weight:700;color:#e05c00;margin-bottom:6px;">📱 ${lang==="zh"?"登记手机号以接收事故短信通知":"문자 사고 알림을 받으려면 번호를 등록하세요"}</div>
-      <div style="display:flex;gap:6px;">
-        <input id="my-phone-input" type="tel" inputmode="numeric" placeholder="${lang==="zh"?"手机号码":"휴대폰 번호"}" style="flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;"/>
-        <button id="btn-my-phone-save" style="padding:8px 16px;background:#e05c00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">${lang==="zh"?"登记":"등록"}</button>
+      <div style="font-size:12px;font-weight:700;color:#e05c00;margin-bottom:7px;">📋 ${lang==="zh"?"请登记追加信息（事故通知·实名确认）":"추가 정보를 등록해 주세요 (사고 알림·실명 확인용)"}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${!state.myRealName ? `<input id="my-name-input" type="text" placeholder="${lang==="zh"?"实名（姓名）":"실명 (성명)"}" maxlength="20" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;"/>` : ""}
+        ${!state.myPhone ? `<input id="my-phone-input" type="tel" inputmode="numeric" placeholder="${lang==="zh"?"手机号码":"휴대폰 번호"}" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;"/>` : ""}
+        <button id="btn-my-info-save" style="padding:9px 16px;background:#e05c00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">${lang==="zh"?"登记":"등록"}</button>
       </div>
     </div>` : ""}
 

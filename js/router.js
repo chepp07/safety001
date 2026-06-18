@@ -24,33 +24,64 @@ const VIEW_BACK = new Map([
 
 // popstate(뒤로가기)로 인한 render인지 표시 — 이때는 히스토리를 다시 쌓지 않는다
 let _fromPopstate = false;
-let _lastView = null;   // 화면 전환 감지용 (스크롤 처리)
+let _lastSig = null;   // 화면(하위모드 포함) 전환 감지용
+
+// 네비게이션 시그니처 — 화면 + (위험성평가) 하위모드 + 대상 키
+function _navSig() {
+  if(state.view === "risk") return "risk:" + (state.risk?.mode||"list") + ":" + (state.risk?.currentKey||"");
+  return state.view;
+}
+function _navState() {
+  return { view: state.view, riskMode: state.risk?.mode||null, currentKey: state.risk?.currentKey||null };
+}
+
+// 저장된 네비게이션 상태로 화면 복원 (뒤로가기 / 새로고침 공용)
+export function restoreNavState(nav) {
+  if(!nav) return;
+  state.view = nav.view || "main";
+  if(nav.view === "risk" && state.risk){
+    const mode = nav.riskMode || "list";
+    state.risk.currentKey = nav.currentKey || null;
+    if(["report","nmReport","edudoc"].includes(mode)){
+      const rec = (state.riskAssessments||{})[nav.currentKey];
+      if(rec){ state.risk.current = rec; state.risk.mode = mode; }
+      else { state.risk.mode = "list"; }              // 데이터 미도착 시 목록으로
+    } else if(["editor","nmEditor","edu"].includes(mode)){
+      state.risk.mode = state.risk.draft ? mode : "list";  // 초안은 메모리에만 → 없으면 목록
+    } else {
+      state.risk.mode = "list";
+    }
+  }
+}
 
 export function render() {
   if(!state.form) state.form = makeEmptyForm();
   const app = document.getElementById("app");
   if(!app) return;
 
-  // 같은 화면을 다시 그릴 때(폼 버튼 클릭 등)는 스크롤 위치를 유지하고,
-  // 화면이 바뀔 때만 최상단으로 이동한다.
-  const viewChanged = state.view !== _lastView;
+  // 같은 화면을 다시 그릴 때(폼 버튼 클릭 등)는 스크롤 위치 유지, 화면(하위모드 포함)이 바뀔 때만 최상단으로.
+  const sig = _navSig();
+  const sigChanged = sig !== _lastSig;
   const prevScroll = window.scrollY;
-  _lastView = state.view;
+  _lastSig = sig;
 
-  // 앞으로 이동할 때마다 히스토리 항목을 쌓아, 뒤로가기가 앱을 닫지 않고 이전 화면으로 돌아가게 한다.
-  // 단, 루트 화면(login/main 등)은 항목을 쌓지 않고 교체해서 히스토리가 중복으로 불어나지 않게 한다.
+  // 앞으로 이동할 때마다 히스토리 항목을 쌓아 뒤로가기가 단계별로 동작하게 한다.
+  // 루트 화면(login/register/main)은 항목을 쌓지 않고 교체.
   if(!_fromPopstate){
     const cur = history.state;
-    if(!cur || cur.view === undefined){
-      history.replaceState({ view: state.view }, "");
-    } else if(cur.view !== state.view){
+    if(!cur || cur.sig === undefined){
+      history.replaceState({ sig, nav: _navState() }, "");
+    } else if(cur.sig !== sig){
       if(VIEW_ROOT.has(state.view)){
-        history.replaceState({ view: state.view }, "");
+        history.replaceState({ sig, nav: _navState() }, "");
       } else {
-        history.pushState({ view: state.view }, "");
+        history.pushState({ sig, nav: _navState() }, "");
       }
     }
   }
+
+  // 새로고침 시 현재 화면 복원용으로 저장
+  try { sessionStorage.setItem("nav", JSON.stringify(_navState())); } catch(e){}
 
   let html = "";
   switch(state.view){
@@ -74,25 +105,20 @@ export function render() {
   // lazy import events to avoid circular dep at module load time
   import("./events.js").then(m => m.bindEvents());
 
-  // 화면 전환 시에만 최상단으로, 같은 화면 재렌더 시엔 위치 유지
-  if(viewChanged) window.scrollTo(0, 0);
+  // 화면(하위모드 포함) 전환 시에만 최상단으로, 같은 화면 재렌더 시엔 위치 유지
+  if(sigChanged) window.scrollTo(0, 0);
   else window.scrollTo(0, prevScroll);
 }
 
-// Back navigation
+// Back navigation — 쌓아둔 nav 상태로 단계별 복원
 window.addEventListener("popstate", (e) => {
   _fromPopstate = true;
-  if(e.state && e.state.view){
-    // 쌓아둔 히스토리 항목으로 직접 복원
-    state.view = e.state.view;
+  if(e.state && e.state.nav){
+    restoreNavState(e.state.nav);
     render();
   } else {
-    // 항목이 없으면(최초 진입 등) 매핑 기반 폴백
     const back = VIEW_BACK.get(state.view);
-    if(back){
-      state.view = back;
-      render();
-    }
+    if(back){ state.view = back; render(); }
   }
   _fromPopstate = false;
 });

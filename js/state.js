@@ -36,6 +36,7 @@ export const state = {
   myRole: "user",          // "master" | "admin" | "user" (effective)
   myDbRole: "",            // users/{uid}.role 원본 값 (grant와 합산 전)
   myPhone: "",             // 내 등록 번호 (없으면 메인에서 등록 안내)
+  myRealName: "",          // 내 실명 (구글 별명이 아닌 등록 실명. 없으면 메인에서 등록 안내)
   isGuest: false,
 
   // 내 접수 조회

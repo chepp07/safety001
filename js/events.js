@@ -11,7 +11,7 @@ import {
 import {
   makeEmptyRA, makeEmptyHazard, loadFromAccident, saveRA, deleteRA, loadDraftFromSaved,
   makeEmptyEducation, makeEmptyAttendee, saveEducation,
-  makeEmptyNearMiss, loadNmDraftFromSaved, saveNearMiss
+  makeEmptyNearMiss, loadNmDraftFromSaved, saveNearMiss, loadAccidentIntoNm
 } from "./features/risk.js";
 import {
   setUserRole, setUserPhone, grantRoleByEmail, revokeGrant,
@@ -71,7 +71,9 @@ export function bindEvents() {
       try {
         const cred = await createUserWithEmailAndPassword(state.auth, email, pw);
         await updateProfile(cred.user, { displayName: name });
-        if(phone){ try { await update(ref(state.db, `users/${cred.user.uid}`), { phone }); } catch(e){} }
+        const reg = { realName: name, name };
+        if(phone) reg.phone = phone;
+        try { await update(ref(state.db, `users/${cred.user.uid}`), reg); } catch(e){}
       } catch(err) {
         const msg = err.code==="auth/email-already-in-use" ? "이미 사용 중인 이메일입니다." : "회원가입에 실패했습니다.";
         errEl.textContent=msg; errEl.style.display="block";
@@ -105,11 +107,24 @@ export function bindEvents() {
       if(state.currentUser) state.myReportPhone = state.currentUser.phoneNumber || "";
       state.view="myreport"; render();
     });
-    $("btn-my-phone-save")?.addEventListener("click", async () => {
-      const p = ($("my-phone-input")?.value || "").replace(/[^0-9]/g,"");
-      if(p.length < 10){ alert("올바른 휴대폰 번호를 입력해 주세요."); return; }
-      if(state.currentUser){
-        try { await update(ref(state.db, `users/${state.currentUser.uid}`), { phone: p }); } catch(e){}
+    $("btn-my-info-save")?.addEventListener("click", async () => {
+      const nameEl = $("my-name-input");
+      const phoneEl = $("my-phone-input");
+      const updates = {};
+      let newName = null;
+      if(nameEl){
+        const nm = nameEl.value.trim();
+        if(!nm){ alert("실명을 입력해 주세요."); return; }
+        updates.realName = nm; updates.name = nm; newName = nm;
+      }
+      if(phoneEl){
+        const p = phoneEl.value.replace(/[^0-9]/g,"");
+        if(p.length < 10){ alert("올바른 휴대폰 번호를 입력해 주세요."); return; }
+        updates.phone = p;
+      }
+      if(state.currentUser && Object.keys(updates).length){
+        try { await update(ref(state.db, `users/${state.currentUser.uid}`), updates); } catch(e){}
+        if(newName){ try { await updateProfile(state.currentUser, { displayName: newName }); } catch(e){} }
       }
     });
   }
@@ -316,6 +331,11 @@ export function bindEvents() {
     // 아차사고 보고서 편집기
     if(risk.mode==="nmEditor"){
       const d = risk.draft;
+      $("nm-acc")?.addEventListener("change", e => {
+        if(e.target.value) loadAccidentIntoNm(e.target.value);
+        else d.accNo = "";
+        render();
+      });
       $("nm-site")?.addEventListener("change",      e => { d.site=e.target.value; });
       $("nm-date")?.addEventListener("change",      e => { d.occurredAt=e.target.value; });
       $("nm-location")?.addEventListener("input",   e => { d.location=e.target.value; });

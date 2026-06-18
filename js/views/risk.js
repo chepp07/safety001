@@ -591,6 +591,10 @@ function renderNmEditor() {
 
     <div id="nm-err" style="display:none;background:#fff5f5;border:1px solid #f5c6c6;color:#b71c1c;border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:12px;"></div>
 
+    <div style="${lbl}">기존 사고에서 불러오기</div>
+    <select id="nm-acc" style="${sel}">${accidentOptions(d.accNo)}</select>
+    ${d.accNo?`<div style="margin-top:6px;font-size:12px;color:#7a3b00;background:#fff0e0;border:1px solid #fcd8a8;border-radius:8px;padding:8px 10px;">연계 사고: <strong>${esc(d.accNo)}</strong></div>`:""}
+
     ${sectionTitle("① 개요")}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div><div style="${lbl}">사업소 <span style="color:#c0392b;">*</span></div><select id="nm-site" style="${sel}">${siteOpts}</select></div>
