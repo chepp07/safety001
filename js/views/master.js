@@ -36,12 +36,15 @@ export function renderMasterTab() {
     ? '<div style="padding:1.5rem;text-align:center;color:#bbb;font-size:13px;">아직 로그인한 가입자가 없습니다. (직원이 로그인하면 자동으로 추가됩니다)</div>'
     : users.map(([uid,u]) => {
         const seed = MASTER_EMAILS.includes(u.email);
-        const gRole = grantFor(u.email);                      // 마스터 지정값(권위)
+        const gRole = grantFor(u.email);                      // 이메일 사전부여
         const legacyAdmin = ADMIN_EMAILS.includes(u.email);
-        const eff = seed ? "master" : (gRole || (legacyAdmin ? "admin" : (u.role || "user")));
+        // 우선순위: 시드 > roleSet(직접 지정) > 이메일부여 > 레거시 > dbRole
+        const eff = seed ? "master"
+                  : u.roleSet ? (u.role || "user")
+                  : (gRole || (legacyAdmin ? "admin" : (u.role || "user")));
         const isMe = state.currentUser && state.currentUser.uid === uid;
         const phone = u.phone || "";
-        const grantNote = (!seed && legacyAdmin && !gRole)
+        const grantNote = (!seed && !u.roleSet && legacyAdmin && !gRole)
           ? ' <span style="font-size:10px;color:#b88600;">(레거시 관리자)</span>' : "";
 
         const roleCtrl = seed

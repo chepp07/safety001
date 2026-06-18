@@ -8,19 +8,13 @@ export const ROLE_LABEL = { master:"마스터", admin:"관리자", user:"일반"
 const norm = (p) => (p||"").replace(/[^0-9]/g, "");
 
 // 가입한 사용자의 역할 변경
-// 권위 있는 값은 roleGrants(이메일 기준)에 기록 → 레거시/이전부여를 덮어쓰고 강등도 확실히 반영.
-// users/{uid}.role 도 함께 써서 마스터 데이터 접근 규칙(uid 기준)을 충족시킨다.
+// users/{uid} 에 role + roleSet:true 를 함께 기록 → '마스터가 직접 지정함'을 표시해
+// 레거시 관리자/이전 부여를 덮어쓰고 강등도 확실히 반영한다. (별도 노드 의존 없음)
 export async function setUserRole(uid, role) {
   if(!state.isMaster) return { ok:false, msg:"마스터 권한이 필요합니다." };
   if(!["master","admin","user"].includes(role)) return { ok:false, msg:"잘못된 역할입니다." };
-  const email = ((state.users[uid]||{}).email || "").trim().toLowerCase();
   try {
-    await update(ref(state.db, `users/${uid}`), { role });
-    if(email){
-      await set(ref(state.db, `roleGrants/${emailKey(email)}`), {
-        email, role, grantedBy: state.currentUser?.email || "", grantedAt: new Date().toLocaleString("ko-KR")
-      });
-    }
+    await update(ref(state.db, `users/${uid}`), { role, roleSet: true });
     return { ok:true };
   } catch(err) {
     return { ok:false, msg:"역할 변경 중 오류가 발생했습니다. (규칙 설정을 확인하세요)" };

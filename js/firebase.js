@@ -23,19 +23,20 @@ function _applyPendingNav() {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// 현재 사용자의 역할 계산 — 우선순위: 시드 마스터 > 마스터 지정값(roleGrants, 강등 포함) > 레거시 > DB역할
-// roleGrants는 마스터가 명시 지정한 '권위 있는' 값이라, 레거시 관리자라도 'user'로 지정하면 강등이 적용된다.
-function _computeRole(email, dbRole) {
+// 현재 사용자의 역할 계산
+// 우선순위: 시드 마스터 > 마스터가 명시 지정(roleSet=true → 강등 포함 권위) > 이메일 사전부여 > 레거시 > DB역할
+function _computeRole(email, dbRole, roleSet) {
   if(MASTER_EMAILS.includes(email)) return "master";
+  if(roleSet) return dbRole || "user";               // 마스터가 직접 지정 → 최우선(레거시/부여 덮어씀)
   const g  = state.roleGrants && state.roleGrants[emailKey(email)];
   const gr = g && (g.role || g);
-  if(gr) return gr;                                  // 마스터가 지정한 값(최우선, 강등 포함)
+  if(gr) return gr;                                   // 이메일 사전부여(미접속자 등)
   if(ADMIN_EMAILS.includes(email)) return "admin";   // 레거시(미지정 시에만)
   if(dbRole) return dbRole;
   return "user";
 }
-function _applyRole(email, dbRole) {
-  state.myRole  = _computeRole(email, dbRole);
+function _applyRole(email, dbRole, roleSet) {
+  state.myRole  = _computeRole(email, dbRole, roleSet);
   state.isMaster = state.myRole === "master";
   state.isAdmin  = state.isMaster || state.myRole === "admin";
 }
@@ -172,9 +173,10 @@ function _startListeners() {
     _unsubMe = onValue(ref(state.db, `users/${_user.uid}`), snap => {
       const me = snap.val() || {};
       state.myDbRole   = me.role || "";
+      state.myRoleSet  = me.roleSet === true;
       state.myPhone    = me.phone || "";
       state.myRealName = me.realName || "";
-      _applyRole(_user.email, state.myDbRole);
+      _applyRole(_user.email, state.myDbRole, state.myRoleSet);
       _maybeAttachMaster();
       render();
     }, err => {
@@ -183,7 +185,7 @@ function _startListeners() {
 
     _unsubGrants = onValue(ref(state.db, "roleGrants"), snap => {
       state.roleGrants = snap.val() || {};
-      _applyRole(_user.email, state.myDbRole);
+      _applyRole(_user.email, state.myDbRole, state.myRoleSet);
       _maybeAttachMaster();
       render();
     }, err => {
@@ -217,7 +219,7 @@ export function initFirebase() {
   onAuthStateChanged(state.auth, user => {
     if(user){
       state.currentUser = user;
-      _applyRole(user.email, null);   // 즉시 적용할 baseline (시드/레거시 기준)
+      _applyRole(user.email, null, false);   // 즉시 적용할 baseline (시드/레거시 기준)
       state.isGuest     = false;
 
       if(state.view==="login"||state.view==="register"){
@@ -233,6 +235,7 @@ export function initFirebase() {
       state.isMaster    = false;
       state.myRole      = "user";
       state.myDbRole    = "";
+      state.myRoleSet   = false;
       state.myPhone     = "";
       state.myRealName  = "";
       state.roleGrants  = {};
