@@ -23,17 +23,16 @@ function _applyPendingNav() {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// 현재 사용자의 역할 계산 — 시드 마스터 / DB역할 / 이메일 권한부여 / 레거시 중 가장 높은 권한
-function _rank(r) { return r === "master" ? 3 : r === "admin" ? 2 : 1; }
+// 현재 사용자의 역할 계산 — 우선순위: 시드 마스터 > 마스터 지정값(roleGrants, 강등 포함) > 레거시 > DB역할
+// roleGrants는 마스터가 명시 지정한 '권위 있는' 값이라, 레거시 관리자라도 'user'로 지정하면 강등이 적용된다.
 function _computeRole(email, dbRole) {
-  let best = "user";
-  const consider = (r) => { if(r && _rank(r) > _rank(best)) best = r; };
-  if(MASTER_EMAILS.includes(email)) consider("master");
-  if(ADMIN_EMAILS.includes(email))  consider("admin");
-  consider(dbRole);
-  const g = state.roleGrants && state.roleGrants[emailKey(email)];
-  consider(g && (g.role || g));
-  return best;
+  if(MASTER_EMAILS.includes(email)) return "master";
+  const g  = state.roleGrants && state.roleGrants[emailKey(email)];
+  const gr = g && (g.role || g);
+  if(gr) return gr;                                  // 마스터가 지정한 값(최우선, 강등 포함)
+  if(ADMIN_EMAILS.includes(email)) return "admin";   // 레거시(미지정 시에만)
+  if(dbRole) return dbRole;
+  return "user";
 }
 function _applyRole(email, dbRole) {
   state.myRole  = _computeRole(email, dbRole);

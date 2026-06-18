@@ -35,19 +35,19 @@ export function renderMasterTab() {
   const userRows = users.length === 0
     ? '<div style="padding:1.5rem;text-align:center;color:#bbb;font-size:13px;">아직 로그인한 가입자가 없습니다. (직원이 로그인하면 자동으로 추가됩니다)</div>'
     : users.map(([uid,u]) => {
-        const dbRole = u.role || "user";
-        const gRole  = grantFor(u.email);
-        const eff = rank(gRole||"user") > rank(dbRole) ? gRole : dbRole;
         const seed = MASTER_EMAILS.includes(u.email);
+        const gRole = grantFor(u.email);                      // 마스터 지정값(권위)
+        const legacyAdmin = ADMIN_EMAILS.includes(u.email);
+        const eff = seed ? "master" : (gRole || (legacyAdmin ? "admin" : (u.role || "user")));
         const isMe = state.currentUser && state.currentUser.uid === uid;
         const phone = u.phone || "";
-        const grantNote = gRole && rank(gRole) > rank(dbRole)
-          ? ` <span style="font-size:10px;color:#5b3ba8;">(이메일 부여: ${ROLE_LABEL[gRole]})</span>` : "";
+        const grantNote = (!seed && legacyAdmin && !gRole)
+          ? ' <span style="font-size:10px;color:#b88600;">(레거시 관리자)</span>' : "";
 
         const roleCtrl = seed
           ? `${roleBadge("master")} <span style="font-size:10px;color:#aaa;">(고정)</span>`
           : `<select class="role-sel" data-uid="${uid}" style="${inp}cursor:pointer;">
-               ${["user","admin","master"].map(r=>`<option value="${r}"${dbRole===r?" selected":""}>${ROLE_LABEL[r]}</option>`).join("")}
+               ${["user","admin","master"].map(r=>`<option value="${r}"${eff===r?" selected":""}>${ROLE_LABEL[r]}</option>`).join("")}
              </select>`;
 
         let recCtrl;
