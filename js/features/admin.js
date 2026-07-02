@@ -6,6 +6,14 @@ import { ref, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase
 // 현재 수정 중인 사고 키
 let _editKey = null;
 
+// 로그인 계정에 등록된 이름 (수정자 자동 기록용). 실명 > 표시이름 > 이메일 앞부분 순
+function _loginName() {
+  return state.myRealName
+      || state.currentUser?.displayName
+      || (state.currentUser?.email || "").split("@")[0]
+      || "관리자";
+}
+
 export function setAdminTab(tab) {
   state.adminTab = tab;
   // router의 render() 호출을 위해 window 이벤트 사용
@@ -115,9 +123,9 @@ export function openEditModal(key) {
   // 인사사고 대상자
   _fillPersonSection(e);
 
-  // 발송제외/수정자/사유 초기화
+  // 발송제외/수정자/사유 초기화. 수정자는 로그인 계정 이름 자동(직접 입력 X)
   const skip = document.getElementById("edit-skip-slack"); if(skip) skip.checked=false;
-  setVal("edit-editor",""); setVal("edit-reason","");
+  setVal("edit-editor", _loginName()); setVal("edit-reason","");
   const errEl = document.getElementById("edit-err"); if(errEl) errEl.style.display="none";
 
   modal.style.display = "flex";
@@ -141,12 +149,12 @@ export async function saveEditAndResend() {
   const errEl = document.getElementById("edit-err");
 
   const skipSlack = !!document.getElementById("edit-skip-slack")?.checked;
-  const editor = getVal("edit-editor").trim();
+  const editor = _loginName();                 // 로그인 계정 이름 자동(직접 입력 아님)
   const reason = getVal("edit-reason").trim();
 
-  // 조건부 필수: 발송제외 시 수정자 + 수정사유
-  if(skipSlack && (!editor || !reason)){
-    if(errEl){ errEl.textContent="발송 제외 시 수정자와 수정 사유를 입력해 주세요."; errEl.style.display="block"; window.scrollTo(0,0); }
+  // 조건부 필수: 발송제외 시 수정 사유(수정자는 로그인 계정으로 자동 기록)
+  if(skipSlack && !reason){
+    if(errEl){ errEl.textContent="발송 제외 시 수정 사유를 입력해 주세요."; errEl.style.display="block"; window.scrollTo(0,0); }
     return;
   }
 
@@ -180,7 +188,7 @@ export async function saveEditAndResend() {
     status:         getVal("edit-status"),
     updatedAt:      new Date().toLocaleString("ko-KR")
   };
-  if(editor) updated.updatedBy = editor;
+  updated.updatedBy = editor;                  // 로그인 계정 이름 항상 기록
   if(reason) updated.editReason = reason;
 
   // 인사사고 대상자 재구성

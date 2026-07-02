@@ -66,6 +66,13 @@ export function renderAdmin() {
       ? '<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">후속조치</div>'
         +'<div style="background:#f0faf0;border:1px solid #b8e0ba;border-radius:7px;padding:8px 10px;color:#2e7d32;line-height:1.6;">'+e.followUp.replace(/\n/g,"<br>")+'</div></div>'
       : "";
+    const editHistHtml = (e.updatedBy || e.editReason)
+      ? '<div style="margin-top:8px;margin-bottom:6px;background:#fff8f0;border:1px solid #fcd8a8;border-radius:7px;padding:8px 10px;">'
+        +'<div style="font-size:11px;font-weight:700;color:#e05c00;margin-bottom:4px;">✏️ 최근 수정 이력</div>'
+        +'<div style="color:#555;line-height:1.6;">수정자: <strong>'+(e.updatedBy||"-")+'</strong>'+(e.updatedAt?' <span style="color:#aaa;">('+e.updatedAt+')</span>':'')+'</div>'
+        +(e.editReason?'<div style="color:#555;line-height:1.6;">수정 사유: '+e.editReason.replace(/\n/g,"<br>")+'</div>':'')
+        +'</div>'
+      : "";
 
     let photoHtml = "";
     if(e.photos && e.photos.length>0){
@@ -109,7 +116,7 @@ export function renderAdmin() {
         +'</div>'
         +'<div style="margin-bottom:6px;"><div style="color:#aaa;margin-bottom:3px;">현재 상황</div>'
           +'<div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">'+situation+'</div></div>'
-        +actionHtml+followHtml+photoHtml
+        +actionHtml+followHtml+editHistHtml+photoHtml
         +'<div style="margin-top:8px;">'
           +'<button onclick="openEditModal(\''+key+'\')" style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 내용 수정 + 재발송</button>'
         +'</div>'
@@ -310,8 +317,8 @@ export function renderAdmin() {
         슬랙/문자 재발송 제외 (조용히 수정만)
       </label>
       <div class="field">
-        <div class="label">수정자 <span style="color:#aaa;font-weight:400;font-size:11px;">(발송 제외 시 필수)</span></div>
-        <input id="edit-editor" class="input" placeholder="수정한 사람"/>
+        <div class="label">수정자 <span style="color:#aaa;font-weight:400;font-size:11px;">(로그인 계정 자동)</span></div>
+        <input id="edit-editor" class="input" readonly style="background:#f5f5f5;color:#666;cursor:not-allowed;"/>
       </div>
       <div class="field">
         <div class="label">수정 사유 <span style="color:#aaa;font-weight:400;font-size:11px;">(발송 제외 시 필수)</span></div>
