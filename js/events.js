@@ -1,11 +1,11 @@
 import { state } from "./state.js";
-import { makeEmptyForm, fmt } from "./utils.js";
+import { makeEmptyForm, fmt, t } from "./utils.js";
 import { render } from "./router.js";
 import { startVoiceInput, stopVoice } from "./features/voice.js";
 import { uploadPhotoDirectly, removePhoto } from "./features/photo.js";
-import { handleSubmit } from "./features/submit.js";
+import { handleSubmit, sendSlackAlert } from "./features/submit.js";
 import {
-  updateAdminTable, downloadExcel, showLoginModal,
+  downloadExcel, showLoginModal,
   setAdminTab, toggleDetail, toggleSugDetail, openEditModal, editSelectType
 } from "./features/admin.js";
 import {
@@ -20,10 +20,13 @@ import {
 } from "./features/master.js";
 import { signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { ref, update, remove, push }
+import { ref, update, push }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const $ = id => document.getElementById(id);
+
+// 안전제안 이중제출 방지 in-flight 가드(작업1)
+let _sugSaving = false;
 
 export function bindEvents() {
   const { view } = state;
@@ -422,6 +425,7 @@ export function bindEvents() {
     });
 
     $("btn-suggest-submit")?.addEventListener("click", async () => {
+      if(_sugSaving) return;                       // 이중제출 가드(작업1)
       const s = window._suggest;
       const errEl = $("sug-err");
       if(!s.site||!s.category||!s.title.trim()||!s.detail.trim()){
@@ -429,7 +433,13 @@ export function bindEvents() {
         errEl.style.display="block"; return;
       }
       errEl.style.display="none";
-      await push(ref(state.db,"suggestions"),{
+
+      _sugSaving = true;
+      const btn = $("btn-suggest-submit");
+      const origHtml = btn ? btn.innerHTML : "";
+      if(btn){ btn.disabled=true; btn.style.opacity="0.6"; btn.textContent = t("submittingSug"); }
+
+      const payload = {
         site: s.site, category: s.category,
         title: s.title.trim(), detail: s.detail.trim(),
         anonymous: s.anonymous,
@@ -439,9 +449,21 @@ export function bindEvents() {
         realName: state.currentUser ? (state.currentUser.displayName || "이름없음") : "비회원",
         userId: state.currentUser ? state.currentUser.uid : "guest",
         status:"접수", createdAt: new Date().toLocaleString("ko-KR")
-      });
-      window._suggest.submitted = true;
-      render();
+      };
+
+      try {
+        await push(ref(state.db,"suggestions"), payload);
+        // 안전제안은 슬랙만(작업7): channels ["slack"] → GAS가 SMS 스킵. lang KO 고정(작업3).
+        sendSlackAlert({ ...payload, lang:"ko", notifyType:"suggestion", channels:["slack"] });
+        window._suggest.submitted = true;
+        render();
+      } catch(err) {
+        errEl.textContent="접수 중 오류가 발생했습니다. 다시 시도해 주세요.";
+        errEl.style.display="block";
+        if(btn){ btn.disabled=false; btn.style.opacity="1"; btn.innerHTML=origHtml; }
+      } finally {
+        _sugSaving = false;
+      }
     });
   }
 
@@ -609,6 +631,8 @@ export function bindEvents() {
         const now = new Date().toLocaleString("ko-KR");
         const updated = prev ? prev+"\n\n["+now+"]\n"+text : "["+now+"]\n"+text;
         await update(ref(state.db,`accidents/${snap[0]}`),{followUp:updated, status:"처리중"});
+        // 후속조치 발송(작업6): slack+sms, lang KO 고정, notifyType followup.
+        sendSlackAlert({ ...state.entries[snap[0]], followUp:updated, status:"처리중", lang:"ko", notifyType:"followup", channels:["slack","sms"] });
         const msg = $("followup-msg");
         if(msg){ msg.style.display="block"; setTimeout(()=>{ msg.style.display="none"; },3000); }
         $("follow-up-text").value="";
@@ -648,28 +672,22 @@ export function bindEvents() {
     $("go-form")?.addEventListener("click", () => { state.view="main"; render(); });
     $("go-logout")?.addEventListener("click", async () => { await signOut(state.auth); state.view="login"; render(); });
 
-    document.querySelectorAll(".card-hd").forEach(el => {
-      el.addEventListener("click", ev => {
-        if(ev.target.closest(".status-sel")||ev.target.closest(".del-btn")||ev.target.closest(".edit-btn")) return;
-        toggleDetail("detail-"+el.dataset.key);
-      });
-    });
-    document.querySelectorAll(".edit-btn").forEach(b => {
-      b.addEventListener("click", ev => { ev.stopPropagation(); openEditModal(b.dataset.key); });
-    });
-    document.querySelectorAll(".sug-hd").forEach(el => {
-      el.addEventListener("click", ev => {
-        if(ev.target.closest(".sug-status-sel")) return;
-        toggleSugDetail("sug-"+el.dataset.key);
-      });
-    });
+    // 상세 토글·수정 버튼은 인라인 onclick(toggleDetail/toggleSugDetail/openEditModal)으로 통일(작업2 A안)
+    // → 렌더-바인딩 타이밍 레이스 제거. 삭제 버튼은 제거(작업5).
     document.querySelectorAll(".tab-btn").forEach(b => {
       b.addEventListener("click", () => setAdminTab(b.dataset.tab));
     });
 
-    $("a-search")?.addEventListener("input", e => { state.filter.search=e.target.value; updateAdminTable(); });
+    // 검색은 render()로 통일(updateAdminTable 폐기, 작업2 C안). 리렌더 후 검색창 포커스 복원.
+    if(state._focusSearch){
+      const se = $("a-search");
+      if(se){ se.focus(); const v=se.value; se.setSelectionRange(v.length, v.length); }
+      state._focusSearch = false;
+    }
+    $("a-search")?.addEventListener("input", e => { state.filter.search=e.target.value; state._focusSearch=true; render(); });
     $("a-acctype")?.addEventListener("change", e => { state.filter.accType=e.target.value; render(); });
     $("a-level")?.addEventListener("change",   e => { state.filter.level=e.target.value; render(); });
+    $("a-show-test")?.addEventListener("change", e => { state.filter.showTest=e.target.checked; render(); });
     $("btn-excel")?.addEventListener("click",  () => downloadExcel());
 
     document.querySelectorAll(".status-sel").forEach(s => {
@@ -677,12 +695,6 @@ export function bindEvents() {
     });
     document.querySelectorAll(".sug-status-sel").forEach(s => {
       s.addEventListener("change", () => { update(ref(state.db,`suggestions/${s.dataset.key}`),{status:s.value}); });
-    });
-    document.querySelectorAll(".del-btn").forEach(b => {
-      b.addEventListener("click", () => {
-        if(!confirm("이 사고 접수 건을 삭제하시겠습니까?")) return;
-        remove(ref(state.db,`accidents/${b.dataset.key}`));
-      });
     });
 
     // 로그인 모달
@@ -806,6 +818,8 @@ window.saveFollowUp = async function(key) {
   const updated = prev ? prev+"\n\n["+now+"]\n"+text : "["+now+"]\n"+text;
   try {
     await update(ref(state.db,`accidents/${key}`),{followUp:updated, status:"처리중"});
+    // 후속조치 발송(작업6): slack+sms, lang KO 고정, notifyType followup.
+    sendSlackAlert({ ...state.entries[key], followUp:updated, status:"처리중", lang:"ko", notifyType:"followup", channels:["slack","sms"] });
     el.value="";
     if(okEl){ okEl.style.display="block"; setTimeout(()=>{ okEl.style.display="none"; },3000); }
   } catch {
@@ -828,6 +842,7 @@ window.removePerson = function(type, idx) {
 };
 
 window.toggleDetail = toggleDetail;
+window.toggleSugDetail = toggleSugDetail;   // 안전제안 상세 인라인 onclick용(작업2)
 window.openEditModal = openEditModal;
 window.editSelectType = editSelectType;
 

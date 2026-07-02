@@ -1,4 +1,4 @@
-const CACHE_NAME = 'safety001-v18';
+const CACHE_NAME = 'safety001-v20';
 const ASSETS = [
   './',
   './index.html',
@@ -68,9 +68,10 @@ self.addEventListener('fetch', e => {
     return; // 캐시 처리 안 함 → 브라우저 기본 동작
   }
 
-  // 나머지만 캐시 처리
+  // 나머지(앱 파일)는 항상 서버와 재검증(no-cache)하여 최신 JS를 받도록 한다.
+  // 변경이 없으면 304로 빠르게 처리되고, 변경 시 즉시 새 파일을 받는다. 오프라인이면 캐시로 폴백.
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' })
       .then(res => {
         // 유효한 응답만 캐시
         if(res && res.status === 200 && res.type === 'basic'){

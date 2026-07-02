@@ -1,10 +1,15 @@
 import { state } from "../state.js";
+import { t } from "../utils.js";
 import { renderMasterTab } from "./master.js";
 
 export function renderAdmin() {
   const { entries, suggestions, filter, adminTab } = state;
 
-  const list = Object.entries(entries);
+  // test·오접수 상태는 기본 제외(목록 + 통계 모두). filter.showTest 체크 시 포함(작업5).
+  const allList = Object.entries(entries);
+  const list = filter.showTest
+    ? allList
+    : allList.filter(([,e]) => e.status!=="test" && e.status!=="오접수");
   const total = list.length;
   const lv1 = list.filter(([,e])=>e.level==="1").length;
   const lv2 = list.filter(([,e])=>e.level==="2").length;
@@ -49,7 +54,7 @@ export function renderAdmin() {
     const detailTag = e.accDetail
       ? '<span style="font-size:11px;color:#888;background:#f0f4f8;padding:1px 6px;border-radius:5px;">'+e.accDetail+'</span>'
       : "";
-    const statusOpts = ["접수","처리중","완료","보류"].map(st =>
+    const statusOpts = ["접수","처리중","완료","보류","test","오접수"].map(st =>
       '<option'+(e.status===st?' selected':'')+'>'+st+'</option>'
     ).join("");
     const situation = (e.situation||"-").replace(/\n/g,"<br>");
@@ -74,7 +79,7 @@ export function renderAdmin() {
     }
 
     return '<div style="background:#fff;border-radius:12px;border:1px solid #eef2f7;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">'
-      +'<div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;" class="card-hd" data-key="'+key+'">'
+      +'<div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;" onclick="toggleDetail(\'detail-'+key+'\')">'
         +'<div style="flex-shrink:0;margin-top:1px;"><span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;background:'+ls.bg+';color:'+ls.color+';border:1px solid '+ls.bd+';white-space:nowrap;">Lv'+(e.level||"?")+' '+lvLabel+'</span></div>'
         +'<div style="flex:1;min-width:0;">'
           +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">'
@@ -91,8 +96,7 @@ export function renderAdmin() {
         +'<div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px;" onclick="event.stopPropagation()">'
           +'<select class="status-sel" data-key="'+key+'" style="border:1px solid #ddd;border-radius:6px;padding:3px 6px;font-size:11px;cursor:pointer;font-family:inherit;max-width:68px;">'+statusOpts+'</select>'
           +'<div style="display:flex;gap:4px;">'
-            +'<button class="del-btn" data-key="'+key+'" style="background:none;border:1px solid #eee;border-radius:5px;cursor:pointer;color:#ccc;font-size:12px;padding:2px 6px;">✕</button>'
-            +'<button class="edit-btn" data-key="'+key+'" style="background:#e05c00;border:none;border-radius:5px;cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">수정</button>'
+            +'<button onclick="openEditModal(\''+key+'\')" style="background:#e05c00;border:none;border-radius:5px;cursor:pointer;color:#fff;font-size:11px;padding:2px 7px;font-family:inherit;font-weight:600;">수정</button>'
           +'</div>'
         +'</div>'
       +'</div>'
@@ -107,7 +111,7 @@ export function renderAdmin() {
           +'<div style="background:#fff;border:1px solid #dce8f4;border-radius:7px;padding:8px 10px;color:#333;line-height:1.6;">'+situation+'</div></div>'
         +actionHtml+followHtml+photoHtml
         +'<div style="margin-top:8px;">'
-          +'<button class="edit-btn" data-key="'+key+'" style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 내용 수정 + 재발송</button>'
+          +'<button onclick="openEditModal(\''+key+'\')" style="padding:6px 14px;background:#e05c00;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">✏️ 내용 수정 + 재발송</button>'
         +'</div>'
       +'</div>'
     +'</div>';
@@ -129,7 +133,7 @@ export function renderAdmin() {
         +'<div style="font-size:13px;color:#333;">이메일: <strong>'+s.realEmail+'</strong></div></div>'
       : "";
 
-    return '<tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" class="sug-hd" data-key="'+key+'">'
+    return '<tr style="border-bottom:1px solid #eef2f7;cursor:pointer;" onclick="toggleSugDetail(\'sug-'+key+'\')">'
       +'<td style="padding:10px 11px;font-size:12px;color:#888;white-space:nowrap;">'+(s.createdAt||"").slice(0,16)+'</td>'
       +'<td style="padding:10px 11px;font-weight:600;">'+(s.site||"-")+'</td>'
       +'<td style="padding:10px 11px;"><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">'+(s.category||"-")+'</span></td>'
@@ -191,34 +195,89 @@ export function renderAdmin() {
           +'<option value="2"'+(filter.level==="2"?' selected':'')+'>Level 2 긴급</option>'
           +'<option value="3"'+(filter.level==="3"?' selected':'')+'>Level 3 일반</option>'
         +'</select>'
+        +'<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;cursor:pointer;padding:0 6px;white-space:nowrap;">'
+          +'<input type="checkbox" id="a-show-test"'+(filter.showTest?' checked':'')+' style="cursor:pointer;"/> '+t("showTestLabel")
+        +'</label>'
       +'</div>'
       +'<div id="admin-table">'+accCards+'</div>'
       +'<div id="admin-count" style="font-size:12px;color:#bbb;margin-top:4px;text-align:right;">총 '+filtered.length+'건</div>'
     : adminTab==="master" ? renderMasterTab()
     : sugHtml;
 
-  // 수정 모달 (원본에서 누락된 부분 — 여기서 구현)
+  // 수정 모달 — 접수 전체 필드 편집 + 발송제외(작업4).
+  // 라벨은 KO 고정(대시보드 정책, 작업3과 동일 취급 — 의도적 i18n 패리티 예외).
+  // 필드 id 계약: edit-<camelCase>  (openEditModal/saveEditAndResend와 3면 통일)
   const editModal = `
 <div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;overflow-y:auto;padding:20px;">
-  <div style="background:#fff;border-radius:14px;padding:1.75rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
-    <div style="font-size:16px;font-weight:700;margin-bottom:1.25rem;">✏️ 사고 접수 수정 + 재발송</div>
+  <div style="background:#fff;border-radius:14px;padding:1.75rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:1rem;">✏️ 사고 접수 수정 + 재발송</div>
+    <div id="edit-err" class="err-banner" style="display:none;margin-bottom:12px;"></div>
+
     <div class="field">
-      <div class="label">사고 유형</div>
-      <select id="edit-acctype" class="select">
-        ${["인사사고","제품사고","공급사고","차량사고"].map(t=>`<option value="${t}">${t}</option>`).join("")}
-      </select>
+      <div class="label">사업소</div>
+      <select id="edit-site" class="select"></select>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div class="field" style="flex:1;">
+        <div class="label">접수자</div>
+        <input id="edit-reporter" class="input"/>
+      </div>
+      <div class="field" style="flex:1;">
+        <div class="label">직급</div>
+        <select id="edit-rank" class="select"></select>
+      </div>
     </div>
     <div class="field">
-      <div class="label">긴급도</div>
-      <select id="edit-level" class="select">
-        <option value="1">Level 1 최긴급</option>
-        <option value="2">Level 2 긴급</option>
-        <option value="3">Level 3 일반</option>
-      </select>
+      <div class="label">연락처</div>
+      <input id="edit-phone" class="input"/>
+    </div>
+    <div class="field">
+      <div class="label">발생일시</div>
+      <input id="edit-accDateTime" class="input" placeholder="예: 2026년 07월 02일 오전 09시 30분"/>
+    </div>
+    <div class="field">
+      <div class="label">발생위치</div>
+      <input id="edit-location" class="input"/>
+    </div>
+    <div class="field">
+      <div class="label">사고 유형</div>
+      <select id="edit-accType" class="select" onchange="editSelectType(this.value)"></select>
+    </div>
+    <div class="field">
+      <div class="label">세부 유형</div>
+      <select id="edit-accDetail" class="select"></select>
+    </div>
+
+    <div id="edit-person-section" style="display:none;border:1px dashed #dce8f4;border-radius:9px;padding:10px 12px;margin-bottom:12px;background:#f9fbfd;">
+      <div class="field" style="margin-bottom:8px;">
+        <div class="label">단독/쌍방</div>
+        <select id="edit-accidentType" class="select" onchange="document.getElementById('edit-perp-wrap').style.display=this.value==='쌍방사고'?'block':'none'">
+          <option value="단독사고">단독사고</option>
+          <option value="쌍방사고">쌍방사고</option>
+        </select>
+      </div>
+      <div id="edit-person-wrap"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;">
+      <div class="field" style="flex:1;">
+        <div class="label">긴급도</div>
+        <select id="edit-level" class="select">
+          <option value="1">Level 1 최긴급</option>
+          <option value="2">Level 2 긴급</option>
+          <option value="3">Level 3 일반</option>
+        </select>
+      </div>
+      <div class="field" style="flex:1;">
+        <div class="label">고객사 영향</div>
+        <select id="edit-customerEffect" class="select">
+          ${["예","아니오"].map(v=>`<option value="${v}">${v}</option>`).join("")}
+        </select>
+      </div>
     </div>
     <div class="field">
       <div class="label">라인중단 여부</div>
-      <select id="edit-linestop" class="select">
+      <select id="edit-lineStop" class="select">
         ${["라인중단발생","라인중단예상","미장착","라인영향없음"].map(v=>`<option value="${v}">${v}</option>`).join("")}
       </select>
     </div>
@@ -228,14 +287,38 @@ export function renderAdmin() {
     </div>
     <div class="field">
       <div class="label">즉시 조치</div>
-      <textarea id="edit-action" class="textarea" style="min-height:80px;"></textarea>
+      <textarea id="edit-actionTaken" class="textarea" style="min-height:70px;"></textarea>
+    </div>
+    <div class="field">
+      <div class="label">추가 지원 필요</div>
+      <textarea id="edit-supportNeeded" class="textarea" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <div class="label">후속 조치</div>
+      <textarea id="edit-followUp" class="textarea" style="min-height:60px;"></textarea>
     </div>
     <div class="field">
       <div class="label">처리 상태</div>
       <select id="edit-status" class="select">
-        ${["접수","처리중","완료","보류"].map(v=>`<option value="${v}">${v}</option>`).join("")}
+        ${["접수","처리중","완료","보류","test","오접수"].map(v=>`<option value="${v}">${v}</option>`).join("")}
       </select>
     </div>
+
+    <div style="border-top:1px solid #eef2f7;margin-top:6px;padding-top:12px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#555;margin-bottom:10px;">
+        <input type="checkbox" id="edit-skip-slack" style="width:16px;height:16px;cursor:pointer;"/>
+        슬랙/문자 재발송 제외 (조용히 수정만)
+      </label>
+      <div class="field">
+        <div class="label">수정자 <span style="color:#aaa;font-weight:400;font-size:11px;">(발송 제외 시 필수)</span></div>
+        <input id="edit-editor" class="input" placeholder="수정한 사람"/>
+      </div>
+      <div class="field">
+        <div class="label">수정 사유 <span style="color:#aaa;font-weight:400;font-size:11px;">(발송 제외 시 필수)</span></div>
+        <textarea id="edit-reason" class="textarea" style="min-height:50px;" placeholder="예: 오탈자 정정, 오접수 처리"></textarea>
+      </div>
+    </div>
+
     <div style="display:flex;gap:8px;margin-top:1rem;">
       <button id="btn-edit-save" class="submit-btn" style="flex:1;font-size:14px;padding:11px;">💾 저장 + 재발송</button>
       <button id="btn-edit-cancel" style="flex:0 0 auto;padding:11px 18px;background:#f5f5f5;border:none;border-radius:9px;font-size:14px;color:#666;cursor:pointer;font-family:inherit;">취소</button>

@@ -96,7 +96,9 @@ export async function handleSubmit(renderFn) {
     await push(ref(state.db, "accidents"), entry);
     state.submitted = entry;
     state.view = "success";
-    sendSlackAlert(entry);
+    // 발송 payload 표준 스키마(00b_decisions): entry는 이미 toKo로 KO 정규화됨.
+    // lang은 항상 "ko" 고정(작업3 — 의도적 i18n 패리티 예외). 신규 접수 => slack+sms.
+    sendSlackAlert({ ...entry, lang:"ko", notifyType:"accident", channels:["slack","sms"] });
   } catch(err) {
     state.errors = { submit: "저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." };
   }

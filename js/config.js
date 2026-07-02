@@ -103,6 +103,8 @@ export const T = {
     ],
     submitBtn:      "사고 접수하기",
     submitting:     "접수 중...",
+    submittingSug:  "접수 중...",              // 안전제안 제출 중 버튼 라벨(이중제출 방지)
+    showTestLabel:  "test·오접수 포함",        // 관리자 필터: test/오접수 상태 표시 토글
     goMain:         "← 메인",
     goLogin:        "← 로그인",
     myReport:       "📋 내 접수 조회",
@@ -213,6 +215,8 @@ export const T = {
     ],
     submitBtn:      "提交事故报告",
     submitting:     "提交中...",
+    submittingSug:  "提交中...",              // 安全建议提交中按钮标签(防止重复提交)
+    showTestLabel:  "包含test·误报",          // 管理员筛选: 显示test/误报状态
     goMain:         "← 主页",
     goLogin:        "← 登录",
     myReport:       "📋 我的报告查询",

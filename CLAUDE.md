@@ -6,6 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Progressive Web App (PWA) for workplace safety incident reporting at Gwangmyeong Business Division (광명사업부). Supports bilingual UI (Korean/Chinese) and real-time accident management.
 
+## 하네스: 안전관리 PWA 개발 팀
+
+**목표:** 빌드리스 ES Module PWA를 일관성(i18n 패리티·SW 캐시·경계면 정합) 깨짐 없이 안전하게 개발한다.
+
+**트리거:** 이 앱(사고접수/관리자/위험성평가/안전제안/인증·역할/PWA)에 기능 추가·수정·리팩터링·버그수정 요청, 또는 "다시 실행/재실행/업데이트/수정/보완" 등 후속 요청 시 `safety-app-dev` 오케스트레이터 스킬을 사용한다. 단순 질문(코드 위치 찾기 등)은 직접 응답 가능.
+
+> 팀(`.claude/agents/`): safety-architect, module-builder, firebase-pwa-engineer, safety-qa
+> 스킬(`.claude/skills/`): module-development, i18n-parity, pwa-cache-sync, firebase-roles, safety-domain, safety-qa-verify, safety-app-dev(오케스트레이터)
+
+**변경 이력:**
+| 날짜 | 변경 내용 | 대상 | 사유 |
+|------|----------|------|------|
+| 2026-06-20 | 초기 하네스 구성 (4인 팀 + 6 스킬 + 오케스트레이터) | 전체 | 신규 구축 |
+
 ## Tech Stack & Architecture
 
 **Modular ES Module SPA** — split into ~20 focused files under `js/`. No build step, no bundler. Dependencies load from CDN (Firebase 10.x from gstatic, ImgBB API).

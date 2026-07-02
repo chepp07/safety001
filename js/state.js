@@ -27,7 +27,9 @@ export const state = {
   submitted: null,
   form: null,              // makeEmptyForm()으로 초기화됨 (main.js에서)
   errors: {},
-  filter: { accType: "전체", level: "전체", search: "" },
+  // filter.showTest: test·오접수 상태 건 표시 여부(기본 false → 목록·통계에서 제외)
+  filter: { accType: "전체", level: "전체", search: "", showTest: false },
+  _focusSearch: false,     // 관리자 검색 input 리렌더 후 포커스 복원용(전이 플래그)
 
   // 사용자
   currentUser: null,
